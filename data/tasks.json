@@ -1,0 +1,46 @@
+[
+  {
+    "id": "task-1",
+    "title": "Update AgentOrgChart.tsx",
+    "description": "Refine the visual hierarchy and connecting lines for better clarity.",
+    "assignedTo": "M",
+    "status": "In Progress"
+  },
+  {
+    "id": "task-2",
+    "title": "Review Mission Control design doc",
+    "description": "Read through the mission-control-team-screen-concept.md for feedback.",
+    "assignedTo": "T",
+    "status": "Backlog"
+  },
+  {
+    "id": "task-3",
+    "title": "Research next feature for Mission Control",
+    "description": "Investigate possibilities for integrating dynamic agent status.",
+    "assignedTo": "M",
+    "status": "Recurring"
+  },
+  {
+    "id": "task-4",
+    "title": "Set up daily sync meeting",
+    "description": "Schedule a brief daily meeting to discuss progress.",
+    "assignedTo": "T",
+    "status": "Done"
+  },
+  {
+    "id": "task-5",
+    "title": "Daily memory summary automation",
+    "description": "Ensure the 4:00 AM job summarizes memory/YYYY-MM-DD.md into per-project docs.",
+    "assignedTo": "M",
+    "status": "Recurring",
+    "tags": ["automation", "docs"]
+  },
+  {
+    "id": "task-6",
+    "title": "Social media auto-posts on show acceptance",
+    "description": "When an artwork is accepted to a juried show, automatically generate and post to social media (Instagram, Facebook, etc.) with the artwork image, show name, and a celebratory caption.",
+    "assignedTo": "T",
+    "status": "Backlog",
+    "tags": ["automation", "social-media", "artwork"]
+  }
+]

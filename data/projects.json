@@ -1,0 +1,300 @@
+[
+  {
+    "id": "proj-mission-control",
+    "title": "Mission Control Application",
+    "description": "The core dashboard for managing OpenClaw agents, tasks, schedules, calendar, docs, and memory.",
+    "status": "Active",
+    "importance": "High",
+    "progress": 75,
+    "lastWorkedOn": "2026-03-15T12:00:00Z",
+    "lastAgent": "Muffin",
+    "sourcePath": "C:/Users/tberg/AppData/Local/Temp/cb8f66e9-70be-4d27-a481-13c22ba2eb79",
+    "createdAt": "2026-03-14T09:00:00Z",
+    "groups": [
+      "workspace",
+      "github"
+    ],
+    "launchUrl": "http://localhost:3000/",
+    "repoUrl": "https://github.com/tarenberg/Command_Control"
+  },
+  {
+    "id": "proj-new-ai-model-research",
+    "title": "New AI Model Research",
+    "description": "Investigating cutting-edge AI architectures for enhanced agent capabilities.",
+    "status": "Planning",
+    "importance": "High",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-13T10:30:00Z",
+    "lastAgent": "Pathfinder",
+    "sourcePath": "/path/to/research/docs",
+    "createdAt": "2026-03-12T14:00:00Z",
+    "groups": [
+      "workspace"
+    ]
+  },
+  {
+    "id": "proj-social-media-content",
+    "title": "Social Media Content Strategy",
+    "description": "Developing a strategy and automated pipeline for engaging social media content.",
+    "status": "Active",
+    "importance": "Medium",
+    "progress": 40,
+    "lastWorkedOn": "2026-03-14T16:00:00Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "/path/to/social/media/project",
+    "createdAt": "2026-03-10T11:00:00Z",
+    "groups": [
+      "workspace"
+    ]
+  },
+  {
+    "id": "proj-art-hanger",
+    "title": "Picture Hanger Pro",
+    "description": "Web app for art hanging calculations and gallery workflows. WORKING VERSION",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-31T17:15:46.063Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/ Picture Hanger Pro",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp",
+      "github"
+    ],
+    "launchUrl": "http://localhost/tools/Art-Hanger/",
+    "repoUrl": "https://github.com/tarenberg/Art-Hanger"
+  },
+  {
+    "id": "proj-art-hanger-main",
+    "title": "Art-Hanger-main",
+    "description": "Primary branch of the Art-Hanger XAMPP deployment.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T12:51:36Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/Art-Hanger-main",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp"
+    ],
+    "launchUrl": "http://localhost/tools/Art-Hanger-main/"
+  },
+  {
+    "id": "proj-art-hanger-saas",
+    "title": "Art-Hanger-SaaS",
+    "description": "SaaS flavor of Art-Hanger for remote clients.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T12:51:36Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/Art-Hanger-SaaS",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp"
+    ],
+    "launchUrl": "http://localhost/tools/Art-Hanger-SaaS/"
+  },
+  {
+    "id": "proj-arttracker",
+    "title": "ArtTracker",
+    "description": "Art tracking utility for collectors and galleries.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T12:51:36Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/ArtTracker",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp",
+      "github"
+    ],
+    "launchUrl": "https://localhost:3001/",
+    "sourcePath": "C:/Users/tberg/Documents/_PROJECTS/ArtTracker"
+  },
+  {
+    "id": "proj-arttracker-dashboard",
+    "title": "ArtTrackerDashboard",
+    "description": "Dashboard UI for the ArtTracker backend.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T12:51:36Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/ArtTrackerDashboard",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp"
+    ],
+    "launchUrl": "http://localhost/tools/ArtTrackerDashboard/"
+  },
+  {
+    "id": "proj-chronicles",
+    "title": "Chronicles",
+    "description": "Journal / knowledge base for collectors.",
+    "status": "Planning",
+    "importance": "High",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-24T19:51:21.765Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/Chronicles",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp",
+      "github"
+    ],
+    "launchUrl": "http://localhost/tools/Chronicles/",
+    "repoUrl": "https://github.com/tarenberg/Chronicles"
+  },
+  {
+    "id": "proj-composition-pro",
+    "title": "Composition Pro",
+    "description": "Tooling for composition and layout planning.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T12:51:36Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/Composition Pro",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp"
+    ],
+    "launchUrl": "http://localhost/tools/Composition%20Pro/"
+  },
+  {
+    "id": "proj-palette-picker-pro",
+    "title": "Palette Picker Pro",
+    "description": "Palette experimentation environment.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T12:51:36Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/Palette Picker Pro",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp"
+    ],
+    "launchUrl": "http://localhost/tools/Palette%20Picker%20Pro/"
+  },
+  {
+    "id": "proj-picture-hanger-pro-3",
+    "title": "Picture Hanger Pro 3",
+    "description": "3rd-gen picture hanging assistant.",
+    "status": "Planning",
+    "importance": "High",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-24T19:50:46.270Z",
+    "lastAgent": "Unassigned",
+    "sourcePath": "C:/xampp/htdocs/tools/Picture Hanger Pro 3",
+    "createdAt": "2026-03-15T12:51:36Z",
+    "groups": [
+      "local-xampp"
+    ],
+    "launchUrl": "http://localhost/tools/Picture%20Hanger%20Pro%203/"
+  },
+  {
+    "id": "proj-voicechat",
+    "title": "VoiceChat",
+    "description": "Full-duplex voice conversation app powered by Gemini Live Audio API.",
+    "status": "Planning",
+    "importance": "High",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T14:00:00Z",
+    "lastAgent": "Muffin",
+    "sourcePath": "https://github.com/tarenberg/VoiceChat",
+    "createdAt": "2026-03-15T14:00:00Z",
+    "groups": [
+      "github"
+    ],
+    "launchUrl": "https://github.com/tarenberg/VoiceChat",
+    "repoUrl": "https://github.com/tarenberg/VoiceChat"
+  },
+  {
+    "id": "proj-collectorcrm",
+    "title": "CollectorCRM",
+    "description": "CRM tailored for art collectors.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T14:00:00Z",
+    "lastAgent": "Muffin",
+    "sourcePath": "https://github.com/tarenberg/CollectorCRM",
+    "createdAt": "2026-03-15T14:00:00Z",
+    "groups": [
+      "github"
+    ],
+    "launchUrl": "https://github.com/tarenberg/CollectorCRM",
+    "repoUrl": "https://github.com/tarenberg/CollectorCRM"
+  },
+  {
+    "id": "proj-tom-arenberg-website",
+    "title": "Tom Arenberg Website",
+    "description": "AI-assisted personal website.",
+    "status": "Planning",
+    "importance": "Medium",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T14:00:00Z",
+    "lastAgent": "Muffin",
+    "sourcePath": "https://github.com/tarenberg/Tom-Arenberg---Website",
+    "createdAt": "2026-03-15T14:00:00Z",
+    "groups": [
+      "github"
+    ],
+    "launchUrl": "https://github.com/tarenberg/Tom-Arenberg---Website",
+    "repoUrl": "https://github.com/tarenberg/Tom-Arenberg---Website"
+  },
+  {
+    "id": "proj-thomas-arenberg",
+    "title": "Thomas-Arenberg",
+    "description": "General development scratchpad repo.",
+    "status": "Planning",
+    "importance": "Low",
+    "progress": 0,
+    "lastWorkedOn": "2026-03-15T14:00:00Z",
+    "lastAgent": "Muffin",
+    "sourcePath": "https://github.com/tarenberg/Thomas-Arenberg",
+    "createdAt": "2026-03-15T14:00:00Z",
+    "groups": [
+      "github"
+    ],
+    "launchUrl": "https://github.com/tarenberg/Thomas-Arenberg",
+    "repoUrl": "https://github.com/tarenberg/Thomas-Arenberg"
+  },
+  {
+    "id": "proj-studio-bridge",
+    "title": "Studio Bridge (Google Home)",
+    "description": "Integration bridge between Google Nest (Nest Cam, Thermostat) and the Mission Control dashboard.",
+    "status": "Planning",
+    "importance": "High",
+    "progress": 5,
+    "lastWorkedOn": "2026-05-02T18:57:00Z",
+    "lastAgent": "Muffin",
+    "sourcePath": "C:/Users/tberg/Documents/_PROJECTS/StudioBridge",
+    "createdAt": "2026-05-02T18:57:00Z",
+    "groups": [
+      "workspace"
+    ]
+  },
+  {
+    "lastWorkedOn": "2026-03-17T15:24:12Z",
+    "id": "proj-postvisit",
+    "createdAt": "2026-03-17T15:24:12Z",
+    "groups": [
+      "workspace",
+      "github"
+    ],
+    "description": "A Laravel-based project for post-visit management.",
+    "progress": 0,
+    "lastAgent": "Muffin",
+    "repoUrl": "https://github.com/mnedoszytko/postvisit",
+    "status": "Planning",
+    "title": "Postvisit",
+    "sourcePath": "C:/Users/tberg/.openclaw/workspace/repos/postvisit",
+    "importance": "Medium"
+  }
+]

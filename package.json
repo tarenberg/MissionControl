@@ -1,0 +1,51 @@
+{
+  "name": "cb8f66e9-70be-4d27-a481-13c22ba2eb79",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
+    "@prisma/client": "^6.19.3",
+    "@swc/helpers": "^0.5.21",
+    "better-sqlite3": "^12.9.0",
+    "client-only": "^0.0.1",
+    "http-proxy": "^1.18.1",
+    "jsdom": "^24.0.0",
+    "next": "^16.2.1",
+    "node-fetch": "^2.7.0",
+    "prisma": "^6.19.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "scheduler": "^0.26.0",
+    "styled-jsx": "^5.1.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "better-sqlite3",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jsdom": "^21.1.0",
+    "@types/node": "20.19.37",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

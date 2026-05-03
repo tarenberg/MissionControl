@@ -1,0 +1,44 @@
+[
+  {
+    "id": "M",
+    "name": "Muffin",
+    "description": "AI Familiar / Coordinator: The primary assistant, managing tasks, knowledge, and user interaction.",
+    "status": "Active",
+    "model": "google/gemini-3-pro-preview"
+  },
+  {
+    "id": "J",
+    "name": "Jason",
+    "description": "Coding & Development Agent: Specializes in code generation, debugging, and refactoring.",
+    "status": "Idle",
+    "model": "openai/gpt-5.1-codex"
+  },
+  {
+    "id": "A",
+    "name": "Archivist",
+    "description": "Memory & Learning Agent: Responsible for knowledge retention and synthesizing long-term memory.",
+    "status": "Idle",
+    "model": "anthropic/claude-sonnet-4-6"
+  },
+  {
+    "id": "P",
+    "name": "Pathfinder",
+    "description": "Research & Exploration Agent: Gathers information, summarizes findings, and provides preliminary analysis.",
+    "status": "Idle",
+    "model": "anthropic/claude-sonnet-4-6"
+  },
+  {
+    "id": "S",
+    "name": "Sentinel",
+    "description": "Verification & QA Agent: Ensures quality, performs automated testing, and validates solutions.",
+    "status": "Idle",
+    "model": "anthropic/claude-sonnet-4-6"
+  },
+  {
+    "id": "H",
+    "name": "Housekeeper",
+    "description": "Housekeeping Agent: Manages all system maintenance tasks including heartbeat checks, cron job execution, and routine system upkeep. Default agent for scheduled tasks.",
+    "status": "Active",
+    "model": "ollama/llama3"
+  }
+]

@@ -1,0 +1,35 @@
+"Act as a Senior Systems Architect and conduct a comprehensive, component-by-component diagnostic of your current OpenClaw configuration and execution environment. My system is currently experiencing significant latency and running very slowly.
+
+Please review your entire configuration file, internal architecture, and recent execution behavior to identify bottlenecks, errors, or inefficiencies. Specifically, analyze and report on the following areas:
+
+
+
+API & Model Routing: Evaluate all configured LLM endpoints (e.g., OpenAI, Anthropic, OpenRouter, or local models). Are there timeout configurations that are too generous? Are we experiencing rate-limiting, or using heavy/expensive models for simple routing tasks that could be handled by faster, smaller models?
+
+
+
+Context & Memory Management: Analyze how short-term and long-term memory (vector databases) are handled. Is context bloat occurring? Are we passing unnecessarily large token payloads in every loop? Check the chunking and retrieval configuration.
+
+
+
+Agent Execution Loop & Tool Calling: Inspect your core reasoning loop. Are there blocking synchronous operations that should be asynchronous? Look for redundant tool calls, excessive retries, or recursive loops.
+
+
+
+System & Environment: Check for any poorly optimized local scripts, memory leaks, or inefficient file I/O operations within your working directory.
+
+Output a detailed diagnostic report categorizing your findings into:
+
+
+
+Critical Errors: Things broken or failing.
+
+
+
+Performance Bottlenecks: Things slowing the system down.
+
+
+
+Suggested Optimizations: Best-practice improvements for speed and efficiency.
+
+For every issue found, provide the specific, actionable code snippet or configuration change required to fix it."

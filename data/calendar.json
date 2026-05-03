@@ -1,0 +1,94 @@
+[
+  {
+    "id": "cron-morning-kickoff",
+    "title": "Morning Kickoff",
+    "time": "8:00 AM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "orange",
+    "isCron": true
+  },
+  {
+    "id": "cron-trend-radar",
+    "title": "Trend Radar Daily Digest",
+    "time": "12:00 PM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "blue",
+    "isCron": true
+  },
+  {
+    "id": "cron-evening-wrapup",
+    "title": "Evening Wrap Up",
+    "time": "9:00 PM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "gray",
+    "isCron": true
+  },
+  {
+    "id": "cron-memory-summaries",
+    "title": "Memory Summaries",
+    "time": "4:00 AM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "frequency": "Daily",
+    "category": "green",
+    "isCron": true
+  },
+  {
+    "id": "event-4",
+    "title": "YouTube OpenClaw",
+    "time": "1:00 PM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "red"
+  },
+  {
+    "id": "event-5",
+    "title": "Scout Morning Res...",
+    "time": "6:00 AM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "green"
+  },
+  {
+    "id": "event-6",
+    "title": "Morning Brief",
+    "time": "8:00 AM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "orange"
+  },
+  {
+    "id": "event-8",
+    "title": "Quill Script Writer",
+    "time": "2:00 PM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "purple"
+  },
+  {
+    "id": "event-9",
+    "title": "Daily Digest",
+    "time": "9:00 AM",
+    "dayOfWeek": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "frequency": "Daily",
+    "category": "blue"
+  },
+  {
+    "id": "event-11",
+    "title": "Stock Scarcity Res...",
+    "time": "7:00 AM",
+    "dayOfWeek": ["Tue"],
+    "frequency": "Weekly",
+    "category": "red"
+  },
+  {
+    "id": "event-12",
+    "title": "Weekly Newsletter",
+    "time": "6:00 PM",
+    "dayOfWeek": ["Fri"],
+    "frequency": "Weekly",
+    "category": "purple"
+  }
+]
