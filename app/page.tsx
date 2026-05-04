@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import ToolCard from '../components/Tools/ToolCard';
-import { toolRegistry } from '../lib/toolRegistry';
 import ArtDeadlines from '../components/ArtDeadlines';
 import SystemMonitor from '../components/SystemMonitor';
 import StudioMonitor from '../components/StudioMonitor';
@@ -81,42 +79,42 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen p-8 bg-white text-gray-900">
-      <h1 className="text-4xl font-bold text-gray-900 mb-6">Welcome to Mission Control</h1>
-      <p className="text-gray-500 text-lg mb-10">Your central hub for managing tasks, agents, and custom tools.</p>
+    <div className="min-h-screen p-8 text-foreground">
+      <h1 className="mb-4">Welcome to Mission Control</h1>
+      <p className="text-muted text-base mb-10">Your central hub for managing tasks, agents, and custom tools.</p>
 
       {/* System Status */}
       <section className="mb-8 flex flex-col lg:flex-row gap-6">
         <div className="flex-1">
-          <StudioMonitor />
           <SystemMonitor />
+          <StudioMonitor />
 
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Available Models</h2>
+          <h2 className="mb-4">Available Models</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">OpenClaw Config</h3>
+            <div className="bg-card p-6 rounded-3xl border border-border-custom shadow-sm interactive-card">
+              <h3 className="mb-4 border-b border-border-custom pb-2">OpenClaw Config</h3>
               {modelStatus.loading ? (
-                <p className="text-gray-500 italic" title="Attempting to retrieve model status from the server.">Fetching status...</p>
+                <p className="text-muted italic" title="Attempting to retrieve model status from the server.">Fetching status...</p>
               ) : (
                 <ul className="list-disc pl-5">
-                  {modelStatus.openClawModels.length === 0 ? <li className="text-gray-500" title="No OpenClaw models are currently configured or available.">No models found</li> :
+                  {modelStatus.openClawModels.length === 0 ? <li className="text-muted" title="No OpenClaw models are currently configured or available.">No models found</li> :
                     modelStatus.openClawModels.map((model, idx) => (
-                      <li key={idx} className="text-gray-600 mb-1">{model}</li>
+                      <li key={idx} className="text-muted mb-1">{model}</li>
                     ))
                   }
                 </ul>
               )}
             </div>
 
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Local Models (Ollama)</h3>
+            <div className="bg-card p-6 rounded-3xl border border-border-custom shadow-sm interactive-card">
+              <h3 className="mb-4 border-b border-border-custom pb-2">Local Models (Ollama)</h3>
               {modelStatus.loading ? (
-                <p className="text-gray-500 italic" title="Attempting to retrieve model status from the server.">Fetching status...</p>
+                <p className="text-muted italic" title="Attempting to retrieve model status from the server.">Fetching status...</p>
               ) : (
                 <ul className="list-disc pl-5">
-                  {modelStatus.ollamaModels.length === 0 ? <li className="text-gray-500" title="No local Ollama models were found.">None</li> :
+                  {modelStatus.ollamaModels.length === 0 ? <li className="text-muted" title="No local Ollama models were found.">None</li> :
                     modelStatus.ollamaModels.map((model, idx) => (
-                      <li key={idx} className="text-gray-600 mb-1">{model}</li>
+                      <li key={idx} className="text-muted mb-1">{model}</li>
                     ))
                   }
                 </ul>
@@ -132,7 +130,7 @@ export default function HomePage() {
 
       {/* Skills List — grouped by category */}
       <section className="mb-10">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Available Skills</h2>
+        <h2 className="mb-6">Available Skills</h2>
         {(() => {
           const grouped = availableSkills.reduce<Record<string, SkillInfo[]>>((acc, s) => {
             (acc[s.category] = acc[s.category] || []).push(s);
@@ -140,14 +138,14 @@ export default function HomePage() {
           }, {});
           return CATEGORY_ORDER.filter((cat) => grouped[cat]?.length).map((cat) => (
             <div key={cat} className="mb-6">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-3">
                 {CATEGORY_ICONS[cat]} {cat}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {grouped[cat].map((skill) => (
-                  <div key={skill.name} className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="font-medium text-gray-900 text-sm">{skill.name}</div>
-                    <div className="text-gray-500 text-xs mt-1 line-clamp-2">{skill.description}</div>
+                  <div key={skill.name} className="bg-card border border-border-custom rounded-2xl px-4 py-3 shadow-sm interactive-card">
+                    <div className="font-medium text-sm">{skill.name}</div>
+                    <div className="text-muted text-xs mt-1 line-clamp-2">{skill.description}</div>
                   </div>
                 ))}
               </div>
@@ -156,14 +154,6 @@ export default function HomePage() {
         })()}
       </section>
 
-      <section className="mb-10">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Available Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {toolRegistry.map((tool) => (
-            <ToolCard key={tool.id} id={tool.id} name={tool.name} description={tool.description} />
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

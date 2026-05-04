@@ -18,9 +18,9 @@ const LongTermMemoryDisplay: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-xl border border-gray-200 h-full flex flex-col">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Long-Term Memory (MEMORY.md)</h2>
-      <div className="flex-1 overflow-y-auto bg-gray-50 p-3 rounded-md text-gray-900 font-mono text-sm">
+    <div className="bg-card p-4 rounded-3xl shadow-xl border border-border-custom h-full flex flex-col interactive-card">
+      <h2 className="mb-4">Long-Term Memory (MEMORY.md)</h2>
+      <div className="flex-1 overflow-y-auto bg-background p-3 rounded-xl text-foreground font-mono text-sm border border-border-custom">
         {loading ? (
           <p>Loading long-term memory...</p>
         ) : (

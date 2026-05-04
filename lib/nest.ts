@@ -113,4 +113,22 @@ export class NestClient {
 
     return response.json();
   }
+
+  /**
+   * Helper to get traits for a specific device.
+   */
+  async getDeviceTraits(deviceId: string) {
+    const data = await this.getDevice(deviceId);
+    return data.traits || {};
+  }
 }
+
+/**
+ * Singleton instance of NestClient using environment variables.
+ */
+export const nest = new NestClient({
+  clientId: process.env.NEST_CLIENT_ID || '',
+  clientSecret: process.env.NEST_CLIENT_SECRET || '',
+  projectId: process.env.NEST_PROJECT_ID || '',
+  refreshToken: process.env.NEST_REFRESH_TOKEN || '',
+});

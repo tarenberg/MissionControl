@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css"; // Keep Tailwind CSS imports
 import React from 'react'; // Explicitly import React
+import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
   title: "Mission Control", // Updated title
@@ -14,65 +15,62 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen bg-gray-50 text-gray-900 font-sans">
-        {/* Left Sidebar */}
-        <aside className="w-64 bg-white p-4 fixed h-full border-r border-gray-200">
-          <div className="text-2xl font-bold text-gray-900 mb-8">Mission Control</div>
-          <nav>
-            <ul>
+      <body className="min-h-screen bg-background text-foreground font-sans relative overflow-x-hidden transition-colors duration-300">
+        {/* Floating Left Sidebar */}
+        <aside className="w-64 bg-sidebar backdrop-blur-xl p-4 fixed h-[calc(100vh-2rem)] top-4 left-4 z-50 rounded-3xl border border-border-custom shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]">
+          <div className="flex items-center justify-between mb-10 px-2">
+            <div className="text-xl font-semibold tracking-tighter">Mission Control</div>
+            <ThemeToggle />
+          </div>
+          <nav className="h-full">
+            <ul className="space-y-1.5">
               <li className="mb-2">
-                <a href="/" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="Go to the main dashboard">
+                <a href="/" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="Go to the main dashboard">
                   Dashboard
                 </a>
               </li>
               <li className="mb-2">
-                <a href="/projects" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="View and manage your projects">
+                <a href="/projects" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="View and manage your projects">
                   Projects
                 </a>
               </li>
               <li className="mb-2">
-                <a href="/memory" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="Access your long-term and daily memories">
+                <a href="/memory" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="Access your long-term and daily memories">
                   Memory
                 </a>
               </li>
               <li className="mb-2">
-                <a href="/docs" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="LLM-maintained project documentation and browser">
+                <a href="/docs" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="LLM-maintained project documentation and browser">
                   Docs
                 </a>
               </li>
               <li className="mb-2">
-                <a href="/calendar" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="View your calendar and schedule">
+                <a href="/calendar" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="View your calendar and schedule">
                   Calendar
                 </a>
               </li>
               <li className="mb-2">
-                <a href="/tasks" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="Manage your tasks and to-do lists">
+                <a href="/tasks" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="Manage your tasks and to-do lists">
                   Tasks
                 </a>
               </li>
               <li className="mb-2">
-                <a href="/team" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="See an overview of your team and agents">
+                <a href="/team" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="See an overview of your team and agents">
                   Team Overview
                 </a>
               </li>
               <li className="mb-2">
-                <div className="flex items-center justify-between p-2 text-gray-400 cursor-not-allowed rounded-md" title="Coming Soon">
-                  <span>🎨 Art Tracker</span>
-                  <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">Coming Soon</span>
-                </div>
-              </li>
-              <li className="mb-2">
-                <a href="/ops" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="Manage and monitor operations">
+                <a href="/ops" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="Manage and monitor operations">
                   Ops Control
                 </a>
               </li>
               <li className="mb-2">
-                <a href="#" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="Access available tools and integrations">
+                <a href="#" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="Access available tools and integrations">
                   Tools
                 </a>
               </li>
               <li className="mb-2">
-                <a href="#" className="flex items-center p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md" title="Adjust application settings">
+                <a href="#" className="flex items-center p-2 text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500 rounded-2xl transition-all" title="Adjust application settings">
                   Settings
                 </a>
               </li>
@@ -81,8 +79,10 @@ export default function RootLayout({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 ml-64 p-8">
-          {children}
+        <main className="min-h-screen pl-72 pr-8 py-12">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </body>
     </html>

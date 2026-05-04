@@ -223,15 +223,15 @@ export default function TasksPage() {
   const columns = ['Backlog', 'In Progress', 'Waiting', 'Blocked', 'Done'];
 
   return (
-    <div className="h-full flex flex-col -mt-4">
+    <div className="h-full flex flex-col -mt-4 bg-background">
       <div className="flex justify-between items-center mb-8 flex-shrink-0">
         <div className="flex items-center gap-6">
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">Tasks</h1>
-          <div className="h-8 w-[1px] bg-gray-200"></div>
+          <h1>Tasks</h1>
+          <div className="h-8 w-[1px] bg-border-custom"></div>
           <select
             value={filterProjectId}
             onChange={(e) => setFilterProjectId(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm font-medium text-gray-600"
+            className="px-4 py-2 border border-border-custom rounded-xl text-sm bg-card focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm font-medium text-foreground"
           >
             <option value="all">All Projects</option>
             {projects.map(p => (
@@ -251,9 +251,9 @@ export default function TasksPage() {
       <div className="flex-1 overflow-x-auto min-h-0 pb-6 -mx-4 px-4">
         <div className="flex gap-6 h-full min-w-max">
           {columns.map(status => (
-            <div key={status} className="w-80 flex flex-col bg-gray-100/40 rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden">
-              <div className="p-4 flex justify-between items-center bg-white/60 backdrop-blur-md border-b border-gray-100">
-                <h2 className="font-bold text-gray-800 flex items-center gap-2.5">
+            <div key={status} className="w-80 flex flex-col bg-card/40 rounded-2xl border border-border-custom shadow-sm overflow-hidden">
+              <div className="p-4 flex justify-between items-center bg-card/60 backdrop-blur-md border-b border-border-custom">
+                <h2 className="flex items-center gap-2.5">
                   <span className={`w-3 h-3 rounded-full shadow-sm ${
                     status === 'Done' ? 'bg-green-500' : 
                     status === 'Blocked' ? 'bg-red-500' :
@@ -263,7 +263,7 @@ export default function TasksPage() {
                   {status}
                 </h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-gray-400 bg-white border border-gray-100 px-2.5 py-1 rounded-full shadow-xs">
+                  <span className="text-[10px] font-black text-muted bg-card border border-border-custom px-2.5 py-1 rounded-full shadow-xs">
                     {filteredTasks.filter(t => t.status === status).length}
                   </span>
                   <button 
@@ -277,7 +277,7 @@ export default function TasksPage() {
                       });
                       setShowModal(true);
                     }}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-100 text-gray-400 hover:text-blue-600 hover:border-blue-200 shadow-xs transition-all"
+                    className="w-6 h-6 flex items-center justify-center rounded-full bg-card border border-border-custom text-muted hover:text-blue-600 hover:border-blue-200 shadow-xs transition-all"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                   </button>
@@ -290,28 +290,28 @@ export default function TasksPage() {
                   .map(task => (
                     <div 
                       key={task.id} 
-                      className="bg-white p-5 rounded-xl shadow-sm border border-gray-200/80 hover:border-blue-400/50 hover:shadow-md transition-all group relative cursor-default"
+                      className="bg-card p-5 rounded-xl shadow-sm border border-border-custom hover:border-blue-400/50 hover:shadow-md transition-all group relative cursor-default interactive-card"
                     >
                       <div className="flex justify-between items-start mb-2.5 gap-3">
-                        <h3 className="text-[13px] font-bold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors">{task.title}</h3>
-                        <button onClick={() => handleEditClick(task)} className="text-gray-300 hover:text-blue-600 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
+                        <h3 className="text-[13px] leading-snug group-hover:text-blue-600 transition-colors">{task.title}</h3>
+                        <button onClick={() => handleEditClick(task)} className="text-muted hover:text-blue-600 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
                       </div>
                       
                       {task.description && (
-                        <p className="text-[11px] text-gray-500 line-clamp-3 mb-5 font-medium leading-relaxed">{task.description}</p>
+                        <p className="text-[11px] text-muted line-clamp-3 mb-5 font-medium leading-relaxed">{task.description}</p>
                       )}
                       
-                      <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-50">
-                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest truncate max-w-[140px]">
+                      <div className="flex justify-between items-center mt-auto pt-4 border-t border-border-custom">
+                        <span className="text-[9px] font-black text-muted uppercase tracking-widest truncate max-w-[140px]">
                           {task.project?.title || 'Studio'}
                         </span>
                         
                         <select 
                           value={task.status}
                           onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                          className="text-[9px] bg-gray-50/50 border border-transparent rounded-lg px-2 py-1 text-gray-400 font-black tracking-wider uppercase focus:ring-0 focus:bg-white focus:border-blue-100 cursor-pointer hover:bg-gray-100 transition-all"
+                          className="text-[9px] bg-background border border-transparent rounded-lg px-2 py-1 text-muted font-bold tracking-wider uppercase focus:ring-0 focus:bg-card focus:border-blue-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all"
                         >
                           {columns.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -321,7 +321,7 @@ export default function TasksPage() {
                 {filteredTasks.filter(t => t.status === status).length === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 px-4 opacity-10">
                     <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                    <p className="text-[9px] font-black uppercase tracking-widest">Empty Shelf</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest">Empty Shelf</p>
                   </div>
                 )}
               </div>
@@ -332,15 +332,15 @@ export default function TasksPage() {
 
       {/* Task Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg shadow-lg p-6 max-w-md w-full mx-4 border border-border-custom">
+            <h2 className="mb-4">
               {editingTask ? 'Edit Task' : 'Add Task'}
             </h2>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Title *
                 </label>
                 <input
@@ -349,13 +349,13 @@ export default function TasksPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="Task title"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Description
                 </label>
                 <textarea
@@ -363,14 +363,14 @@ export default function TasksPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="Task description"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Status
                 </label>
                 <select
@@ -378,7 +378,7 @@ export default function TasksPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                 >
                   {statusCycle.map((status) => (
                     <option key={status} value={status}>
@@ -389,7 +389,7 @@ export default function TasksPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Project
                 </label>
                 <select
@@ -397,7 +397,7 @@ export default function TasksPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, projectId: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                 >
                   <option value="">No project</option>
                   {projects.map((project) => (
@@ -412,7 +412,7 @@ export default function TasksPage() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={handleModalClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 Cancel
               </button>
@@ -429,16 +429,16 @@ export default function TasksPage() {
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Delete Task?</h2>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg shadow-lg p-6 max-w-sm w-full mx-4 border border-border-custom">
+            <h2 className="mb-4">Delete Task?</h2>
+            <p className="text-muted mb-6">
               This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 Cancel
               </button>

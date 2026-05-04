@@ -12,7 +12,7 @@ export default function ArtTrackerPage() {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <h1 className="text-3xl font-bold text-gray-900">ArtTracker Dashboard</h1>
+      <h1>ArtTracker Dashboard</h1>
       <p className="text-gray-600">
         The ArtTracker UI blocks cross-origin iframes (Apache sends <code className="text-gray-900">X-Frame-Options: SAMEORIGIN</code>),
         so Mission Control opens it in a dedicated tab. Click the button below to launch it using your configured URL.

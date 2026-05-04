@@ -127,33 +127,38 @@ export async function getFileContent(filePath: string): Promise<string> {
 }
 
 export async function createDirectory(parentPath: string, dirName: string): Promise<boolean> {
-  const cleanPath = parentPath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
-  const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath, dirName);
   try {
+    const cleanPath = parentPath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
+    const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath, dirName);
+    log(`MKDIR: "${absolutePath}"`);
     mkdirSync(absolutePath, { recursive: true });
     return true;
   } catch (error) {
-    console.error(`Error creating directory ${absolutePath}:`, error);
+    log(`MKDIR ERR: "${parentPath}/${dirName}" - ${error}`);
+    console.error(`Error creating directory:`, error);
     return false;
   }
 }
 
 export async function createFile(parentPath: string, fileName: string, content: string): Promise<boolean> {
-  const cleanPath = parentPath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
-  const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath, fileName);
   try {
+    const cleanPath = parentPath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
+    const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath, fileName);
+    log(`CREATE: "${absolutePath}" (${content.length} bytes)`);
     writeFileSync(absolutePath, content, 'utf-8');
     return true;
   } catch (error) {
-    console.error(`Error creating file ${absolutePath}:`, error);
+    log(`CREATE ERR: "${parentPath}/${fileName}" - ${error}`);
+    console.error(`Error creating file:`, error);
     return false;
   }
 }
 
 export async function deleteFileOrDirectory(itemPath: string): Promise<boolean> {
-  const cleanPath = itemPath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
-  const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath);
   try {
+    const cleanPath = itemPath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
+    const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath);
+    log(`DELETE: "${absolutePath}"`);
     const stats = statSync(absolutePath);
     if (stats.isDirectory()) {
       rmdirSync(absolutePath, { recursive: true });
@@ -162,33 +167,38 @@ export async function deleteFileOrDirectory(itemPath: string): Promise<boolean> 
     }
     return true;
   } catch (error) {
-    console.error(`Error deleting ${absolutePath}:`, error);
+    log(`DELETE ERR: "${itemPath}" - ${error}`);
+    console.error(`Error deleting ${itemPath}:`, error);
     return false;
   }
 }
 
 export async function moveFileOrDirectory(oldRelativePath: string, newRelativePath: string): Promise<boolean> {
-  const cleanOld = oldRelativePath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
-  const cleanNew = newRelativePath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
-  const oldAbsolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanOld);
-  const newAbsolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanNew);
   try {
+    const cleanOld = oldRelativePath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
+    const cleanNew = newRelativePath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
+    const oldAbsolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanOld);
+    const newAbsolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanNew);
+    log(`MOVE: "${oldAbsolutePath}" -> "${newAbsolutePath}"`);
     renameSync(oldAbsolutePath, newAbsolutePath);
     return true;
   } catch (error) {
-    console.error(`Error moving ${oldAbsolutePath} to ${newAbsolutePath}:`, error);
+    log(`MOVE ERR: "${oldRelativePath}" -> "${newRelativePath}" - ${error}`);
+    console.error(`Error moving item:`, error);
     return false;
   }
 }
 
 export async function updateFileContent(filePath: string, newContent: string): Promise<boolean> {
-  const cleanPath = filePath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
-  const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath);
   try {
+    const cleanPath = filePath.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, path.sep);
+    const absolutePath = path.resolve(OPENCLAW_WORKSPACE_DIR, cleanPath);
+    log(`UPDATE: "${absolutePath}" (${newContent.length} bytes)`);
     writeFileSync(absolutePath, newContent, 'utf-8');
     return true;
   } catch (error) {
-    console.error(`Error updating file ${absolutePath}:`, error);
+    log(`UPDATE ERR: "${filePath}" - ${error}`);
+    console.error(`Error updating file:`, error);
     return false;
   }
 }
@@ -228,6 +238,7 @@ export async function searchDocuments(query: string): Promise<FileSystemItem[]> 
   searchInDir(MEMORY_DIR, 'memory');
   searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'tasks'), 'tasks');
   searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'scripts'), 'scripts');
+  searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'projects_bridge'), 'projects');
   
   return results.slice(0, 50); // Limit to 50 results
 }

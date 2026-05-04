@@ -13,34 +13,34 @@ interface AgentStatus {
 }
 
 const EMOJIS: Record<string, string> = {
-  main: '🧁',
-  jason: '⚙️',
-  pixels: '🎨',
-  housekeeper: '🏠',
+  M: '🧁',
+  J: '⚙️',
+  Sc: '🔭',
+  P: '🎨',
+  Se: '🛡️',
+  MP: '🏛️',
+  H: '🏠',
 };
 
 export async function GET() {
   try {
-    const configContent = readFileSync('C:\\Users\\tberg\\.openclaw\\openclaw.json', 'utf-8');
-    const config = JSON.parse(configContent);
-
-    const agentList: { id: string; name: string }[] = config.agents?.list || [];
-    const defaultModel: string = config.agents?.defaults?.model?.primary || 'unknown';
+    const agentsContent = readFileSync('data/agents.json', 'utf-8');
+    const agentList: { id: string; name: string; model: string; status: string }[] = JSON.parse(agentsContent);
 
     const agentStatuses: AgentStatus[] = agentList.map((agent) => {
       let subagents: string[] = [];
-      if (agent.id === 'main') {
-        subagents = ['jason', 'housekeeper'];
-      } else if (agent.id === 'jason') {
-        subagents = ['pixels'];
+      if (agent.id === 'M') {
+        subagents = ['J', 'H', 'Sc', 'Se', 'MP'];
+      } else if (agent.id === 'J') {
+        subagents = ['P'];
       }
 
       return {
         id: agent.id,
         name: agent.name,
         emoji: EMOJIS[agent.id] ?? '🤖',
-        model: defaultModel,
-        state: 'idle',
+        model: agent.model,
+        state: (agent.status.toLowerCase() as any) || 'idle',
         currentTask: undefined,
         lastActiveTime: undefined,
         subagents,

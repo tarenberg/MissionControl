@@ -7,7 +7,7 @@ interface AlwaysRunningSectionProps {
 const AlwaysRunningSection: React.FC<AlwaysRunningSectionProps> = ({ runningTasks }) => {
   return (
     <div className="bg-gray-100 rounded-lg p-3 mb-4">
-      <h2 className="text-gray-900 text-lg font-bold mb-2 flex items-center">
+      <h2 className="text-gray-900 mb-2 flex items-center">
         <svg className="w-4 h-4 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>

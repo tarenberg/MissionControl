@@ -20,12 +20,13 @@ interface ActivePort {
 
 const statusColors: Record<string, string> = {
   'active': 'bg-green-200 text-green-800',
+  'planning': 'bg-indigo-200 text-indigo-800',
   'paused': 'bg-yellow-200 text-yellow-800',
   'archived': 'bg-gray-200 text-gray-800',
   'abandoned': 'bg-red-200 text-red-800',
 };
 
-const statusOptions = ['active', 'paused', 'archived', 'abandoned'];
+const statusOptions = ['active', 'planning', 'paused', 'archived', 'abandoned'];
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -242,6 +243,29 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleStatusRotate = async (project: Project) => {
+    const currentIdx = statusOptions.indexOf(project.status);
+    const nextStatus = statusOptions[(currentIdx + 1) % statusOptions.length];
+    
+    // Optimistic update
+    setProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: nextStatus } : p));
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to rotate status:', error);
+      fetchData(); // Revert on error
+    }
+  };
+
   const handleViewTasks = (projectId: string) => {
     window.location.href = `/tasks?projectId=${projectId}`;
   };
@@ -270,14 +294,25 @@ export default function ProjectsPage() {
     return null;
   };
 
+  const sortedProjects = React.useMemo(() => {
+    return [...projects].sort((a, b) => {
+      const indexA = statusOptions.indexOf(a.status);
+      const indexB = statusOptions.indexOf(b.status);
+      if (indexA !== indexB) {
+        return indexA - indexB;
+      }
+      return a.title.localeCompare(b.title);
+    });
+  }, [projects]);
+
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-background min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+        <h1>Projects</h1>
         <div className="flex gap-4">
           {activePorts.length > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-md px-3 py-1 flex items-center gap-2">
@@ -297,114 +332,117 @@ export default function ProjectsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project) => {
+        {sortedProjects.map((project) => {
           const runningPort = getRunningProjectPort(project);
           
           return (
             <div
               key={project.id}
-              className={`bg-white rounded-lg border p-4 hover:shadow-md transition ${
-                runningPort ? 'border-green-400 ring-1 ring-green-100' : 'border-gray-200'
+              className={`bg-card rounded-lg border p-4 hover:shadow-md transition flex flex-col interactive-card ${
+                runningPort ? 'border-green-400 ring-1 ring-green-100' : 'border-border-custom'
               }`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
-                  {runningPort && (
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                  )}
+              <div className="flex-1">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-foreground">{project.title}</h3>
+                    {runningPort && (
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    onClick={() => handleStatusRotate(project)}
+                    className={`px-2 py-1 rounded text-xs font-medium cursor-pointer select-none transition-all active:scale-95 ${
+                      statusColors[project.status] || 'bg-gray-200'
+                    }`}
+                  >
+                    {project.status}
+                  </span>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    statusColors[project.status] || 'bg-gray-200'
-                  }`}
-                >
-                  {project.status}
-                </span>
-              </div>
 
-              {project.description && (
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
-              )}
+                {project.description && (
+                  <p className="text-sm text-muted mb-3 line-clamp-2">{project.description}</p>
+                )}
 
-              {project.githubUrl && (
-                <p className="text-xs text-blue-600 mb-1 truncate">
-                  <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
-                    🔗 GitHub
-                  </a>
-                </p>
-              )}
-
-              {project.localUrl && (
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="text-xs text-gray-500 truncate flex-1" title={project.localUrl}>
-                    📁 {project.localUrl}
-                  </p>
-                  {runningPort ? (
-                    <button
-                      onClick={() => handleStopProject(runningPort)}
-                      className="text-[10px] bg-red-50 hover:bg-red-100 text-red-700 px-2 py-0.5 rounded border border-red-200"
-                    >
-                      Stop
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleSpinUp(project)}
-                      className="text-[10px] bg-gray-50 hover:bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-300"
-                    >
-                      Spin Up
-                    </button>
-                  )}
-                  {project.devUrl && (
-                    <a
-                      href={project.devUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`text-[10px] px-2 py-0.5 rounded border text-center ${
-                        runningPort 
-                          ? 'bg-green-600 hover:bg-green-700 text-white border-green-700' 
-                          : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
-                      }`}
-                    >
-                      Open App
+                {project.githubUrl && (
+                  <p className="text-xs text-blue-600 mb-1 truncate">
+                    <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                      🔗 GitHub
                     </a>
-                  )}
-                </div>
-              )}
+                  </p>
+                )}
+
+                {project.localUrl && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <p className="text-xs text-muted truncate flex-1" title={project.localUrl}>
+                      📁 {project.localUrl}
+                    </p>
+                    {runningPort ? (
+                      <button
+                        onClick={() => handleStopProject(runningPort)}
+                        className="text-[10px] bg-red-50 hover:bg-red-100 text-red-700 px-2 py-0.5 rounded border border-red-200"
+                      >
+                        Stop
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSpinUp(project)}
+                        className="text-[10px] bg-gray-50 hover:bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-300"
+                      >
+                        Spin Up
+                      </button>
+                    )}
+                    {project.devUrl && (
+                      <a
+                        href={project.devUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-[10px] px-2 py-0.5 rounded border text-center ${
+                          runningPort 
+                            ? 'bg-green-600 hover:bg-green-700 text-white border-green-700' 
+                            : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                        }`}
+                      >
+                        Open App
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="flex justify-between gap-2 mt-4 pt-4 border-t border-gray-50">
                 <button
                   onClick={() => handleViewTasks(project.id)}
-                  className="flex-1 text-sm text-blue-600 hover:text-blue-700 font-medium py-1"
+                  className="flex-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider py-1"
                 >
                   Tasks
                 </button>
                 <button
                   onClick={() => handleViewDocs(project)}
-                  className="flex-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                  className="flex-1 text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-wider py-1"
                 >
                   Docs
                 </button>
                 <button
                   onClick={() => handleEditClick(project)}
-                  className="flex-1 text-sm text-blue-600 hover:text-blue-700 font-medium py-1"
+                  className="flex-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider py-1"
                 >
                   Edit
                 </button>
                 {project.status !== 'archived' && (
                   <button
                     onClick={() => setArchiveConfirm(project)}
-                    className="flex-1 text-sm text-amber-600 hover:text-amber-700 font-medium py-1"
+                    className="flex-1 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-wider py-1"
                   >
                     Archive
                   </button>
                 )}
                 <button
                   onClick={() => setDeleteConfirm(project.id)}
-                  className="flex-1 text-sm text-red-600 hover:text-red-700 font-medium py-1"
+                  className="flex-1 text-[10px] text-red-600 hover:text-red-700 font-bold uppercase tracking-wider py-1"
                 >
                   Delete
                 </button>
@@ -415,17 +453,17 @@ export default function ProjectsPage() {
       </div>
 
       {projects.length === 0 && (
-        <div className="text-center text-gray-500 py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+        <div className="text-center text-muted py-12 bg-card rounded-lg border-2 border-dashed border-border-custom">
           No projects found
         </div>
       )}
 
       {/* Manual Process List for Orpaned Ports */}
       {activePorts.length > 0 && (
-        <div className="mt-12 pt-8 border-t">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Active Dev Processes</h2>
-          <div className="bg-gray-50 rounded-lg border p-4">
-            <div className="grid grid-cols-4 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+        <div className="mt-12 pt-8 border-t border-border-custom">
+          <h2 className="mb-4">Active Dev Processes</h2>
+          <div className="bg-card rounded-lg border border-border-custom p-4">
+            <div className="grid grid-cols-4 gap-4 text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
               <div>Port</div>
               <div>PID</div>
               <div>Status</div>
@@ -433,9 +471,9 @@ export default function ProjectsPage() {
             </div>
             <div className="space-y-1">
               {activePorts.map((ap) => (
-                <div key={ap.port} className="bg-white border rounded p-2 flex justify-between items-center text-sm shadow-sm">
+                <div key={ap.port} className="bg-card border border-border-custom rounded p-2 flex justify-between items-center text-sm shadow-sm">
                   <div className="font-mono font-bold text-blue-600">{ap.port}</div>
-                  <div className="text-gray-500">{ap.pid}</div>
+                  <div className="text-muted">{ap.pid}</div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                     <span className="text-xs text-green-700">Listening</span>
@@ -455,15 +493,15 @@ export default function ProjectsPage() {
 
       {/* Project Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full animate-in fade-in zoom-in duration-200">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl p-6 max-w-md w-full animate-in fade-in zoom-in duration-200 border border-border-custom">
+            <h2 className="mb-4">
               {editingProject ? 'Edit Project' : 'Add Project'}
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Title *
                 </label>
                 <input
@@ -472,13 +510,13 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="Project title"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Description
                 </label>
                 <textarea
@@ -486,14 +524,14 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="Project description"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Status
                 </label>
                 <select
@@ -501,7 +539,7 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                 >
                   {statusOptions.map((status) => (
                     <option key={status} value={status}>
@@ -512,7 +550,7 @@ export default function ProjectsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   GitHub URL
                 </label>
                 <input
@@ -521,13 +559,13 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, githubUrl: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="https://github.com/..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Local Path (for Spin Up)
                 </label>
                 <input
@@ -536,13 +574,13 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, localUrl: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="C:\Users\tberg\Documents\..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Dev URL (for Open App)
                 </label>
                 <input
@@ -551,7 +589,7 @@ export default function ProjectsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, devUrl: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
                   placeholder="http://localhost:3001"
                 />
               </div>
@@ -560,7 +598,7 @@ export default function ProjectsPage() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={handleModalClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 Cancel
               </button>
@@ -577,17 +615,17 @@ export default function ProjectsPage() {
 
       {/* Archive Confirmation */}
       {archiveConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Archive Project?</h2>
-            <p className="text-sm text-gray-600 mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-border-custom">
+            <h2 className="mb-2">Archive Project?</h2>
+            <p className="text-sm text-muted mb-6">
               This will compress <strong>{archiveConfirm.title}</strong> into a ZIP file in your <code>_ARCHIVE</code> folder to save space. 
             </p>
             <div className="flex justify-end gap-2">
               <button
                 disabled={archiving}
                 onClick={() => setArchiveConfirm(null)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -610,16 +648,16 @@ export default function ProjectsPage() {
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Delete Project?</h2>
-            <p className="text-sm text-gray-600 mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-border-custom">
+            <h2 className="mb-2">Delete Project?</h2>
+            <p className="text-sm text-muted mb-6">
               This will remove the project from Mission Control. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 Cancel
               </button>

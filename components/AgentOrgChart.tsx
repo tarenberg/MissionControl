@@ -48,11 +48,11 @@ const AgentOrgChart: React.FC<AgentOrgChartProps> = ({ agents }) => {
 
   return (
     <div className="p-4 bg-white text-gray-900 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 text-center">OpenClaw Operational Agents</h1>
+      <h1 className="mb-8 text-center">OpenClaw Operational Agents</h1>
 
       {/* Input Signal */}
       <div className="text-center text-gray-500 mb-8">
-        <p className="text-lg font-semibold">[INPUT SIGNAL] (From User)</p>
+        <p className="font-semibold">[INPUT SIGNAL] (From User)</p>
         <div className="w-0.5 h-8 bg-purple-500 mx-auto my-2"></div>
       </div>
 
@@ -62,7 +62,7 @@ const AgentOrgChart: React.FC<AgentOrgChartProps> = ({ agents }) => {
       {/* Output Action */}
       <div className="text-center text-gray-500 mt-16">
         <div className="w-0.5 h-8 bg-red-500 mx-auto my-2"></div>
-        <p className="text-lg font-semibold">[OUTPUT ACTION] (To User)</p>
+        <p className="font-semibold">[OUTPUT ACTION] (To User)</p>
       </div>
     </div>
   );

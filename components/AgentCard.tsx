@@ -22,7 +22,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, role, tags, model, status, 
 
   return (
     <div className={`p-4 rounded-lg shadow-lg text-center ${bgColorClass} border border-gray-300`}>
-      <h3 className="text-xl font-bold mb-1 text-gray-900">{name}</h3>
+      <h3 className="mb-1 text-gray-900">{name}</h3>
       <p className="text-gray-700 text-sm mb-1">{role}</p>
       <p className="text-gray-500 text-xs mb-2">Model: {model}</p>
       <div className="flex flex-wrap justify-center gap-1">

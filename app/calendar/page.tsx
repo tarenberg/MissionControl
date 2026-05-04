@@ -240,7 +240,7 @@ export default function CalendarPage() {
   return (
     <div className="h-screen flex flex-col bg-white">
       <div className="border-b border-gray-200 p-4">
-        <h1 className="text-3xl font-bold text-gray-900">Scheduled Jobs</h1>
+        <h1>Scheduled Jobs</h1>
         <p className="text-sm text-gray-600 mt-1">Weekly calendar view (UTC)</p>
       </div>
 

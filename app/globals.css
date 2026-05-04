@@ -1,15 +1,127 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f3f4f6;
   --foreground: #171717;
+  --card-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.15);
+  --muted: #71717a;
+  --btn-glow: rgba(59, 130, 246, 0.2);
+  --btn-shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Explicit dark class takes precedence */
+.dark {
+  --background: #0a0a0c;
+  --foreground: #c0c0c5;
+  --card-bg: #27272a; /* Zinc-800: Light gray in dark mode context */
+  --sidebar-bg: #111113;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow-color: rgba(0, 0, 0, 0.6);
+  --muted: #808085;
+  --btn-glow: rgba(59, 130, 246, 0.4);
+  --btn-shadow: rgba(0, 0, 0, 0.2);
+}
+
+/* Only apply system dark mode if .light is not explicitly set */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #0a0a0c;
+    --foreground: #c0c0c5;
+    --card-bg: #27272a;
+    --sidebar-bg: #111113;
+    --border: rgba(255, 255, 255, 0.08);
+    --shadow-color: rgba(0, 0, 0, 0.6);
+    --muted: #808085;
+    --btn-glow: rgba(59, 130, 246, 0.4);
+    --btn-shadow: rgba(0, 0, 0, 0.2);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-border-custom: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  h1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  h2 {
+    @apply text-lg font-semibold tracking-tight;
+  }
+  h3 {
+    @apply text-base font-medium;
+  }
+  h4 {
+    @apply text-sm font-medium;
+  }
+
+  button:not([disabled]):not(.no-3d), 
+  .btn:not([disabled]):not(.no-3d),
+  .btn-3d:not([disabled]):not(.no-3d),
+  a[class*="bg-"]:not([disabled]):not(.no-3d) {
+    @apply rounded-2xl transition-all duration-200 relative overflow-hidden;
+    box-shadow: 0 4px 0 0 var(--shadow-color), 0 8px 15px -3px var(--btn-shadow);
+    transform: translateY(-2px);
+  }
+
+  button:not([disabled]):not(.no-3d):hover,
+  .btn:not([disabled]):not(.no-3d):hover,
+  .btn-3d:not([disabled]):not(.no-3d):hover,
+  a[class*="bg-"]:not([disabled]):not(.no-3d):hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 0 0 var(--shadow-color), 0 15px 30px -5px var(--btn-glow);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  button:not([disabled]):not(.no-3d):active,
+  .btn:not([disabled]):not(.no-3d):active,
+  .btn-3d:not([disabled]):not(.no-3d):active,
+  a[class*="bg-"]:not([disabled]):not(.no-3d):active {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Reset for buttons that shouldn't have the 3D effect */
+  .no-3d {
+    @apply shadow-none transform-none rounded-none overflow-visible;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* Color-specific shadow overrides */
+  button.bg-blue-600, .btn-blue {
+    box-shadow: 0 4px 0 0 #1d4ed8, 0 8px 15px -3px var(--btn-shadow);
+  }
+  button.bg-blue-600:hover {
+    box-shadow: 0 6px 0 0 #1e40af, 0 15px 30px -5px var(--btn-glow);
+  }
+
+  button.bg-red-600:hover {
+    box-shadow: 0 6px 0 0 #b91c1c, 0 12px 20px -5px rgba(255, 0, 255, 0.5);
+  }
+
+  button.bg-green-600:hover {
+    box-shadow: 0 6px 0 0 #15803d, 0 12px 20px -5px rgba(255, 0, 255, 0.5);
+  }
+
+  /* Interactive Card Glow */
+  .interactive-card {
+    @apply transition-all duration-300;
+  }
+
+  .interactive-card:hover, .interactive-card:focus-within {
+    @apply border-blue-400/50 shadow-[0_0_25px_-5px_rgba(59,130,246,0.3)];
+    transform: translateY(-2px);
+  }
 }
 
 body {

@@ -75,7 +75,7 @@ export default async function EditCronJobPage({ params }: Props) {
         </a>
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-100 mb-2">Edit Cron Job</h1>
+      <h1>Edit Cron Job</h1>
       <p className="text-gray-400 mb-6">Modify the schedule and settings for <strong className="text-gray-200">{job.name}</strong></p>
 
       <EditCronJobForm job={job} />

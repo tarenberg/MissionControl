@@ -40,22 +40,22 @@ const DailyMemoryList: React.FC = () => {
   }, [selectedFile]);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-xl border border-gray-200 h-full flex flex-col">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Daily Memory (memory/YYYY-MM-DD.md)</h2>
+    <div className="bg-card p-4 rounded-3xl shadow-xl border border-border-custom h-full flex flex-col interactive-card">
+      <h2 className="mb-4">Daily Memory (memory/YYYY-MM-DD.md)</h2>
       <div className="flex-1 flex overflow-hidden">
         {/* File List Sidebar */}
-        <div className="w-48 overflow-y-auto pr-3 border-r border-gray-200 mr-3">
+        <div className="w-48 overflow-y-auto pr-3 border-r border-border-custom mr-3">
           {loadingFiles ? (
-            <p className="text-gray-500">Loading daily files...</p>
+            <p className="text-muted">Loading daily files...</p>
           ) : fileNames.length === 0 ? (
-            <p className="text-gray-500">No daily memory files found.</p>
+            <p className="text-muted">No daily memory files found.</p>
           ) : (
             <ul>
               {fileNames.map(name => (
                 <li key={name} className="mb-1">
                   <button
                     onClick={() => setSelectedFile(name)}
-                    className={`block w-full text-left p-2 rounded-md ${selectedFile === name ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`block w-full text-left p-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${selectedFile === name ? 'bg-blue-600 text-white shadow-lg' : 'text-muted hover:bg-background'}`}
                   >
                     {name.replace('.md', '')}
                   </button>
@@ -66,13 +66,13 @@ const DailyMemoryList: React.FC = () => {
         </div>
 
         {/* File Content Display */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-3 rounded-md text-gray-900 font-mono text-sm">
+        <div className="flex-1 overflow-y-auto bg-background p-3 rounded-xl text-foreground font-mono text-sm border border-border-custom">
           {loadingContent ? (
             <p>Loading content for {selectedFile}...</p>
           ) : selectedFile ? (
             <pre className="whitespace-pre-wrap">{fileContent}</pre>
           ) : (
-            <p className="text-gray-500">Select a daily memory file to view its content.</p>
+            <p className="text-muted">Select a daily memory file to view its content.</p>
           )}
         </div>
       </div>

@@ -48,7 +48,8 @@ const CircularGauge: React.FC<CircularGaugeProps> = ({ label, percentage, color,
             cy="50"
             r="45"
             fill="none"
-            stroke="#f3f4f6"
+            stroke="currentColor"
+            className="text-gray-100 dark:text-zinc-800"
             strokeWidth="10"
           />
           {/* Progress circle */}
@@ -67,12 +68,12 @@ const CircularGauge: React.FC<CircularGaugeProps> = ({ label, percentage, color,
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-xl font-black text-gray-900 leading-none">{percentage}%</div>
-          <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{label}</div>
+          <div className="text-xl font-black text-foreground leading-none">{percentage}%</div>
+          <div className="text-[8px] font-bold text-muted uppercase tracking-widest mt-0.5">{label}</div>
         </div>
       </div>
       <div className="text-center">
-        <div className="text-[10px] font-bold text-gray-600">{usage}</div>
+        <div className="text-[10px] font-bold text-muted">{usage}</div>
       </div>
     </div>
   );
@@ -98,7 +99,7 @@ export default function SystemMonitor() {
   }, []);
 
   if (!stats) {
-    return <div className="bg-white rounded-xl py-4 text-xs text-gray-400">Loading system metrics...</div>;
+    return <div className="bg-card rounded-2xl py-4 text-xs text-muted">Loading system metrics...</div>;
   }
 
   const formatGB = (bytes: number) => (bytes / (1024 ** 3)).toFixed(1);
@@ -113,10 +114,10 @@ export default function SystemMonitor() {
     <div className="w-full mb-8">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <h2 className="text-lg font-black text-gray-900 tracking-tight uppercase tracking-widest">System</h2>
-        <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+        <h2 className="text-foreground tracking-tight uppercase tracking-widest">System</h2>
+        <div className="flex items-center gap-1.5 bg-card px-2 py-0.5 rounded-full border border-border-custom">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-          <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Live</span>
+          <span className="text-[9px] font-black text-muted uppercase tracking-widest">Live</span>
         </div>
       </div>
 

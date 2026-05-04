@@ -28,30 +28,30 @@ const ArtDeadlines: React.FC = () => {
       });
   }, []);
 
-  if (loading) return <div className="p-4 text-gray-500">Loading art deadlines...</div>;
-  if (deadlines.length === 0) return <div className="p-4 text-gray-500">No upcoming deadlines found.</div>;
+  if (loading) return <div className="p-4 text-muted">Loading art deadlines...</div>;
+  if (deadlines.length === 0) return <div className="p-4 text-muted">No upcoming deadlines found.</div>;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="font-bold text-gray-800 flex items-center">
-          <span className="mr-2">🎨</span> Upcoming Art Deadlines
+    <div className="bg-card rounded-3xl shadow-sm border border-border-custom overflow-hidden">
+      <div className="bg-card px-5 py-4 border-b border-border-custom flex justify-between items-center">
+        <h3 className="text-foreground flex items-center uppercase tracking-tight">
+          <span className="mr-2 text-lg">🎨</span> Deadlines
         </h3>
-        <span className="text-xs text-gray-500">Source: The Art Guide</span>
+        <span className="text-[10px] font-bold text-muted uppercase tracking-widest">The Art Guide</span>
       </div>
-      <div className="max-h-[400px] overflow-y-auto">
-        <ul className="divide-y divide-gray-50">
+      <div className="max-h-[400px] overflow-y-auto scrollbar-hide">
+        <ul className="divide-y divide-border-custom">
           {deadlines.map((item, index) => (
-            <li key={index} className="p-4 hover:bg-gray-50 transition-colors">
+            <li key={index} className="p-5 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
               <a href={item.link} target="_blank" rel="noopener noreferrer" className="block">
-                <div className="font-medium text-blue-600 hover:underline">{item.title}</div>
+                <div className="font-bold text-blue-600 dark:text-blue-400 hover:underline">{item.title}</div>
                 {item.organization && (
-                  <div className="text-sm text-gray-600 mt-1">{item.organization}</div>
+                  <div className="text-sm text-muted mt-1 font-medium">{item.organization}</div>
                 )}
-                <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                <div className="flex justify-between items-center mt-3 text-[10px] font-bold uppercase tracking-wider text-muted">
                   <span>{item.location || 'Online/Various'}</span>
                   {item.deadline && (
-                    <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                    <span className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/30">
                       Due: {item.deadline}
                     </span>
                   )}

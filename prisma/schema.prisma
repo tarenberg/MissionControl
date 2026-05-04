@@ -147,3 +147,13 @@ model ArtPiece {
 
   project Project? @relation(fields: [projectId], references: [id])
 }
+
+// ─── Studio Environment ──────────────────────────────────
+
+model ClimateLog {
+  id          String   @id @default(cuid())
+  temperature Float
+  humidity    Float?
+  deviceId    String?
+  timestamp   DateTime @default(now())
+}
