@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ArtDeadlines from '../components/ArtDeadlines';
 import SystemMonitor from '../components/SystemMonitor';
 import StudioMonitor from '../components/StudioMonitor';
+import OpsLogMonitor from '../components/OpsLogMonitor';
 
 interface SkillInfo {
   name: string;
@@ -88,6 +89,7 @@ export default function HomePage() {
         <div className="flex-1">
           <SystemMonitor />
           <StudioMonitor />
+          <OpsLogMonitor />
 
           <h2 className="mb-4">Available Models</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

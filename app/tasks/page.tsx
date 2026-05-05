@@ -81,7 +81,7 @@ export default function TasksPage() {
       title: '',
       description: '',
       status: 'Backlog',
-      projectId: '',
+      projectId: filterProjectId === 'all' ? '' : filterProjectId,
     });
     setShowModal(true);
   };
@@ -121,11 +121,14 @@ export default function TasksPage() {
       });
 
       if (response.ok) {
-        // Fetch all tasks again to ensure the UI has the new task with its project relation
-        const tasksRes = await fetch('/api/tasks');
-        if (tasksRes.ok) {
-          setTasks(await tasksRes.json());
+        const savedTask = await response.json();
+        
+        if (editingTask) {
+          setTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
+        } else {
+          setTasks(prev => [savedTask, ...prev]);
         }
+        
         handleModalClose();
       } else {
         const error = await response.json();
@@ -144,7 +147,7 @@ export default function TasksPage() {
       });
 
       if (response.ok) {
-        setTasks(tasks.filter(t => t.id !== id));
+        setTasks(prev => prev.filter(t => t.id !== id));
         setDeleteConfirm(null);
       }
     } catch (error) {
@@ -248,10 +251,10 @@ export default function TasksPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-x-auto min-h-0 pb-6 -mx-4 px-4">
-        <div className="flex gap-6 h-full min-w-max">
+      <div className="flex-1 min-h-0 pb-6">
+        <div className="flex gap-4 h-full w-full">
           {columns.map(status => (
-            <div key={status} className="w-80 flex flex-col bg-card/40 rounded-2xl border border-border-custom shadow-sm overflow-hidden">
+            <div key={status} className="flex-1 min-w-0 flex flex-col bg-card/40 rounded-2xl border border-border-custom shadow-sm overflow-hidden">
               <div className="p-4 flex justify-between items-center bg-card/60 backdrop-blur-md border-b border-border-custom">
                 <h2 className="flex items-center gap-2.5">
                   <span className={`w-3 h-3 rounded-full shadow-sm ${
@@ -294,9 +297,14 @@ export default function TasksPage() {
                     >
                       <div className="flex justify-between items-start mb-2.5 gap-3">
                         <h3 className="text-[13px] leading-snug group-hover:text-blue-600 transition-colors">{task.title}</h3>
-                        <button onClick={() => handleEditClick(task)} className="text-muted hover:text-blue-600 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditClick(task)} className="text-muted hover:text-blue-600 transition-colors p-1" title="Edit task">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          <button onClick={() => setDeleteConfirm(task.id)} className="text-muted hover:text-red-600 transition-colors p-1" title="Delete task">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
                       </div>
                       
                       {task.description && (
@@ -409,19 +417,35 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={handleModalClose}
-                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveTask}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-              >
-                Save
-              </button>
+            <div className="flex justify-between items-center mt-6">
+              <div>
+                {editingTask && (
+                  <button
+                    onClick={() => {
+                      setDeleteConfirm(editingTask.id);
+                      handleModalClose();
+                    }}
+                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm font-bold transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    Delete Task
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleModalClose}
+                  className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveTask}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </div>

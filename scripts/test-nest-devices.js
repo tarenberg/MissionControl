@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fetch = require('node-fetch');
 
 const NEST_AUTH_URL = 'https://www.googleapis.com/oauth2/v4/token';
@@ -21,7 +22,12 @@ async function test() {
     }),
   });
 
-  const { access_token } = await authResponse.json();
+  const authData = await authResponse.json();
+  if (!authResponse.ok) {
+    console.error('Auth Error:', authData);
+    return;
+  }
+  const { access_token } = authData;
 
   const devicesResponse = await fetch(`${SDM_API_URL}/enterprises/${credentials.projectId}/devices`, {
     headers: { Authorization: `Bearer ${access_token}` },

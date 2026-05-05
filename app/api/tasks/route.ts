@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         description: description ?? null,
         status: status ?? 'Backlog',
         assignedTo: assignedTo ?? null,
-        projectId: projectId ?? null,
+        projectId: projectId && projectId !== '' ? projectId : null,
       },
       include: { project: true },
     });

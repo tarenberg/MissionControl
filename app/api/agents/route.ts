@@ -10,6 +10,8 @@ interface AgentStatus {
   currentTask?: string;
   lastActiveTime?: string;
   subagents: string[];
+  description?: string;
+  reportsTo?: string;
 }
 
 const EMOJIS: Record<string, string> = {
@@ -29,10 +31,17 @@ export async function GET() {
 
     const agentStatuses: AgentStatus[] = agentList.map((agent) => {
       let subagents: string[] = [];
+      let reportsTo: string | undefined = undefined;
+
       if (agent.id === 'M') {
         subagents = ['J', 'H', 'Sc', 'Se', 'MP'];
       } else if (agent.id === 'J') {
         subagents = ['P'];
+        reportsTo = 'Muffin';
+      } else if (['H', 'Sc', 'Se', 'MP'].includes(agent.id)) {
+        reportsTo = 'Muffin';
+      } else if (agent.id === 'P') {
+        reportsTo = 'Jason';
       }
 
       return {
@@ -44,6 +53,8 @@ export async function GET() {
         currentTask: undefined,
         lastActiveTime: undefined,
         subagents,
+        description: (agent as any).description,
+        reportsTo
       };
     });
 

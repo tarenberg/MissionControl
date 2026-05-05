@@ -20,6 +20,8 @@ interface NestSensor {
 }
 
 export default function StudioMonitor() {
+  const [data, setData] = useState<{ environment: any[], sensors: any[] } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 

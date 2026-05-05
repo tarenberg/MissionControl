@@ -17,7 +17,9 @@ export async function PATCH(
         ...(description !== undefined && { description }),
         ...(status !== undefined && { status }),
         ...(assignedTo !== undefined && { assignedTo }),
-        ...(projectId !== undefined && { projectId }),
+        ...(projectId !== undefined && { 
+          projectId: projectId && projectId !== '' ? projectId : null 
+        }),
       },
       include: { project: true },
     });

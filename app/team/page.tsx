@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import AgentDetailModal from '@/components/AgentDetailModal';
 
 interface Agent {
   id: string;
@@ -10,6 +11,9 @@ interface Agent {
   currentTask?: string;
   lastActiveTime?: string;
   subagents: string[];
+  emoji: string;
+  description?: string;
+  reportsTo?: string;
 }
 
 const agentEmojis: Record<string, string> = {
@@ -32,6 +36,7 @@ const stateColors: Record<string, string> = {
 export default function TeamPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -67,7 +72,8 @@ export default function TeamPage() {
         {/* Card Wrapper */}
         <div className="relative flex flex-col items-center">
           <div
-            className={`z-10 ${level === 0 ? 'w-40 h-28' : 'w-36 h-24'} border-2 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition shadow-sm hover:shadow-md ${
+            onClick={() => setSelectedAgent(agent)}
+            className={`z-10 ${level === 0 ? 'w-40 h-28' : 'w-36 h-24'} border-2 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${
               stateColors[agent.state]
             }`}
           >
@@ -128,6 +134,13 @@ export default function TeamPage() {
       <div className="flex justify-center w-full min-w-max pb-20">
         {renderAgent('M')}
       </div>
+
+      {selectedAgent && (
+        <AgentDetailModal 
+          agent={selectedAgent} 
+          onClose={() => setSelectedAgent(null)} 
+        />
+      )}
     </div>
   );
 }

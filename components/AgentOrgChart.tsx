@@ -17,20 +17,21 @@ const AgentOrgChart: React.FC<AgentOrgChartProps> = ({ agents }) => {
     return (
       <div className="flex flex-col items-center relative py-4">
         {/* Render the current agent */}
-        <div className={`mb-4 ${level > 0 ? 'mt-8' : ''}`}> {/* Add margin-top for non-root agents */}
+        <div className={`mb-4 ${level > 0 ? 'mt-4' : ''} z-10`}>
           <AgentCard {...agent} />
         </div>
 
         {directReports.length > 0 && (
-          <div className="flex justify-center gap-8 w-full relative">
-            {/* Horizontal line connecting direct reports */}
+          <div className="flex justify-center gap-12 w-full relative pt-8">
+            {/* Horizontal bridge line */}
             {directReports.length > 1 && (
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300 -z-10"></div>
+              <div className="absolute top-0 left-[15%] right-[15%] h-1 bg-white/40 rounded-full shadow-[2px_2px_4px_#b8bec5,-2px_-2px_4px_#ffffff]"></div>
             )}
+            
             {directReports.map((report, index) => (
-              <div key={report.name} className="flex flex-col items-center">
-                {/* Vertical line from current agent to direct report */}
-                <div className="w-0.5 h-8 bg-gray-300"></div>
+              <div key={report.name} className="flex flex-col items-center relative">
+                {/* Vertical drop line */}
+                <div className="absolute -top-8 w-1 h-8 bg-white/40 rounded-full shadow-[1px_1px_2px_#b8bec5,-1px_-1px_2px_#ffffff]"></div>
                 {renderAgentBranch(report, level + 1)}
               </div>
             ))}
@@ -47,22 +48,32 @@ const AgentOrgChart: React.FC<AgentOrgChartProps> = ({ agents }) => {
   }
 
   return (
-    <div className="p-4 bg-white text-gray-900 min-h-screen">
-      <h1 className="mb-8 text-center">OpenClaw Operational Agents</h1>
+    <div className="p-8 bg-[#e0e5ec] text-gray-900 min-h-screen font-sans">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="mb-12 text-center text-4xl font-black text-gray-700 tracking-tighter uppercase italic">
+          Operational Hierarchy
+        </h1>
 
-      {/* Input Signal */}
-      <div className="text-center text-gray-500 mb-8">
-        <p className="font-semibold">[INPUT SIGNAL] (From User)</p>
-        <div className="w-0.5 h-8 bg-purple-500 mx-auto my-2"></div>
-      </div>
+        {/* Input Signal */}
+        <div className="flex flex-col items-center mb-12">
+          <div className="neo-pressed px-4 py-2 rounded-2xl">
+            <p className="text-xs font-bold text-purple-600 tracking-widest uppercase">[ INPUT SIGNAL ]</p>
+          </div>
+          <div className="w-1 h-12 bg-gradient-to-b from-purple-500 to-gray-300 rounded-full my-2 shadow-[0_0_10px_rgba(168,85,247,0.3)]"></div>
+        </div>
 
-      {/* Render Muffin and subsequent branches */}
-      {renderAgentBranch(muffin)}
+        {/* Render Muffin and subsequent branches */}
+        <div className="flex justify-center overflow-x-auto pb-20">
+          {renderAgentBranch(muffin)}
+        </div>
 
-      {/* Output Action */}
-      <div className="text-center text-gray-500 mt-16">
-        <div className="w-0.5 h-8 bg-red-500 mx-auto my-2"></div>
-        <p className="font-semibold">[OUTPUT ACTION] (To User)</p>
+        {/* Output Action */}
+        <div className="flex flex-col items-center mt-12">
+          <div className="w-1 h-12 bg-gradient-to-b from-gray-300 to-red-500 rounded-full my-2 shadow-[0_0_10px_rgba(239,68,68,0.3)]"></div>
+          <div className="neo-pressed px-4 py-2 rounded-2xl">
+            <p className="text-xs font-bold text-red-600 tracking-widest uppercase">[ OUTPUT ACTION ]</p>
+          </div>
+        </div>
       </div>
     </div>
   );

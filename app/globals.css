@@ -48,6 +48,41 @@
   --color-border-custom: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-neo-bg: #e0e5ec;
+  --color-neo-shadow-dark: #b8bec5;
+  --color-neo-shadow-light: #ffffff;
+  
+  --shadow-neo-flat: 9px 9px 16px var(--color-neo-shadow-dark), 
+                    -9px -9px 16px var(--color-neo-shadow-light);
+  
+  --shadow-neo-pressed: inset 6px 6px 12px var(--color-neo-shadow-dark), 
+                       inset -6px -6px 12px var(--color-neo-shadow-light);
+  
+  --shadow-neo-button: 4px 4px 8px var(--color-neo-shadow-dark), 
+                      -4px -4px 8px var(--color-neo-shadow-light);
+}
+
+@utility neo-flat {
+  background-color: var(--color-neo-bg);
+  box-shadow: var(--shadow-neo-flat);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+@utility neo-pressed {
+  background-color: var(--color-neo-bg);
+  box-shadow: var(--shadow-neo-pressed);
+}
+
+@utility neo-button {
+  background-color: var(--color-neo-bg);
+  box-shadow: var(--shadow-neo-button);
+  transition: all 0.2s ease;
+}
+
+@utility neo-button-active {
+  box-shadow: inset 2px 2px 5px var(--color-neo-shadow-dark), 
+              inset -2px -2px 5px var(--color-neo-shadow-light);
 }
 
 @layer base {

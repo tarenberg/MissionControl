@@ -10,12 +10,14 @@ interface Project {
   githubUrl?: string;
   localUrl?: string;
   devUrl?: string;
+  launchUrl?: string;
   createdAt?: string;
 }
 
 interface ActivePort {
   port: number;
   pid: number;
+  name: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -463,29 +465,52 @@ export default function ProjectsPage() {
         <div className="mt-12 pt-8 border-t border-border-custom">
           <h2 className="mb-4">Active Dev Processes</h2>
           <div className="bg-card rounded-lg border border-border-custom p-4">
-            <div className="grid grid-cols-4 gap-4 text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
+            <div className="grid grid-cols-5 gap-4 text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
               <div>Port</div>
               <div>PID</div>
+              <div>App</div>
               <div>Status</div>
               <div className="text-right">Action</div>
             </div>
             <div className="space-y-1">
-              {activePorts.map((ap) => (
-                <div key={ap.port} className="bg-card border border-border-custom rounded p-2 flex justify-between items-center text-sm shadow-sm">
-                  <div className="font-mono font-bold text-blue-600">{ap.port}</div>
-                  <div className="text-muted">{ap.pid}</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                    <span className="text-xs text-green-700">Listening</span>
+              {activePorts.map((ap) => {
+                const project = projects.find(p => {
+                  const urlsToTry = [p.devUrl, p.launchUrl].filter(Boolean);
+                  for (const urlStr of urlsToTry) {
+                    try {
+                      const fullUrl = urlStr!.startsWith('http') ? urlStr! : `http://${urlStr}`;
+                      const url = new URL(fullUrl);
+                      if (parseInt(url.port) === ap.port) return true;
+                    } catch (e) {}
+                  }
+                  return false;
+                });
+                const displayName = project ? project.title : ap.name;
+
+                return (
+                  <div key={ap.port} className="bg-card border border-border-custom rounded p-2 flex justify-between items-center text-sm shadow-sm">
+                    <div className="grid grid-cols-5 gap-4 w-full items-center">
+                      <div className="font-mono font-bold text-blue-600">{ap.port}</div>
+                      <div className="text-muted">{ap.pid}</div>
+                      <div className="font-medium truncate text-foreground font-bold" title={displayName}>
+                        {displayName}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                        <span className="text-xs text-green-700">Listening</span>
+                      </div>
+                      <div className="text-right">
+                        <button 
+                          onClick={() => handleStopProject(ap.port)}
+                          className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded border border-red-100"
+                        >
+                          Kill Process
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button 
-                    onClick={() => handleStopProject(ap.port)}
-                    className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded border border-red-100"
-                  >
-                    Kill Process
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

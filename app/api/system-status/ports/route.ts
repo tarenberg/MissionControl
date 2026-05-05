@@ -7,8 +7,8 @@ const execAsync = promisify(exec);
 export async function GET() {
   try {
     // Command to find node processes listening on ports 3001-3010
-    // We use powershell to get the port and the process ID
-    const command = `powershell -Command "Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -ge 3001 -and $_.LocalPort -le 3020 } | Select-Object LocalPort, OwningProcess | ConvertTo-Json"`;
+    // We use powershell to get the port, the process ID, and the name
+    const command = `powershell -Command "Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -ge 3001 -and $_.LocalPort -le 3020 } | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [PSCustomObject]@{ port = $_.LocalPort; pid = $_.OwningProcess; name = if ($p) { $p.Name } else { 'Unknown' } } } | ConvertTo-Json"`;
     
     const { stdout } = await execAsync(command);
     
@@ -24,8 +24,9 @@ export async function GET() {
     }
 
     const activePorts = results.map((r: any) => ({
-      port: r.LocalPort,
-      pid: r.OwningProcess
+      port: r.port,
+      pid: r.pid,
+      name: r.name
     }));
 
     return NextResponse.json({ activePorts });

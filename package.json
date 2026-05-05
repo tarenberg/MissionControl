@@ -16,6 +16,7 @@
     "client-only": "^0.0.1",
     "http-proxy": "^1.18.1",
     "jsdom": "^24.0.0",
+    "lucide-react": "^1.14.0",
     "next": "^16.2.1",
     "node-fetch": "^2.7.0",
     "prisma": "^6.19.3",
