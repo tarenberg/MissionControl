@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { nest } from '@/lib/nest';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const devices = await nest.listDevices();
+    const devices = await nest.listDevices().catch(err => {
+      console.warn('Nest listDevices failed, returning empty:', err.message);
+      return { devices: [] };
+    });
+    
     const environment: any[] = [];
     const sensors: any[] = [];
 

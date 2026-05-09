@@ -21,14 +21,14 @@ async function main() {
     }
   }
 
-  githubRepoJson.launchUrl = '/arttracker';
+  githubRepoJson.launchUrl = '/art-tracker';
   
   const updatedProject = await prisma.project.update({
     where: { id: 'proj-arttracker' },
     data: {
       githubRepo: JSON.stringify(githubRepoJson),
       status: 'active',
-      devUrl: '/arttracker' // Also update devUrl for consistency
+      devUrl: '/art-tracker' // Also update devUrl for consistency
     },
   });
 

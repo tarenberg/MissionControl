@@ -49,11 +49,14 @@ function serializeDates<T>(obj: T): T {
 }
 
 export async function getOpsControlData(): Promise<OpsControlData> {
-  const cronResult = getCronJobs();
+  const [cronResult, externalResult] = await Promise.all([
+    getCronJobs(),
+    getExternalSchedulers()
+  ]);
+  
   const heartbeat = getHeartbeatInfo();
   const internalSchedulers = getInternalSchedulers();
   const activeProcesses = getActiveProcesses();
-  const externalResult = getExternalSchedulers();
   const resourceMonitors = getResourceMonitors();
   const timeline = getTimeline();
   const activityLog = getActivityLog();

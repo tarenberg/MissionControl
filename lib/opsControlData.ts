@@ -201,15 +201,41 @@ export interface GetCronJobsResult {
   error?: string;
 }
 
-export function getCronJobs(): GetCronJobsResult {
+export async function getCronJobs(): Promise<GetCronJobsResult> {
+  const jobsPath = 'C:/Users/tberg/.openclaw/cron/jobs.json';
   try {
-    const raw = execSync('openclaw cron list', { encoding: 'utf8', timeout: 8000 });
-    const jobs: CronJobItem[] = parseCronTableOutput(raw);
-    return { jobs };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { jobs: [], error: message };
+    if (fs.existsSync(jobsPath)) {
+      const raw = fs.readFileSync(jobsPath, 'utf8');
+      const data = JSON.parse(raw);
+      const jobs: CronJobItem[] = data.jobs.map((j: any) => ({
+        id: j.id,
+        name: j.name,
+        schedule: j.schedule.expr || j.schedule.kind,
+        nextRun: j.state.nextRunAtMs ? new Date(j.state.nextRunAtMs).toLocaleTimeString() : null,
+        lastRun: j.state.lastRunAtMs ? new Date(j.state.lastRunAtMs).toLocaleTimeString() : null,
+        status: j.state.lastRunStatus === 'ok' ? 'active' : j.state.lastRunStatus === 'error' ? 'error' : 'unknown',
+        payloadSummary: j.payload.text || j.payload.message || '',
+        deliveryStatus: j.state.lastDeliveryStatus || 'unknown',
+        tags: deriveCronTags(j.name, j.schedule.expr || ''),
+      }));
+      return { jobs };
+    }
+  } catch (e) {
+    console.error('Error reading jobs.json:', e);
   }
+
+  // Fallback to CLI if file reading fails
+  return new Promise((resolve) => {
+    const { exec } = require('child_process');
+    exec('openclaw cron list', { timeout: 3000 }, (error: any, stdout: string) => {
+      if (error) {
+        resolve({ jobs: [], error: error.message });
+        return;
+      }
+      const jobs: CronJobItem[] = parseCronTableOutput(stdout);
+      resolve({ jobs });
+    });
+  });
 }
 
 // ─── getHeartbeatInfo ─────────────────────────────────────────────────────────
@@ -337,33 +363,33 @@ export interface GetExternalSchedulersResult {
   error?: string;
 }
 
-export function getExternalSchedulers(): GetExternalSchedulersResult {
-  try {
-    const raw = execSync(
-      'schtasks /query /fo CSV /nh',
-      { encoding: 'utf8', timeout: 8000 },
-    );
-    const lines = raw.split('\n').filter((l) => l.trim().length > 0);
-    const schedulers: ExternalScheduler[] = lines.slice(0, 20).map((line, idx) => {
-      const cols = line.split('","').map((c) => c.replace(/^"|"$/g, '').trim());
-      const name = cols[0] ?? `Task ${idx + 1}`;
-      const nextRun = cols[1] ? new Date(cols[1]) : null;
-      const status = cols[2]?.toLowerCase() ?? 'unknown';
-      return {
-        id: `ext-${idx}`,
-        name,
-        owner: 'Windows Task Scheduler',
-        cadence: 'Scheduled',
-        lastStatus: status === 'ready' || status === 'running' ? 'success' : 'unknown',
-        lastRun: nextRun,
-        tags: ['system', 'windows'],
-      };
+export async function getExternalSchedulers(): Promise<GetExternalSchedulersResult> {
+  return new Promise((resolve) => {
+    const { exec } = require('child_process');
+    exec('schtasks /query /fo CSV /nh', { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ schedulers: [], error: error.message });
+        return;
+      }
+      const lines = stdout.split('\n').filter((l) => l.trim().length > 0);
+      const schedulers: ExternalScheduler[] = lines.slice(0, 20).map((line, idx) => {
+        const cols = line.split('","').map((c) => c.replace(/^"|"$/g, '').trim());
+        const name = cols[0] ?? `Task ${idx + 1}`;
+        const nextRun = cols[1] ? new Date(cols[1]) : null;
+        const status = cols[2]?.toLowerCase() ?? 'unknown';
+        return {
+          id: `ext-${idx}`,
+          name,
+          owner: 'Windows Task Scheduler',
+          cadence: 'Scheduled',
+          lastStatus: status === 'ready' || status === 'running' ? 'success' : 'unknown',
+          lastRun: nextRun,
+          tags: ['system', 'windows'],
+        };
+      });
+      resolve({ schedulers });
     });
-    return { schedulers };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { schedulers: [], error: message };
-  }
+  });
 }
 
 // ─── getResourceMonitors ──────────────────────────────────────────────────────

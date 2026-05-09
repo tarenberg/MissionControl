@@ -25,16 +25,16 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, role, tags, model, status, 
       {/* Status indicator pill */}
       <div className={`absolute top-3 right-3 w-3 h-3 rounded-full ${indicatorColor}`}></div>
       
-      <h3 className="mb-1 text-gray-800 font-bold tracking-tight">{name}</h3>
-      <p className="text-gray-600 text-sm font-medium mb-1">{role}</p>
+      <h3 className="mb-1 text-gray-800 dark:text-gray-200 font-bold tracking-tight">{name}</h3>
+      <p className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">{role}</p>
       
       <div className="neo-pressed rounded-xl py-1 px-3 mb-3 inline-block">
-        <p className="text-gray-500 text-[10px] font-mono">MODEL: {model || 'N/A'}</p>
+        <p className="text-gray-500 dark:text-gray-400 text-[10px] font-mono">MODEL: {model || 'N/A'}</p>
       </div>
 
       <div className="flex flex-wrap justify-center gap-1.5 mt-2">
         {tags.map((tag, index) => (
-          <span key={index} className="neo-pressed text-gray-600 text-[10px] px-2.5 py-1 rounded-full font-semibold">
+          <span key={index} className="neo-pressed text-gray-600 dark:text-gray-400 text-[10px] px-2.5 py-1 rounded-full font-semibold">
             {tag}
           </span>
         ))}

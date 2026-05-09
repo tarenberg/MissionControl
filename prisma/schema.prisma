@@ -1,6 +1,3 @@
-// Mission Control — Prisma Schema
-// Database: SQLite
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,115 +7,96 @@ datasource db {
   url      = "file:../data/mission-control.db"
 }
 
-// ─── GitHub ───────────────────────────────────────────────
-
 model GithubAccount {
-  id         String   @id @default(cuid())
-  login      String   @unique
-  avatarUrl  String?
-  accessToken String? // store encrypted in production
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(cuid())
+  login       String   @unique
+  avatarUrl   String?
+  accessToken String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
-
-// ─── Contacts ─────────────────────────────────────────────
 
 model Contact {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   email       String?
-  role        String?  // client, collaborator, gallery, etc.
+  role        String?
   githubLogin String?
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tasks    Task[]
-  projects Project[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tasks       Task[]
+  projects    Project[] @relation("ContactToProject")
 }
-
-// ─── Projects ─────────────────────────────────────────────
 
 model Project {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  status      String   @default("active") // active, paused, complete, archived, abandoned
-  githubRepo  String?  // e.g. tberg/chronicles
-  githubUrl   String?
-  localUrl    String?  // e.g. C:\Users\tberg\Documents\project-name
-  devUrl      String?  // e.g. http://localhost:3001
-  archivedPath String? // Path to the zip archive if archived
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tasks      Task[]
-  artPieces  ArtPiece[]
-  notes      Note[]
-  contacts   Contact[]
-}
-
-// ─── Tasks ────────────────────────────────────────────────
-
-model Task {
-  id               String   @id @default(cuid())
-  title            String
-  description      String?
-  status           String   @default("Backlog") // Backlog, In Progress, Done
-  assignedTo       String?  // agent ID or contact name
-  projectId        String?
-  githubIssueNumber Int?
-  githubIssueUrl   String?
-  githubPrNumber   Int?
-  githubPrUrl      String?
-  githubStatus     String?  // open, closed, merged
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  project  Project? @relation(fields: [projectId], references: [id])
-  contact  Contact? @relation(fields: [assignedTo], references: [id])
-}
-
-// ─── Calendar Events ──────────────────────────────────────
-
-model CalendarEvent {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   title        String
   description  String?
-  startAt      DateTime
-  endAt        DateTime?
-  allDay       Boolean  @default(false)
-  location     String?
-  googleEventId String? @unique // for future Google Calendar sync
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String     @default("active")
+  githubRepo   String?
+  githubUrl    String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  localUrl     String?
+  devUrl       String?
+  archivedPath String?
+  artPieces    ArtPiece[]
+  notes        Note[]
+  tasks        Task[]
+  contacts     Contact[]  @relation("ContactToProject")
 }
 
-// ─── Agent Logs ───────────────────────────────────────────
+model Task {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  status            String   @default("Backlog")
+  assignedTo        String?
+  projectId         String?
+  githubIssueNumber Int?
+  githubIssueUrl    String?
+  githubPrNumber    Int?
+  githubPrUrl       String?
+  githubStatus      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  contact           Contact? @relation(fields: [assignedTo], references: [id])
+  project           Project? @relation(fields: [projectId], references: [id])
+}
+
+model CalendarEvent {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  startAt       DateTime
+  endAt         DateTime?
+  allDay        Boolean   @default(false)
+  location      String?
+  googleEventId String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
 
 model AgentLog {
   id        String   @id @default(cuid())
-  agentId   String   // main, jason, pixels, etc.
+  agentId   String
   sessionId String?
-  level     String   // INFO, WARN, ERROR
+  level     String
   message   String
   subsystem String?
   createdAt DateTime @default(now())
 }
 
-// ─── Cron Runs ────────────────────────────────────────────
-
 model CronRun {
-  id          String   @id @default(cuid())
-  jobId       String
-  jobName     String
-  status      String   // ok, error
-  durationMs  Int?
-  error       String?
-  ranAt       DateTime @default(now())
+  id         String   @id @default(cuid())
+  jobId      String
+  jobName    String
+  status     String
+  durationMs Int?
+  error      String?
+  ranAt      DateTime @default(now())
 }
-
-// ─── Notes ────────────────────────────────────────────────
 
 model Note {
   id        String   @id @default(cuid())
@@ -126,29 +104,23 @@ model Note {
   projectId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  project Project? @relation(fields: [projectId], references: [id])
+  project   Project? @relation(fields: [projectId], references: [id])
 }
-
-// ─── Art Pieces ───────────────────────────────────────────
 
 model ArtPiece {
-  id          String   @id @default(cuid())
-  title       String
-  medium      String?  // oil, watercolor, digital, etc.
-  status      String   @default("in-progress") // in-progress, complete, sold, archived
-  year        Int?
-  dimensions  String?  // e.g. "24x36in"
-  imageUrl    String?
-  projectId   String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  project Project? @relation(fields: [projectId], references: [id])
+  id         String   @id @default(cuid())
+  title      String
+  medium     String?
+  status     String   @default("in-progress")
+  year       Int?
+  dimensions String?
+  imageUrl   String?
+  projectId  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  project    Project? @relation(fields: [projectId], references: [id])
 }
-
-// ─── Studio Environment ──────────────────────────────────
 
 model ClimateLog {
   id          String   @id @default(cuid())

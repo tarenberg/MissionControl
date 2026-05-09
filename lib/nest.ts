@@ -31,24 +31,39 @@ export class NestClient {
       throw new Error('No refresh token provided for Nest client.');
     }
 
-    const response = await fetch(NEST_AUTH_URL, {
-      method: 'POST',
-      body: new URLSearchParams({
-        client_id: this.credentials.clientId,
-        client_secret: this.credentials.clientSecret,
-        refresh_token: this.credentials.refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1000);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to refresh Nest access token: ${error}`);
+    try {
+      const response = await fetch(NEST_AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: this.credentials.clientId,
+          client_secret: this.credentials.clientSecret,
+          refresh_token: this.credentials.refreshToken,
+          grant_type: 'refresh_token',
+        }),
+        signal: controller.signal,
+      } as any);
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to refresh Nest access token: ${error}`);
+      }
+
+      const data = await response.json() as { access_token: string };
+      this.accessToken = data.access_token;
+      return this.accessToken;
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') throw new Error('Nest API request timed out');
+      throw err;
     }
-
-    const data = await response.json() as { access_token: string };
-    this.accessToken = data.access_token;
-    return this.accessToken;
   }
 
   /**
@@ -56,18 +71,30 @@ export class NestClient {
    */
   async listDevices() {
     const token = this.accessToken || (await this.refreshAccessToken());
-    const response = await fetch(`${SDM_API_URL}/enterprises/${this.credentials.projectId}/devices`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1000);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to list Nest devices: ${error}`);
+    try {
+      const response = await fetch(`${SDM_API_URL}/enterprises/${this.credentials.projectId}/devices`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        signal: controller.signal,
+      } as any);
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to list Nest devices: ${error}`);
+      }
+
+      return response.json();
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') throw new Error('Nest API request timed out');
+      throw err;
     }
-
-    return response.json();
   }
 
   /**

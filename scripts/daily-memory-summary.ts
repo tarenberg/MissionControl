@@ -116,9 +116,9 @@ Format your response as a structured JSON object with these exact keys:
 }`;
 
   try {
-    // Use anthropic/claude-3-opus-20240229 (Archivist's model)
+    // Use google/gemini-2.0-flash (Economy model)
     const result = execSync(
-      `echo "${prompt.replace(/"/g, '\\"')}" | openclaw chat --model anthropic/claude-3-opus-20240229 --system "You are a memory archivist. Output only valid JSON."`,
+      `echo "${prompt.replace(/"/g, '\\"')}" | openclaw chat --model google/gemini-2.0-flash --system "You are a memory archivist. Output only valid JSON."`,
       { encoding: 'utf-8', timeout: 60000 }
     );
     
@@ -148,7 +148,7 @@ function generateSummaryDocument(
   return `# Memory Summary for ${date}
 
 Generated: ${new Date().toLocaleString()}
-Agent: Archivist (anthropic/claude-3-opus-20240229)
+Agent: Archivist (google/gemini-2.0-flash)
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface Project {
   id: string;
@@ -42,6 +42,17 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [filterProjectId, setFilterProjectId] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Task; direction: 'asc' | 'desc' } | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollToColumn = (index: number) => {
+    if (scrollRef.current && scrollRef.current.children[index]) {
+      scrollRef.current.children[index].scrollIntoView({
+        behavior: 'smooth',
+        inline: 'start',
+        block: 'nearest'
+      });
+    }
+  };
 
   // Fetch tasks and projects
   useEffect(() => {
@@ -178,16 +189,6 @@ export default function TasksPage() {
     }
   };
 
-  const handleStatusToggle = async (task: Task) => {
-    const currentIdx = statusCycle.indexOf(task.status);
-    const nextStatus = statusCycle[(currentIdx + 1) % statusCycle.length];
-    handleStatusChange(task.id, nextStatus);
-  };
-
-  const handleMarkComplete = async (task: Task) => {
-    handleStatusChange(task.id, 'Done');
-  };
-
   const handleSort = (key: keyof Task) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -226,15 +227,51 @@ export default function TasksPage() {
   const columns = ['Backlog', 'In Progress', 'Waiting', 'Blocked', 'Done'];
 
   return (
-    <div className="h-full flex flex-col -mt-4 bg-background">
+    <div className="h-full flex flex-col -mt-4 bg-neo-bg p-8 transition-colors duration-300 overflow-hidden">
       <div className="flex justify-between items-center mb-8 flex-shrink-0">
-        <div className="flex items-center gap-6">
-          <h1>Tasks</h1>
-          <div className="h-8 w-[1px] bg-border-custom"></div>
+        <div>
+          <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl mb-2 drop-shadow-sm uppercase">Tasks</h1>
+          <div className="flex items-center gap-3">
+             <div className="neo-pressed px-4 py-1.5 rounded-full">
+                <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest m-0">Project Backlog & Kanban</p>
+             </div>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleAddClick}
+          className="neo-button no-3d text-blue-600 dark:text-blue-400 px-8 py-4 rounded-[28px] font-black uppercase tracking-widest shadow-neo-button active:neo-button-active flex items-center gap-3 group transition-all"
+        >
+          <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+          Add New Task
+        </button>
+      </div>
+
+      <div className="flex items-center gap-6 mb-10 flex-shrink-0 bg-white/10 dark:bg-black/5 backdrop-blur-md p-6 rounded-[32px] border border-white/20 dark:border-white/5 sticky top-0 z-30">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Quick Jump</span>
+          <div className="flex gap-2">
+            {columns.map((status, index) => (
+              <button
+                key={`jump-${status}`}
+                onClick={() => scrollToColumn(index)}
+                className="neo-button no-3d px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-tighter hover:text-blue-600 dark:hover:text-blue-400 active:neo-button-active transition-all"
+                title={`Jump to ${status}`}
+              >
+                {status === 'In Progress' ? 'Active' : status}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="h-10 w-[1px] bg-gray-300/50 dark:bg-gray-700/50"></div>
+        
+        <div className="flex flex-col gap-1.5 flex-1 max-w-[300px]">
+          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Filter by Project</span>
           <select
             value={filterProjectId}
             onChange={(e) => setFilterProjectId(e.target.value)}
-            className="px-4 py-2 border border-border-custom rounded-xl text-sm bg-card focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm font-medium text-foreground"
+            className="neo-button no-3d w-full px-5 py-2.5 rounded-2xl text-[10px] uppercase font-black tracking-widest bg-neo-bg focus:outline-none shadow-neo-button active:neo-button-active text-gray-700 dark:text-gray-300 border-none cursor-pointer"
           >
             <option value="all">All Projects</option>
             {projects.map(p => (
@@ -242,31 +279,27 @@ export default function TasksPage() {
             ))}
           </select>
         </div>
-        <button
-          onClick={handleAddClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center gap-2 group"
-        >
-          <svg className="w-5 h-5 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
-          Add New Task
-        </button>
       </div>
 
-      <div className="flex-1 min-h-0 pb-6">
-        <div className="flex gap-4 h-full w-full">
+      <div className="flex-1 min-h-0 pb-10">
+        <div 
+          ref={scrollRef}
+          className="flex gap-8 h-full w-full overflow-x-auto custom-scrollbar pb-4 relative"
+        >
           {columns.map(status => (
-            <div key={status} className="flex-1 min-w-0 flex flex-col bg-card/40 rounded-2xl border border-border-custom shadow-sm overflow-hidden">
-              <div className="p-4 flex justify-between items-center bg-card/60 backdrop-blur-md border-b border-border-custom">
-                <h2 className="flex items-center gap-2.5">
-                  <span className={`w-3 h-3 rounded-full shadow-sm ${
-                    status === 'Done' ? 'bg-green-500' : 
-                    status === 'Blocked' ? 'bg-red-500' :
-                    status === 'Waiting' ? 'bg-yellow-500' :
-                    status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-400'
+            <div key={status} className="flex-1 min-w-[280px] flex flex-col neo-flat rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat overflow-hidden">
+              <div className="p-6 flex justify-between items-center bg-white/20 dark:bg-black/10 backdrop-blur-md border-b border-gray-300/30 dark:border-gray-700/30">
+                <h2 className="flex items-center gap-3 text-gray-800 dark:text-gray-200 font-black uppercase tracking-widest text-[11px]">
+                  <span className={`w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)] ${
+                    status === 'Done' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 
+                    status === 'Blocked' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' :
+                    status === 'Waiting' ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]' :
+                    status === 'In Progress' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-gray-400'
                   }`}></span>
                   {status}
                 </h2>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-muted bg-card border border-border-custom px-2.5 py-1 rounded-full shadow-xs">
+                <div className="flex items-center gap-4">
+                  <span className="neo-pressed text-[10px] font-black text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-full">
                     {filteredTasks.filter(t => t.status === status).length}
                   </span>
                   <button 
@@ -280,46 +313,47 @@ export default function TasksPage() {
                       });
                       setShowModal(true);
                     }}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-card border border-border-custom text-muted hover:text-blue-600 hover:border-blue-200 shadow-xs transition-all"
+                    className="neo-button no-3d w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 active:neo-button-active transition-all"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                   </button>
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
                 {filteredTasks
                   .filter(task => task.status === status)
                   .map(task => (
                     <div 
                       key={task.id} 
-                      className="bg-card p-5 rounded-xl shadow-sm border border-border-custom hover:border-blue-400/50 hover:shadow-md transition-all group relative cursor-default interactive-card"
+                      className="neo-button no-3d p-6 rounded-[32px] border border-white/50 dark:border-white/5 shadow-neo-button active:neo-button-active group relative cursor-default transition-all hover:scale-[1.02]"
                     >
-                      <div className="flex justify-between items-start mb-2.5 gap-3">
-                        <h3 className="text-[13px] leading-snug group-hover:text-blue-600 transition-colors">{task.title}</h3>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleEditClick(task)} className="text-muted hover:text-blue-600 transition-colors p-1" title="Edit task">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      <div className="flex justify-between items-start mb-3 gap-4">
+                        <h3 className="text-gray-800 dark:text-gray-200 font-bold text-[13px] leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{task.title}</h3>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditClick(task)} className="neo-pressed p-1.5 rounded-lg text-gray-400 hover:text-blue-600 transition-colors" title="Edit task">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>
-                          <button onClick={() => setDeleteConfirm(task.id)} className="text-muted hover:text-red-600 transition-colors p-1" title="Delete task">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          <button onClick={() => setDeleteConfirm(task.id)} className="neo-pressed p-1.5 rounded-lg text-gray-400 hover:text-red-600 transition-colors" title="Delete task">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </div>
                       </div>
                       
                       {task.description && (
-                        <p className="text-[11px] text-muted line-clamp-3 mb-5 font-medium leading-relaxed">{task.description}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-3 mb-6 font-medium leading-relaxed">{task.description}</p>
                       )}
                       
-                      <div className="flex justify-between items-center mt-auto pt-4 border-t border-border-custom">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-widest truncate max-w-[140px]">
-                          {task.project?.title || 'Studio'}
+                      <div className="flex justify-between items-center mt-auto pt-5 border-t border-gray-300/30 dark:border-gray-700/30">
+                        <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest truncate max-w-[140px] flex items-center gap-2">
+                           <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+                           {task.project?.title || 'Studio'}
                         </span>
                         
                         <select 
                           value={task.status}
                           onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                          className="text-[9px] bg-background border border-transparent rounded-lg px-2 py-1 text-muted font-bold tracking-wider uppercase focus:ring-0 focus:bg-card focus:border-blue-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all"
+                          className="text-[9px] bg-neo-bg border-none neo-pressed rounded-full px-3 py-1 text-gray-500 dark:text-gray-400 font-black tracking-[0.15em] uppercase focus:ring-0 cursor-pointer active:neo-button-active transition-all"
                         >
                           {columns.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -327,9 +361,11 @@ export default function TasksPage() {
                     </div>
                   ))}
                 {filteredTasks.filter(t => t.status === status).length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-16 px-4 opacity-10">
-                    <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                    <p className="text-[9px] font-bold uppercase tracking-widest">Empty Shelf</p>
+                  <div className="flex flex-col items-center justify-center py-24 px-6 opacity-20">
+                    <div className="neo-pressed p-6 rounded-[32px] mb-4">
+                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">Empty Shelf</p>
                   </div>
                 )}
               </div>
@@ -340,110 +376,118 @@ export default function TasksPage() {
 
       {/* Task Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-lg p-6 max-w-md w-full mx-4 border border-border-custom">
-            <h2 className="mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="neo-flat rounded-[40px] shadow-2xl p-8 max-w-md w-full animate-in fade-in zoom-in duration-200 border border-white/50 dark:border-white/5">
+            <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl mb-8 uppercase border-b border-gray-300/30 dark:border-gray-700/30 pb-4">
               {editingTask ? 'Edit Task' : 'Add Task'}
             </h2>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Title *
                 </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="Task title"
-                />
+                <div className="neo-pressed p-1 rounded-2xl">
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-bold text-sm"
+                    placeholder="Task title"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Description
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="Task description"
-                  rows={3}
-                />
+                <div className="neo-pressed p-1 rounded-2xl">
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-medium text-xs leading-relaxed"
+                    placeholder="Task description"
+                    rows={3}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                >
-                  {statusCycle.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Status
+                  </label>
+                  <div className="neo-pressed p-1 rounded-2xl">
+                    <select
+                      value={formData.status}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-bold text-xs appearance-none cursor-pointer"
+                    >
+                      {statusCycle.map((status) => (
+                        <option key={status} value={status} className="bg-neo-bg">
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Project
-                </label>
-                <select
-                  value={formData.projectId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, projectId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                >
-                  <option value="">No project</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.title}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Project
+                  </label>
+                  <div className="neo-pressed p-1 rounded-2xl">
+                    <select
+                      value={formData.projectId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, projectId: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-bold text-xs appearance-none cursor-pointer"
+                    >
+                      <option value="" className="bg-neo-bg">No project</option>
+                      {projects.map((project) => (
+                        <option key={project.id} value={project.id} className="bg-neo-bg">
+                          {project.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center mt-6">
-              <div>
-                {editingTask && (
+            <div className="flex justify-between items-center mt-10">
+              <div className="flex gap-4 w-full">
+                {editingTask ? (
                   <button
                     onClick={() => {
                       setDeleteConfirm(editingTask.id);
                       handleModalClose();
                     }}
-                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm font-bold transition-colors flex items-center gap-2"
+                    className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 active:neo-button-active flex-1"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    Delete Task
+                    Delete
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleModalClose}
+                    className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 active:neo-button-active flex-1"
+                  >
+                    Cancel
                   </button>
                 )}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleModalClose}
-                  className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  Cancel
-                </button>
                 <button
                   onClick={handleSaveTask}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                  className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 active:neo-button-active flex-1 shadow-lg"
                 >
-                  Save
+                  Save Task
                 </button>
               </div>
             </div>
@@ -453,22 +497,22 @@ export default function TasksPage() {
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-lg p-6 max-w-sm w-full mx-4 border border-border-custom">
-            <h2 className="mb-4">Delete Task?</h2>
-            <p className="text-muted mb-6">
-              This action cannot be undone.
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="neo-flat rounded-[40px] shadow-2xl p-8 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-white/50 dark:border-white/5">
+            <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl mb-4 uppercase">Delete?</h2>
+            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+              Permanent removal. Cannot be undone.
             </p>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-4">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 active:neo-button-active"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteTask(deleteConfirm)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 active:neo-button-active"
               >
                 Delete
               </button>

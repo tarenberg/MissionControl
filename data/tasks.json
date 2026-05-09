@@ -30,10 +30,18 @@
   {
     "id": "task-5",
     "title": "Daily memory summary automation",
-    "description": "Ensure the 4:00 AM job summarizes memory/YYYY-MM-DD.md into per-project docs.",
+    "description": "Updated to use Economy models (Gemini Flash) for cost efficiency.",
     "assignedTo": "M",
-    "status": "Recurring",
+    "status": "Done",
     "tags": ["automation", "docs"]
+  },
+  {
+    "id": "task-7",
+    "title": "Implement Live Ops Log Monitor",
+    "description": "Create a real-time terminal-style log viewer for Gateway and App logs.",
+    "assignedTo": "M",
+    "status": "Done",
+    "tags": ["feature", "ops"]
   },
   {
     "id": "task-6",

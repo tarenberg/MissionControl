@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { execSync } from 'child_process';
+import { prisma } from '@/lib/prisma';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
 
-// Force Prisma to use the generated client with the new field
-const prisma = new PrismaClient();
+const execAsync = promisify(exec);
 const ARCHIVE_ROOT = 'C:\\Users\\tberg\\Documents\\_ARCHIVE';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const project = await (prisma.project as any).findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!project || !project.localUrl) {
@@ -28,59 +29,57 @@ export async function POST(
     const zipName = `${project.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.zip`;
     const zipPath = path.join(ARCHIVE_ROOT, zipName);
 
-    console.log(`Archiving ${project.title} to ${zipPath}...`);
+    console.log(`[Archive] Starting for ${project.title}...`);
 
-    // Use PowerShell Compress-Archive for native Windows zipping
-    const command = `powershell "Compress-Archive -Path '${project.localUrl}\\*' -DestinationPath '${zipPath}' -Force"`;
-    execSync(command);
+    // Async archive process
+    const excludeFolders = "('node_modules', '.git', '.next', 'dist', 'build')";
+    const psScript = `
+      $source = '${project.localUrl}';
+      $dest = '${zipPath}';
+      $files = Get-ChildItem -Path $source -Recurse | Where-Object { 
+        $path = $_.FullName;
+        $exclude = $false;
+        ${excludeFolders}.ForEach({ if ($path -like "*\\$PSItem\\*") { $exclude = $true } });
+        !$exclude 
+      };
+      if ($files) {
+        Compress-Archive -Path $files.FullName -DestinationPath $dest -Force
+      }
+    `.replace(/\s+/g, ' ').trim();
 
-    // Update database status using cast to any to bypass local build-time type mismatches
-    await (prisma.project as any).update({
-      where: { id: params.id },
-      data: {
-        status: 'archived',
-        archivedPath: zipPath,
-      },
+    const command = `powershell -NoProfile -Command "${psScript}"`;
+
+    // Start archiving in background
+    exec(command, async (error, stdout, stderr) => {
+      if (error) {
+        console.error(`[Archive] Failed for ${project.title}:`, error);
+        return;
+      }
+      
+      console.log(`[Archive] Completed for ${project.title}. Updating database...`);
+      
+      try {
+        await (prisma.project as any).update({
+          where: { id },
+          data: {
+            status: 'archived',
+            archivedPath: zipPath,
+          },
+        });
+        console.log(`[Archive] Database updated for ${project.title}.`);
+      } catch (dbErr) {
+        console.error(`[Archive] DB update failed for ${project.title}:`, dbErr);
+      }
     });
 
-    // Verify zip exists and compare integrity
-    if (fs.existsSync(zipPath)) {
-      const zipSize = fs.statSync(zipPath).size;
-      
-      // Calculate original size recursively
-      const getDirSize = (dirPath: string): number => {
-        let size = 0;
-        const items = fs.readdirSync(dirPath);
-        for (const item of items) {
-          const itemPath = path.join(dirPath, item);
-          const stats = fs.statSync(itemPath);
-          if (stats.isDirectory()) {
-            size += getDirSize(itemPath);
-          } else {
-            size += stats.size;
-          }
-        }
-        return size;
-      };
-
-      const originalSize = getDirSize(project.localUrl);
-      
-      // Verification logic: Zip should exist and have size
-      // (Compression makes it smaller, so we check for > 0 and compare content count)
-      const zipContentCount = parseInt(execSync(`powershell "(Get-ArchiveEntry -Path '${zipPath}').Count"`).toString().trim()) || 0;
-      
-      console.log(`Verification for ${project.title}:`);
-      console.log(`- Original Size: ${(originalSize / 1024 / 1024).toFixed(2)} MB`);
-      console.log(`- Zip Size: ${(zipSize / 1024 / 1024).toFixed(2)} MB`);
-      
-      if (zipSize > 0) {
-        console.log(`Successfully verified ${project.title}.`);
-      }
-    }
-
-    return NextResponse.json({ success: true, archive: zipPath });
+    // Return immediate response
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Archiving started in background',
+      zipName
+    });
   } catch (error: any) {
-    console.error('Archive error:', error);
+    console.error('Archive route error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

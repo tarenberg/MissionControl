@@ -38,7 +38,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-xl bg-white dark:bg-zinc-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center w-10 h-10 border border-gray-200 dark:border-white/5"
+      className="neo-button no-3d text-gray-600 dark:text-gray-400 active:neo-button-active transition-all flex items-center justify-center w-10 h-10 rounded-xl border border-white/50 dark:border-white/5"
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       {theme === 'light' ? (

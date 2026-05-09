@@ -10,33 +10,46 @@
   --muted: #71717a;
   --btn-glow: rgba(59, 130, 246, 0.2);
   --btn-shadow: rgba(0, 0, 0, 0.1);
+
+  --neo-bg: #e0e5ec;
+  --neo-shadow-dark: #b8bec5;
+  --neo-shadow-light: #ffffff;
 }
 
-/* Explicit dark class takes precedence */
+/* Explicit dark class */
 .dark {
-  --background: #0a0a0c;
-  --foreground: #c0c0c5;
-  --card-bg: #27272a; /* Zinc-800: Light gray in dark mode context */
-  --sidebar-bg: #111113;
-  --border: rgba(255, 255, 255, 0.08);
-  --shadow-color: rgba(0, 0, 0, 0.6);
-  --muted: #808085;
-  --btn-glow: rgba(59, 130, 246, 0.4);
-  --btn-shadow: rgba(0, 0, 0, 0.2);
+  --background: #151719;
+  --foreground: #d1d5db;
+  --card-bg: #1c1e22;
+  --sidebar-bg: #151719;
+  --border: rgba(255, 255, 255, 0.03);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --muted: #9ca3af;
+  --btn-glow: rgba(59, 130, 246, 0.2);
+  --btn-shadow: rgba(0, 0, 0, 0.4);
+
+  /* Loosely Twisted Dark Palette */
+  --neo-bg: #1c1e22;
+  --neo-shadow-dark: #121417;
+  --neo-shadow-light: #26292e;
 }
 
-/* Only apply system dark mode if .light is not explicitly set */
+/* System dark mode fallback */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --background: #0a0a0c;
-    --foreground: #c0c0c5;
-    --card-bg: #27272a;
-    --sidebar-bg: #111113;
-    --border: rgba(255, 255, 255, 0.08);
-    --shadow-color: rgba(0, 0, 0, 0.6);
-    --muted: #808085;
-    --btn-glow: rgba(59, 130, 246, 0.4);
-    --btn-shadow: rgba(0, 0, 0, 0.2);
+    --background: #151719;
+    --foreground: #d1d5db;
+    --card-bg: #1c1e22;
+    --sidebar-bg: #151719;
+    --border: rgba(255, 255, 255, 0.03);
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --muted: #9ca3af;
+    --btn-glow: rgba(59, 130, 246, 0.2);
+    --btn-shadow: rgba(0, 0, 0, 0.4);
+
+    --neo-bg: #1c1e22;
+    --neo-shadow-dark: #121417;
+    --neo-shadow-light: #26292e;
   }
 }
 
@@ -49,40 +62,122 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --color-neo-bg: #e0e5ec;
-  --color-neo-shadow-dark: #b8bec5;
-  --color-neo-shadow-light: #ffffff;
+  --color-neo-bg: var(--neo-bg);
+  --color-neo-shadow-dark: var(--neo-shadow-dark);
+  --color-neo-shadow-light: var(--neo-shadow-light);
   
-  --shadow-neo-flat: 9px 9px 16px var(--color-neo-shadow-dark), 
-                    -9px -9px 16px var(--color-neo-shadow-light);
+  --shadow-neo-flat: 9px 9px 16px var(--neo-shadow-dark), 
+                    -9px -9px 16px var(--neo-shadow-light);
   
-  --shadow-neo-pressed: inset 6px 6px 12px var(--color-neo-shadow-dark), 
-                       inset -6px -6px 12px var(--color-neo-shadow-light);
+  --shadow-neo-pressed: inset 6px 6px 12px var(--neo-shadow-dark), 
+                       inset -6px -6px 12px var(--neo-shadow-light);
   
-  --shadow-neo-button: 4px 4px 8px var(--color-neo-shadow-dark), 
-                      -4px -4px 8px var(--color-neo-shadow-light);
+  --shadow-neo-button: 4px 4px 8px var(--neo-shadow-dark), 
+                      -4px -4px 8px var(--neo-shadow-light);
 }
 
 @utility neo-flat {
-  background-color: var(--color-neo-bg);
+  background-color: var(--neo-bg);
   box-shadow: var(--shadow-neo-flat);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 @utility neo-pressed {
-  background-color: var(--color-neo-bg);
+  background-color: var(--neo-bg);
   box-shadow: var(--shadow-neo-pressed);
 }
 
 @utility neo-button {
-  background-color: var(--color-neo-bg);
+  background-color: var(--neo-bg);
   box-shadow: var(--shadow-neo-button);
   transition: all 0.2s ease;
 }
 
 @utility neo-button-active {
-  box-shadow: inset 2px 2px 5px var(--color-neo-shadow-dark), 
-              inset -2px -2px 5px var(--color-neo-shadow-light);
+  box-shadow: inset 2px 2px 5px var(--neo-shadow-dark), 
+              inset -2px -2px 5px var(--neo-shadow-light);
+}
+
+@utility neo-glow-blue {
+  box-shadow: 
+    var(--shadow-neo-button),
+    0 0 25px rgba(59, 130, 246, 0.5),
+    0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+@utility neo-glow-cyan {
+  box-shadow: 
+    var(--shadow-neo-button),
+    0 0 25px rgba(0, 255, 255, 0.4),
+    0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+@utility neo-glow-icon {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+}
+
+.dark .neo-glow-blue {
+  box-shadow: 
+    var(--shadow-neo-button),
+    0 0 35px rgba(59, 130, 246, 0.5),
+    0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.dark .neo-glow-cyan {
+  box-shadow: 
+    var(--shadow-neo-button),
+    0 0 45px rgba(0, 255, 255, 0.6),
+    0 0 20px rgba(0, 255, 255, 0.4),
+    inset 0 0 15px rgba(0, 255, 255, 0.15);
+}
+
+@keyframes slowPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes ripple {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes rippleSlow {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes rippleFast {
+  0% { transform: scale(1); opacity: 0.4; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes rippleOuter {
+  0% { transform: scale(1); opacity: 0.25; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes ringPulse1 {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.15); opacity: 0.15; }
+}
+@keyframes ringPulse2 {
+  0%, 100% { transform: scale(1.1); opacity: 0.2; }
+  50% { transform: scale(1.25); opacity: 0.1; }
+}
+@keyframes ringPulse3 {
+  0%, 100% { transform: scale(1.2); opacity: 0.12; }
+  50% { transform: scale(1.35); opacity: 0.06; }
+}
+@keyframes particleFloat {
+  0% { transform: translateY(0px) scale(1); }
+  100% { transform: translateY(-8px) scale(1.3); }
+}
+@keyframes shimmerRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @layer base {
@@ -164,3 +259,44 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Global Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+/* --- Global Overrides for Art Tracker --- */
+.art-tracker-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.art-tracker-container::-webkit-scrollbar-track {
+  background: #0a0a20; 
+}
+.art-tracker-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 170, 255, 0.4); 
+  border-radius: 5px;
+}
+.art-tracker-container::-webkit-scrollbar-thumb:hover {
+  background: #00ffff; 
+}
+
+.art-tracker-container {
+  scroll-behavior: smooth;
+}
+
+.art-tracker-container section[id] {
+  scroll-margin-top: 100px;
+}
+

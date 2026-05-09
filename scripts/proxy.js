@@ -10,6 +10,7 @@ const httpProxy = require('http-proxy');
 const proxy = httpProxy.createProxyServer({});
 
 const server = http.createServer((req, res) => {
+  console.log(`[Proxy] ${req.method} ${req.url}`);
   proxy.web(req, res, {
     target: 'http://127.0.0.1:3002',
   });

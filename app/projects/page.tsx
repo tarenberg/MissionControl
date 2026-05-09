@@ -21,11 +21,19 @@ interface ActivePort {
 }
 
 const statusColors: Record<string, string> = {
-  'active': 'bg-green-200 text-green-800',
-  'planning': 'bg-indigo-200 text-indigo-800',
-  'paused': 'bg-yellow-200 text-yellow-800',
-  'archived': 'bg-gray-200 text-gray-800',
-  'abandoned': 'bg-red-200 text-red-800',
+  'active': 'text-green-600 dark:text-green-400',
+  'planning': 'text-indigo-600 dark:text-indigo-400',
+  'paused': 'text-yellow-600 dark:text-yellow-400',
+  'archived': 'text-gray-600 dark:text-gray-400',
+  'abandoned': 'text-red-600 dark:text-red-400',
+};
+
+const statusDotColors: Record<string, string> = {
+  'active': 'bg-green-500',
+  'planning': 'bg-indigo-500',
+  'paused': 'bg-yellow-500',
+  'archived': 'bg-gray-500',
+  'abandoned': 'bg-red-500',
 };
 
 const statusOptions = ['active', 'planning', 'paused', 'archived', 'abandoned'];
@@ -312,142 +320,170 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-4 bg-background min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1>Projects</h1>
+    <div className="p-8 bg-neo-bg min-h-screen transition-colors duration-300">
+      <div className="flex justify-between items-center mb-12 ml-4">
+        <div>
+          <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl mb-2 drop-shadow-sm uppercase">Projects</h1>
+          <div className="flex items-center gap-3">
+             <div className="neo-pressed px-4 py-1.5 rounded-full">
+                <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest m-0">Project Registry & Deployment</p>
+             </div>
+          </div>
+        </div>
+        
         <div className="flex gap-4">
           {activePorts.length > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-md px-3 py-1 flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-xs font-medium text-green-700">
-                {activePorts.length} Active {activePorts.length === 1 ? 'Process' : 'Processes'}
+            <div className="neo-pressed px-4 py-2 rounded-2xl flex items-center gap-3">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+              <span className="text-[10px] font-black text-green-700 dark:text-green-500 uppercase tracking-widest">
+                {activePorts.length} Live {activePorts.length === 1 ? 'Process' : 'Processes'}
               </span>
             </div>
           )}
           <button
             onClick={handleAddClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow-sm"
+            className="neo-button no-3d px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 active:neo-button-active"
           >
             Add Project
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {sortedProjects.map((project) => {
           const runningPort = getRunningProjectPort(project);
+          const dotColor = statusDotColors[project.status] || 'bg-gray-500';
           
           return (
             <div
               key={project.id}
-              className={`bg-card rounded-lg border p-4 hover:shadow-md transition flex flex-col interactive-card ${
-                runningPort ? 'border-green-400 ring-1 ring-green-100' : 'border-border-custom'
+              className={`neo-flat rounded-[32px] border border-white/50 dark:border-white/5 flex flex-col transition-all hover:scale-[1.01] overflow-hidden ${
+                runningPort ? 'ring-2 ring-green-500/30' : ''
               }`}
             >
-              <div className="flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-foreground">{project.title}</h3>
-                    {runningPort && (
-                      <span className="flex h-2 w-2 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    onClick={() => handleStatusRotate(project)}
-                    className={`px-2 py-1 rounded text-xs font-medium cursor-pointer select-none transition-all active:scale-95 ${
-                      statusColors[project.status] || 'bg-gray-200'
-                    }`}
-                  >
-                    {project.status}
+              {/* Status Band */}
+              <div 
+                onClick={() => handleStatusRotate(project)}
+                className={`h-6 w-full cursor-pointer transition-all hover:brightness-110 active:opacity-80 relative group/band flex items-center justify-center ${dotColor}`}
+                title="Click to rotate status"
+              >
+                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] drop-shadow-sm group-hover/band:opacity-0 transition-opacity">
+                  {project.status}
+                </span>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/band:opacity-100 transition-opacity">
+                  <span className="text-[8px] font-black text-white uppercase tracking-[0.3em] drop-shadow-md">
+                    Rotate Status
                   </span>
                 </div>
-
-                {project.description && (
-                  <p className="text-sm text-muted mb-3 line-clamp-2">{project.description}</p>
-                )}
-
-                {project.githubUrl && (
-                  <p className="text-xs text-blue-600 mb-1 truncate">
-                    <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
-                      🔗 GitHub
-                    </a>
-                  </p>
-                )}
-
-                {project.localUrl && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <p className="text-xs text-muted truncate flex-1" title={project.localUrl}>
-                      📁 {project.localUrl}
-                    </p>
-                    {runningPort ? (
-                      <button
-                        onClick={() => handleStopProject(runningPort)}
-                        className="text-[10px] bg-red-50 hover:bg-red-100 text-red-700 px-2 py-0.5 rounded border border-red-200"
-                      >
-                        Stop
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSpinUp(project)}
-                        className="text-[10px] bg-gray-50 hover:bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-300"
-                      >
-                        Spin Up
-                      </button>
-                    )}
-                    {project.devUrl && (
-                      <a
-                        href={project.devUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`text-[10px] px-2 py-0.5 rounded border text-center ${
-                          runningPort 
-                            ? 'bg-green-600 hover:bg-green-700 text-white border-green-700' 
-                            : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
-                        }`}
-                      >
-                        Open App
-                      </a>
-                    )}
-                  </div>
-                )}
               </div>
 
-              <div className="flex justify-between gap-2 mt-4 pt-4 border-t border-gray-50">
-                <button
-                  onClick={() => handleViewTasks(project.id)}
-                  className="flex-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider py-1"
-                >
-                  Tasks
-                </button>
-                <button
-                  onClick={() => handleViewDocs(project)}
-                  className="flex-1 text-[10px] text-emerald-600 hover:text-emerald-700 font-bold uppercase tracking-wider py-1"
-                >
-                  Docs
-                </button>
-                <button
-                  onClick={() => handleEditClick(project)}
-                  className="flex-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider py-1"
-                >
-                  Edit
-                </button>
-                {project.status !== 'archived' && (
+              <div className="p-8 flex flex-col flex-1">
+                <div className="flex-1">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-gray-800 dark:text-gray-200 font-black text-xl tracking-tight uppercase">{project.title}</h3>
+                      {runningPort && (
+                        <span className="flex h-2.5 w-2.5 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {project.description && (
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-6 line-clamp-3 leading-relaxed">{project.description}</p>
+                  )}
+
+                  <div className="space-y-4 mb-8">
+                    {project.githubUrl && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🔗</span>
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:underline truncate">
+                          GitHub Source
+                        </a>
+                      </div>
+                    )}
+
+                    {project.localUrl && (
+                      <div className="space-y-3">
+                        <div className="neo-pressed p-3 rounded-2xl flex items-center gap-3 overflow-hidden group">
+                          <span className="text-sm grayscale group-hover:grayscale-0 transition-all">📁</span>
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 truncate flex-1" title={project.localUrl}>
+                            {project.localUrl}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          {runningPort ? (
+                            <button
+                              onClick={() => handleStopProject(runningPort)}
+                              className="neo-button no-3d px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 active:neo-button-active flex-1"
+                            >
+                              Stop Process
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSpinUp(project)}
+                              className="neo-button no-3d px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 active:neo-button-active flex-1"
+                            >
+                              Spin Up
+                            </button>
+                          )}
+                          {project.devUrl && (
+                            <a
+                              href={project.devUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`neo-button no-3d px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-center flex-1 active:neo-button-active ${
+                                runningPort 
+                                  ? 'text-green-600 dark:text-green-400 shadow-neo-pressed' 
+                                  : 'text-blue-600 dark:text-blue-400'
+                              }`}
+                            >
+                              Open App
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap justify-between gap-3 mt-4 pt-6 border-t border-gray-300/30 dark:border-gray-700/30">
                   <button
-                    onClick={() => setArchiveConfirm(project)}
-                    className="flex-1 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-wider py-1"
+                    onClick={() => handleViewTasks(project.id)}
+                    className="neo-button no-3d px-3 py-2 rounded-xl text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-widest active:neo-button-active"
                   >
-                    Archive
+                    Tasks
                   </button>
-                )}
-                <button
-                  onClick={() => setDeleteConfirm(project.id)}
-                  className="flex-1 text-[10px] text-red-600 hover:text-red-700 font-bold uppercase tracking-wider py-1"
-                >
-                  Delete
-                </button>
+                  <button
+                    onClick={() => handleViewDocs(project)}
+                    className="neo-button no-3d px-3 py-2 rounded-xl text-[9px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest active:neo-button-active"
+                  >
+                    Docs
+                  </button>
+                  <button
+                    onClick={() => handleEditClick(project)}
+                    className="neo-button no-3d px-3 py-2 rounded-xl text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-widest active:neo-button-active"
+                  >
+                    Edit
+                  </button>
+                  {project.status !== 'archived' && (
+                    <button
+                      onClick={() => setArchiveConfirm(project)}
+                      className="neo-button no-3d px-3 py-2 rounded-xl text-[9px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-widest active:neo-button-active"
+                    >
+                      Archive
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDeleteConfirm(project.id)}
+                    className="neo-button no-3d px-3 py-2 rounded-xl text-[9px] text-red-600 dark:text-red-400 font-black uppercase tracking-widest active:neo-button-active"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -455,183 +491,141 @@ export default function ProjectsPage() {
       </div>
 
       {projects.length === 0 && (
-        <div className="text-center text-muted py-12 bg-card rounded-lg border-2 border-dashed border-border-custom">
-          No projects found
-        </div>
-      )}
-
-      {/* Manual Process List for Orpaned Ports */}
-      {activePorts.length > 0 && (
-        <div className="mt-12 pt-8 border-t border-border-custom">
-          <h2 className="mb-4">Active Dev Processes</h2>
-          <div className="bg-card rounded-lg border border-border-custom p-4">
-            <div className="grid grid-cols-5 gap-4 text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
-              <div>Port</div>
-              <div>PID</div>
-              <div>App</div>
-              <div>Status</div>
-              <div className="text-right">Action</div>
-            </div>
-            <div className="space-y-1">
-              {activePorts.map((ap) => {
-                const project = projects.find(p => {
-                  const urlsToTry = [p.devUrl, p.launchUrl].filter(Boolean);
-                  for (const urlStr of urlsToTry) {
-                    try {
-                      const fullUrl = urlStr!.startsWith('http') ? urlStr! : `http://${urlStr}`;
-                      const url = new URL(fullUrl);
-                      if (parseInt(url.port) === ap.port) return true;
-                    } catch (e) {}
-                  }
-                  return false;
-                });
-                const displayName = project ? project.title : ap.name;
-
-                return (
-                  <div key={ap.port} className="bg-card border border-border-custom rounded p-2 flex justify-between items-center text-sm shadow-sm">
-                    <div className="grid grid-cols-5 gap-4 w-full items-center">
-                      <div className="font-mono font-bold text-blue-600">{ap.port}</div>
-                      <div className="text-muted">{ap.pid}</div>
-                      <div className="font-medium truncate text-foreground font-bold" title={displayName}>
-                        {displayName}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                        <span className="text-xs text-green-700">Listening</span>
-                      </div>
-                      <div className="text-right">
-                        <button 
-                          onClick={() => handleStopProject(ap.port)}
-                          className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded border border-red-100"
-                        >
-                          Kill Process
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="text-center text-gray-400 dark:text-gray-500 py-20 neo-flat rounded-[40px] border-2 border-dashed border-gray-300/50 dark:border-gray-700/50 uppercase font-black tracking-widest text-[10px] italic">
+          No projects found in the registry.
         </div>
       )}
 
       {/* Project Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-lg shadow-xl p-6 max-w-md w-full animate-in fade-in zoom-in duration-200 border border-border-custom">
-            <h2 className="mb-4">
+          <div className="neo-flat rounded-[40px] shadow-2xl p-8 max-w-md w-full animate-in fade-in zoom-in duration-200 border border-white/50 dark:border-white/5">
+            <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl mb-8 uppercase border-b border-gray-300/30 dark:border-gray-700/30 pb-4">
               {editingProject ? 'Edit Project' : 'Add Project'}
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Title *
                 </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="Project title"
-                />
+                <div className="neo-pressed p-1 rounded-2xl">
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-bold text-sm"
+                    placeholder="Project title"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Description
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="Project description"
-                  rows={3}
-                />
+                <div className="neo-pressed p-1 rounded-2xl">
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-medium text-xs leading-relaxed"
+                    placeholder="Project description"
+                    rows={3}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Status
                 </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </option>
-                  ))}
-                </select>
+                <div className="neo-pressed p-1 rounded-2xl">
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 font-bold text-sm appearance-none cursor-pointer"
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status} className="bg-neo-bg">
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  GitHub URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.githubUrl}
-                  onChange={(e) =>
-                    setFormData({ ...formData, githubUrl: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="https://github.com/..."
-                />
-              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    GitHub URL
+                  </label>
+                  <div className="neo-pressed p-1 rounded-2xl">
+                    <input
+                      type="url"
+                      value={formData.githubUrl}
+                      onChange={(e) =>
+                        setFormData({ ...formData, githubUrl: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-blue-600 dark:text-blue-400 font-mono text-xs font-bold"
+                      placeholder="https://github.com/..."
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Local Path (for Spin Up)
-                </label>
-                <input
-                  type="text"
-                  value={formData.localUrl}
-                  onChange={(e) =>
-                    setFormData({ ...formData, localUrl: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="C:\Users\tberg\Documents\..."
-                />
-              </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Local Path
+                  </label>
+                  <div className="neo-pressed p-1 rounded-2xl">
+                    <input
+                      type="text"
+                      value={formData.localUrl}
+                      onChange={(e) =>
+                        setFormData({ ...formData, localUrl: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-gray-600 dark:text-gray-400 font-mono text-xs"
+                      placeholder="C:\Users\tberg\Documents\..."
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Dev URL (for Open App)
-                </label>
-                <input
-                  type="text"
-                  value={formData.devUrl}
-                  onChange={(e) =>
-                    setFormData({ ...formData, devUrl: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-border-custom bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
-                  placeholder="http://localhost:3001"
-                />
+                <div>
+                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Dev URL
+                  </label>
+                  <div className="neo-pressed p-1 rounded-2xl">
+                    <input
+                      type="text"
+                      value={formData.devUrl}
+                      onChange={(e) =>
+                        setFormData({ ...formData, devUrl: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-transparent rounded-xl focus:outline-none text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold"
+                      placeholder="http://localhost:3001"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex justify-end gap-4 mt-10">
               <button
                 onClick={handleModalClose}
-                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 active:neo-button-active"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveProject}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm"
+                className="neo-button no-3d px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 active:neo-button-active shadow-lg"
               >
-                Save
+                Save Project
               </button>
             </div>
           </div>
@@ -641,30 +635,25 @@ export default function ProjectsPage() {
       {/* Archive Confirmation */}
       {archiveConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-lg shadow-xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-border-custom">
-            <h2 className="mb-2">Archive Project?</h2>
-            <p className="text-sm text-muted mb-6">
-              This will compress <strong>{archiveConfirm.title}</strong> into a ZIP file in your <code>_ARCHIVE</code> folder to save space. 
+          <div className="neo-flat rounded-[40px] shadow-2xl p-8 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-white/50 dark:border-white/5">
+            <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl mb-4 uppercase">Archive?</h2>
+            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+              Compress <strong>{archiveConfirm.title}</strong> into <code>_ARCHIVE</code>?
             </p>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-4">
               <button
                 disabled={archiving}
                 onClick={() => setArchiveConfirm(null)}
-                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 active:neo-button-active"
               >
                 Cancel
               </button>
               <button
                 disabled={archiving}
                 onClick={() => handleArchiveProject(archiveConfirm.id)}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-sm flex items-center gap-2 disabled:opacity-50"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 active:neo-button-active flex items-center gap-2"
               >
-                {archiving ? (
-                  <>
-                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    Archiving...
-                  </>
-                ) : 'Archive'}
+                {archiving ? 'Archiving...' : 'Confirm'}
               </button>
             </div>
           </div>
@@ -674,21 +663,21 @@ export default function ProjectsPage() {
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-lg shadow-xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-border-custom">
-            <h2 className="mb-2">Delete Project?</h2>
-            <p className="text-sm text-muted mb-6">
-              This will remove the project from Mission Control. This action cannot be undone.
+          <div className="neo-flat rounded-[40px] shadow-2xl p-8 max-w-sm w-full animate-in fade-in zoom-in duration-200 border border-white/50 dark:border-white/5">
+            <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl mb-4 uppercase">Delete?</h2>
+            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+              Permanent removal from registry. Cannot be undone.
             </p>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-4">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-border-custom rounded-md text-foreground hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 active:neo-button-active"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteProject(deleteConfirm)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md shadow-sm"
+                className="neo-button no-3d px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 active:neo-button-active"
               >
                 Delete
               </button>

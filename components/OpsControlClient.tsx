@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from 'react';
 import OpsSummaryBar from '@/components/OpsSummaryBar';
+import OpsPulse from '@/components/OpsPulse';
 import OpsTimeline from '@/components/OpsTimeline';
 import OpsDetailPanel from '@/components/OpsDetailPanel';
 import OpsActivityLog from '@/components/OpsActivityLog';
@@ -44,76 +45,98 @@ export default function OpsControlClient({ data: initialData, onRefresh }: Props
   }
 
   return (
-    <div>
+    <div className="p-12 bg-neo-bg min-h-screen transition-colors duration-300">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-16 ml-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ops Control</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Background operations, scheduled jobs &amp; active processes
-          </p>
+          <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-5xl mb-3 drop-shadow-sm uppercase">Ops Control</h1>
+          <div className="flex items-center gap-3">
+             <div className="neo-pressed px-6 py-2 rounded-full">
+               <p className="text-gray-500 dark:text-gray-400 text-[11px] font-black uppercase tracking-[0.3em] m-0">Mission Telemetry & Scheduling</p>
+             </div>
+          </div>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isPending}
-          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 text-sm px-4 py-2 rounded-lg transition-colors border border-gray-200"
+          className="neo-button rounded-2xl px-8 py-4 flex items-center gap-3 border border-white/20 dark:border-white/5 group"
         >
-          <span className={isPending ? 'animate-spin' : ''}>↻</span>
-          {isPending ? 'Refreshing…' : 'Refresh'}
+          <span className={`text-lg transition-transform duration-700 ${isPending ? 'animate-spin' : 'group-hover:rotate-180'}`}>↻</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.25em]">{isPending ? 'Syncing...' : 'Sync Data'}</span>
         </button>
       </div>
 
       {/* Error banners */}
-      {data.cronError && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-2 rounded-lg">
-          <strong>openclaw cron list failed:</strong> {data.cronError}
-        </div>
-      )}
-      {data.externalError && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-4 py-2 rounded-lg">
-          <strong>Windows Task Scheduler query failed:</strong> {data.externalError}
-        </div>
-      )}
-      {data.heartbeat.status === 'not-configured' && (
-        <div className="mb-4 bg-gray-100 border border-gray-200 text-gray-500 text-sm px-4 py-2 rounded-lg">
-          <strong>Heartbeat:</strong> HEARTBEAT.md not found — heartbeat automation is not configured.
-        </div>
-      )}
-      {data.heartbeat.status === 'stale' && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-4 py-2 rounded-lg">
-          <strong>Heartbeat stale:</strong> HEARTBEAT.md has not been updated in over 30 minutes.
-        </div>
-      )}
+      <div className="px-4 space-y-4 mb-12">
+        {data.cronError && (
+          <div className="neo-flat border-l-4 border-red-500 bg-red-500/5 p-6 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 mb-1">CRON SUBSYSTEM FAULT</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{data.cronError}</p>
+            </div>
+          </div>
+        )}
+        {data.externalError && (
+          <div className="neo-flat border-l-4 border-orange-500 bg-orange-500/5 p-6 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+            <span className="text-2xl">🌐</span>
+            <div className="flex-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-1">EXTERNAL SCHEDULER TIMEOUT</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{data.externalError}</p>
+            </div>
+          </div>
+        )}
+        {data.heartbeat.status === 'stale' && (
+          <div className="neo-flat border-l-4 border-yellow-500 bg-yellow-500/5 p-6 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+            <span className="text-2xl">💓</span>
+            <div className="flex-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600 dark:text-yellow-400 mb-1">HEARTBEAT LATENCY WARNING</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-300">HEARTBEAT.md has not been updated in over 30 minutes. Automation sync may be lagging.</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Summary bar */}
-      <OpsSummaryBar summary={data.summary} fetchedAt={data.fetchedAt} />
+      <div className="px-4">
+        <OpsSummaryBar summary={data.summary} fetchedAt={data.fetchedAt} />
+      </div>
+
+      {/* Pulse Status */}
+      <OpsPulse />
 
       {/* Two-column main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 mb-4" style={{ minHeight: '520px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-10 mb-12 px-4 h-[700px]">
         {/* Left: Timeline */}
-        <OpsTimeline
-          entries={data.timeline}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
+        <div className="h-full">
+          <OpsTimeline
+            entries={data.timeline}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        </div>
 
         {/* Right: Detail panel */}
-        <OpsDetailPanel
-          selectedEntry={selectedEntry}
-          activeProcesses={data.activeProcesses}
-          cronJobs={data.cronJobs}
-          cronError={data.cronError}
-          heartbeat={data.heartbeat}
-          internalSchedulers={data.internalSchedulers}
-          externalSchedulers={data.externalSchedulers}
-          externalError={data.externalError}
-          resourceMonitors={data.resourceMonitors}
-          agentModels={data.agentModels}
-        />
+        <div className="h-full">
+          <OpsDetailPanel
+            selectedEntry={selectedEntry}
+            activeProcesses={data.activeProcesses}
+            cronJobs={data.cronJobs}
+            cronError={data.cronError}
+            heartbeat={data.heartbeat}
+            internalSchedulers={data.internalSchedulers}
+            externalSchedulers={data.externalSchedulers}
+            externalError={data.externalError}
+            resourceMonitors={data.resourceMonitors}
+            agentModels={data.agentModels}
+          />
+        </div>
       </div>
 
       {/* Bottom: Activity log strip */}
-      <OpsActivityLog entries={data.activityLog} />
+      <div className="px-4 pb-20">
+        <OpsActivityLog entries={data.activityLog} />
+      </div>
     </div>
   );
 }

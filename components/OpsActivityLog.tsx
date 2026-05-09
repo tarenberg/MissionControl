@@ -36,71 +36,84 @@ function timeAgo(iso: string): string {
 export default function OpsActivityLog({ entries }: Props) {
   if (entries.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
-        <h2 className="text-sm font-semibold text-gray-500 mb-2 uppercase tracking-wider">Activity Log</h2>
-        <p className="text-xs text-gray-400">No recent activity.</p>
+      <div className="neo-flat rounded-[32px] p-10 border border-white/50 dark:border-white/5 shadow-neo-flat">
+        <div className="flex items-center gap-3 mb-4">
+           <div className="neo-pressed p-2 rounded-xl text-gray-400">
+             <span className="text-lg">📜</span>
+           </div>
+           <h2 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] m-0">Activity Log</h2>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 opacity-50 italic ml-12">System idle. No recent events detected.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">
-          Activity Log
-          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-normal normal-case tracking-normal">
-            latest {entries.length} events
-          </span>
-        </h2>
-        <div className="flex gap-3 text-xs text-gray-500">
+    <div className="neo-flat rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat overflow-hidden">
+      <div className="px-10 py-8 border-b border-gray-300/30 dark:border-gray-700/30 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+           <div className="neo-pressed p-3 rounded-2xl text-blue-600 dark:text-blue-400">
+             <span className="text-xl neo-glow-blue">📜</span>
+           </div>
+           <div>
+             <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter m-0 uppercase text-sm">Operation Stream</h2>
+             <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Latest {entries.length} Atomic Events</p>
+           </div>
+        </div>
+        
+        <div className="flex gap-4">
           {(['success', 'failure', 'alert', 'info'] as const).map((r) => {
             const meta = RESULT_META[r];
             const count = entries.filter((e) => e.result === r).length;
             if (count === 0) return null;
             return (
-              <span key={r} className={`${meta.color} flex items-center gap-1`}>
-                <span className={`w-1.5 h-1.5 rounded-full inline-block ${meta.dot}`} />
-                {count} {r}
-              </span>
+              <div key={r} className="neo-pressed px-4 py-2 rounded-xl flex items-center gap-2 group hover:neo-flat transition-all cursor-default">
+                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot} ${r === 'success' ? 'shadow-[0_0_5px_rgba(34,197,94,0.5)]' : ''}`} />
+                <span className={`text-[9px] font-black uppercase tracking-widest ${meta.color}`}>{count} {r}</span>
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* Scrollable log stream — monospace feel */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs font-mono">
-          <tbody>
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full text-[10px] font-mono border-collapse">
+          <thead>
+            <tr className="bg-black/5 dark:bg-black/10 text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+              <th className="pl-10 py-4 text-left font-black w-12">Res</th>
+              <th className="py-4 text-left font-black w-24">Rel Time</th>
+              <th className="py-4 text-left font-black w-20">Class</th>
+              <th className="py-4 text-left font-black w-48">Identifier</th>
+              <th className="py-4 text-left font-black">Data Payload</th>
+              <th className="pr-10 py-4 text-right font-black hidden lg:table-cell">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-300/10 dark:divide-gray-700/10">
             {entries.map((entry) => {
               const meta = RESULT_META[entry.result];
               return (
                 <tr
                   key={entry.id}
-                  className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors"
+                  className="group hover:bg-white/20 dark:hover:bg-black/10 transition-colors"
                 >
-                  {/* Result icon */}
-                  <td className={`pl-4 pr-2 py-2 w-6 ${meta.color} font-bold`}>{meta.icon}</td>
-                  {/* Timestamp */}
-                  <td className="pr-3 py-2 text-gray-500 whitespace-nowrap w-20">
+                  <td className={`pl-10 py-4 ${meta.color} font-black text-xs`}>{meta.icon}</td>
+                  <td className="py-4 text-gray-600 dark:text-gray-400 font-bold uppercase tracking-tighter">
                     {timeAgo(entry.timestamp)}
                   </td>
-                  {/* Type badge */}
-                  <td className="pr-3 py-2 w-12">
-                    <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-xs">
+                  <td className="py-4">
+                    <span className="neo-pressed px-2 py-0.5 rounded-md text-[8px] font-black text-gray-500 dark:text-gray-500 uppercase tracking-widest border border-white/5">
                       {TYPE_LABELS[entry.type]}
                     </span>
                   </td>
-                  {/* Job name */}
-                  <td className="pr-3 py-2 text-gray-800 whitespace-nowrap w-40 truncate max-w-[160px]">
+                  <td className="py-4 text-gray-800 dark:text-gray-200 font-black uppercase tracking-tight truncate max-w-[160px]">
                     {entry.jobName}
                   </td>
-                  {/* Message */}
-                  <td className="py-2 pr-4 text-gray-500 truncate max-w-xs">
+                  <td className="py-4 text-gray-500 dark:text-gray-500 font-medium truncate max-w-xs pr-4 italic">
                     {entry.message}
                   </td>
-                  {/* Absolute time */}
-                  <td className="py-2 pr-4 text-gray-400 whitespace-nowrap text-right hidden lg:table-cell">
-                    {new Date(entry.timestamp).toLocaleTimeString()}
+                  <td className="py-4 pr-10 text-gray-400 dark:text-gray-600 font-bold text-right hidden lg:table-cell opacity-50 group-hover:opacity-100 transition-opacity">
+                    {new Date(entry.timestamp).toLocaleTimeString([], { hour12: false })}
                   </td>
                 </tr>
               );

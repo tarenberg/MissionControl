@@ -1,20 +1,21 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
+
+const execAsync = promisify(exec);
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') || 'app';
 
   let logPath;
-  if (type === 'gateway') {
-    // Try local date first, then fallback to current log patterns
-    const now = new Date();
-    const localDate = now.toLocaleDateString('en-CA'); // yyyy-mm-dd
+  const now = new Date();
+  const localDate = now.toLocaleDateString('en-CA'); // yyyy-mm-dd
+  
+  if (type === 'gateway' || type === 'app') {
     logPath = `C:\\tmp\\openclaw\\openclaw-${localDate}.log`;
-    
     if (!fs.existsSync(logPath)) {
       const utcDate = now.toISOString().slice(0, 10);
       logPath = `C:\\tmp\\openclaw\\openclaw-${utcDate}.log`;
@@ -25,12 +26,27 @@ export async function GET(request: NextRequest) {
 
   try {
     if (!fs.existsSync(logPath)) {
-      return NextResponse.json({ error: 'Log file not found' }, { status: 404 });
+      return NextResponse.json([]);
     }
 
-    const command = `powershell.exe -Command "Get-Content -Path '${logPath}' -Tail 50"`;
-    const logs = execSync(command).toString().split('\n').filter(line => line.trim() !== '');
-    return NextResponse.json(logs);
+    // Faster than spawning PowerShell: Read the last chunk of the file
+    const stats = fs.statSync(logPath);
+    const fileSize = stats.size;
+    const chunkSize = 16384; // 16KB should be plenty for 50 lines
+    const start = Math.max(0, fileSize - chunkSize);
+    
+    const buffer = Buffer.alloc(chunkSize);
+    const fd = fs.openSync(logPath, 'r');
+    const bytesRead = fs.readSync(fd, buffer, 0, chunkSize, start);
+    fs.closeSync(fd);
+    
+    const content = buffer.toString('utf8', 0, bytesRead);
+    const lines = content.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0)
+      .slice(-50);
+
+    return NextResponse.json(lines);
   } catch (error) {
     let errorMessage = 'An unknown error occurred';
     if (error instanceof Error) {

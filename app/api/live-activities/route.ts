@@ -90,7 +90,7 @@ function parseLogFile(logPath: string): ActivityLogEntry[] | null {
 
 // ─── Main getter ──────────────────────────────────────────────────────────────
 
-export function getActivityLogServer(): ActivityLogEntry[] {
+function getActivityLogServer(): ActivityLogEntry[] {
   const now = new Date();
   const todayStr = formatDate(now);
   const yesterdayStr = formatDate(new Date(now.getTime() - 86400000));

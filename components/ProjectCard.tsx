@@ -45,66 +45,70 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDelete, on
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-lg flex flex-col justify-between border border-gray-200">
+    <div className="neo-flat rounded-[32px] p-6 shadow-neo-flat flex flex-col justify-between border border-white/50 dark:border-white/5 transition-all hover:scale-[1.01] group">
       <div>
         {additionalGroups.length > 0 && (
-          <div className="text-xs text-purple-600 mb-2">
+          <div className="text-[10px] font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)]"></span>
             Also in: {additionalGroups.map(group => groupLabelMap[group] || group).join(', ')}
           </div>
         )}
         <button
-          className="text-left w-full text-xl font-bold text-gray-900 mb-2 hover:text-blue-600 focus:outline-none"
+          className="text-left w-full text-xl font-black text-gray-800 dark:text-gray-200 mb-3 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none tracking-tight uppercase"
           onClick={handleOpenProject}
           disabled={!projectLink}
           title={projectLink ? 'Open project source' : 'No launch path available'}
         >
           {project.title}
         </button>
-        <p className="text-gray-500 text-sm mb-3 line-clamp-3">{project.description}</p>
+        <p className="text-gray-500 dark:text-gray-400 text-xs font-medium mb-5 line-clamp-3 leading-relaxed">{project.description}</p>
 
         {project.status === 'Active' && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+          <div className="w-full neo-pressed rounded-full h-3 mb-6 p-[2px]">
             <div
-              className="bg-blue-500 h-2.5 rounded-full"
+              className="bg-gradient-to-r from-blue-600 to-blue-400 h-full rounded-full shadow-[0_0_10px_rgba(37,99,235,0.4)] transition-all duration-1000"
               style={{ width: `${project.progress}%` }}
             ></div>
           </div>
         )}
 
-        <div className="flex items-center justify-between text-xs mb-2">
-          <span className={`${statusColor} text-gray-900 px-2 py-1 rounded-full`}>
+        <div className="flex items-center gap-3 mb-6">
+          <span className={`neo-pressed ${statusColor.replace('bg-', 'text-')} px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusColor}`}></span>
             {project.status}
           </span>
-          <span className={`${importanceColor} text-gray-900 px-2 py-1 rounded-full`}>
-            {project.importance} Importance
+          <span className={`neo-pressed ${importanceColor.replace('bg-', 'text-')} px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5`}>
+             <span className={`w-1.5 h-1.5 rounded-full ${importanceColor}`}></span>
+            {project.importance}
           </span>
         </div>
 
-        <p className="text-gray-500 text-xs mb-2">
-          Last worked: {project.lastWorkedOn ? new Date(project.lastWorkedOn).toLocaleDateString() : 'N/A'} by {project.lastAgent}
-        </p>
-
-        {project.sourcePath && (
-          <p className="text-gray-500 text-xs mb-2 break-all">
-            Source: {project.sourcePath}
+        <div className="space-y-2 mb-2">
+          <p className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+            Last activity: <span className="text-gray-600 dark:text-gray-400">{project.lastWorkedOn ? new Date(project.lastWorkedOn).toLocaleDateString() : 'N/A'}</span>
           </p>
-        )}
+          <p className="text-gray-400 dark:text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+            Agent: <span className="text-gray-600 dark:text-gray-400">{project.lastAgent}</span>
+          </p>
+        </div>
 
         {project.repoUrl && (
-          <p className="text-xs mb-2">
-            <a href={project.repoUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800">
-              View GitHub Repo
+          <div className="mt-4 pt-4 border-t border-gray-300/30 dark:border-gray-700/30">
+            <a href={project.repoUrl} target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:underline">
+              GitHub Repository →
             </a>
-          </p>
+          </div>
         )}
       </div>
 
       {(onEdit || onDelete || onArchive || onSelect) && (
-        <div className="flex justify-end gap-2 mt-4">
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-300/30 dark:border-gray-700/30">
           {onSelect && (
             <button 
               onClick={() => onSelect(project)} 
-              className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-md"
+              className="neo-button no-3d text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl text-purple-600 dark:text-purple-400 active:neo-button-active"
             >
               Select
             </button>
@@ -112,23 +116,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit, onDelete, on
           {onEdit && (
             <button 
               onClick={() => onEdit(project)} 
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md"
+              className="neo-button no-3d text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl text-blue-600 dark:text-blue-400 active:neo-button-active"
             >
               Edit
-            </button>
-          )}
-          {onArchive && project.status !== 'Archived' && (
-            <button 
-              onClick={() => onArchive(project.id)} 
-              className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-3 py-1 rounded-md"
-            >
-              Archive
             </button>
           )}
           {onDelete && (
             <button 
               onClick={() => onDelete(project.id)} 
-              className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-md"
+              className="neo-button no-3d text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl text-red-600 dark:text-red-400 active:neo-button-active"
             >
               Delete
             </button>

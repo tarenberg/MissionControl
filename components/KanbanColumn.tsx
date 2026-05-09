@@ -10,12 +10,12 @@ interface KanbanColumnProps {
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, tasks, statusColor }) => {
   return (
-    <div className="flex-1 bg-white rounded-lg p-4 shadow-xl border-t-4" style={{ borderColor: statusColor.split('-')[1]}}>
-      <h2 className="text-gray-900 text-xl font-bold mb-4 flex items-center">
-        <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: statusColor.split('-')[1]}}></span>
-        {title} ({tasks.length})
+    <div className="flex-1 neo-flat rounded-[32px] p-6 shadow-neo-flat border-t-8" style={{ borderColor: statusColor }}>
+      <h2 className="text-gray-800 dark:text-gray-200 text-lg font-black mb-6 flex items-center uppercase tracking-widest">
+        <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_rgba(0,0,0,0.2)]" style={{ backgroundColor: statusColor }}></span>
+        {title} <span className="ml-2 text-gray-400 font-bold">({tasks.length})</span>
       </h2>
-      <div className="min-h-[100px]">
+      <div className="min-h-[100px] space-y-4">
         {tasks.map(task => (
           <TaskCard key={task.id} task={task} />
         ))}

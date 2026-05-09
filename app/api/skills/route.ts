@@ -102,45 +102,48 @@ function extractFromHeading(content: string): { description?: string } {
   return {};
 }
 
-function readSkillsFromDir(dir: string): SkillInfo[] {
+async function readSkillsFromDir(dir: string): Promise<SkillInfo[]> {
   const skills: SkillInfo[] = [];
   try {
     if (!fs.existsSync(dir)) return skills;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const skillMdPath = path.join(dir, entry.name, 'SKILL.md');
-      try {
-        if (!fs.existsSync(skillMdPath)) continue;
-        const content = fs.readFileSync(skillMdPath, 'utf8');
+    
+    const skillPromises = entries
+      .filter(entry => entry.isDirectory())
+      .map(async (entry) => {
+        const skillMdPath = path.join(dir, entry.name, 'SKILL.md');
+        try {
+          if (!fs.existsSync(skillMdPath)) return null;
+          const content = await fs.promises.readFile(skillMdPath, 'utf8');
 
-        // Try frontmatter first (most SKILL.md files have it)
-        const fm = extractFromFrontmatter(content);
-        const skillName = fm.name ?? entry.name;
-        if (fm.description) {
-          skills.push({
-            name: skillName,
-            description: fm.description,
-            category: SKILL_CATEGORIES[skillName] ?? SKILL_CATEGORIES[entry.name] ?? 'Other',
-          });
-          continue;
+          // Try frontmatter first (most SKILL.md files have it)
+          const fm = extractFromFrontmatter(content);
+          const skillName = fm.name ?? entry.name;
+          if (fm.description) {
+            return {
+              name: skillName,
+              description: fm.description,
+              category: SKILL_CATEGORIES[skillName] ?? SKILL_CATEGORIES[entry.name] ?? 'Other',
+            };
+          }
+
+          // Fall back to markdown heading extraction
+          const heading = extractFromHeading(content);
+          return {
+            name: entry.name,
+            description: heading.description ?? '',
+            category: SKILL_CATEGORIES[entry.name] ?? 'Other',
+          };
+        } catch {
+          return null;
         }
+      });
 
-        // Fall back to markdown heading extraction
-        const heading = extractFromHeading(content);
-        skills.push({
-          name: entry.name,
-          description: heading.description ?? '',
-          category: SKILL_CATEGORIES[entry.name] ?? 'Other',
-        });
-      } catch {
-        // skip unreadable skill
-      }
-    }
+    const results = await Promise.all(skillPromises);
+    return results.filter((s): s is SkillInfo => s !== null);
   } catch {
-    // dir not accessible
+    return skills;
   }
-  return skills;
 }
 
 // Skills that require macOS/Linux-only apps or tools — not usable on Windows
@@ -160,8 +163,10 @@ export async function GET() {
   const builtInDir = 'C:/Users/tberg/AppData/Roaming/npm/node_modules/openclaw/skills';
   const customDir = 'C:/Users/tberg/.openclaw/workspace/skills';
 
-  const builtIn = readSkillsFromDir(builtInDir);
-  const custom = readSkillsFromDir(customDir);
+  const [builtIn, custom] = await Promise.all([
+    readSkillsFromDir(builtInDir),
+    readSkillsFromDir(customDir)
+  ]);
 
   // Merge; custom skills override built-in if same name
   const skillMap = new Map<string, SkillInfo>();

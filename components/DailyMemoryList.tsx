@@ -40,39 +40,57 @@ const DailyMemoryList: React.FC = () => {
   }, [selectedFile]);
 
   return (
-    <div className="bg-card p-4 rounded-3xl shadow-xl border border-border-custom h-full flex flex-col interactive-card">
-      <h2 className="mb-4">Daily Memory (memory/YYYY-MM-DD.md)</h2>
-      <div className="flex-1 flex overflow-hidden">
+    <div className="neo-flat rounded-[40px] p-10 border border-white/50 dark:border-white/5 h-full flex flex-col shadow-neo-flat overflow-hidden">
+      <div className="flex items-center gap-4 mb-8 ml-2">
+        <div className="neo-pressed p-3 rounded-2xl text-orange-600 dark:text-orange-400">
+           <span className="text-xl neo-glow-orange">📅</span>
+        </div>
+        <div>
+          <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter m-0 uppercase text-sm">Daily Memory</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Chronological Event Stream</p>
+        </div>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden gap-6">
         {/* File List Sidebar */}
-        <div className="w-48 overflow-y-auto pr-3 border-r border-border-custom mr-3">
+        <div className="w-56 flex flex-col gap-3 overflow-y-auto pr-4 custom-scrollbar">
           {loadingFiles ? (
-            <p className="text-muted">Loading daily files...</p>
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-ping"></div>
+              <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Indexing Files...</p>
+            </div>
           ) : fileNames.length === 0 ? (
-            <p className="text-muted">No daily memory files found.</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic text-center py-12">No archives found.</p>
           ) : (
-            <ul>
-              {fileNames.map(name => (
-                <li key={name} className="mb-1">
-                  <button
-                    onClick={() => setSelectedFile(name)}
-                    className={`block w-full text-left p-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${selectedFile === name ? 'bg-blue-600 text-white shadow-lg' : 'text-muted hover:bg-background'}`}
-                  >
-                    {name.replace('.md', '')}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            fileNames.map(name => (
+              <button
+                key={name}
+                onClick={() => setSelectedFile(name)}
+                className={`w-full text-left px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  selectedFile === name 
+                    ? 'neo-pressed text-orange-600 dark:text-orange-400 shadow-inner' 
+                    : 'text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 hover:neo-flat'
+                }`}
+              >
+                {name.replace('.md', '')}
+              </button>
+            ))
           )}
         </div>
 
         {/* File Content Display */}
-        <div className="flex-1 overflow-y-auto bg-background p-3 rounded-xl text-foreground font-mono text-sm border border-border-custom">
+        <div className="flex-1 overflow-y-auto neo-pressed p-8 rounded-[32px] bg-neo-bg text-gray-800 dark:text-gray-300 font-mono text-[11px] leading-relaxed border border-black/10 dark:border-white/5 custom-scrollbar relative">
           {loadingContent ? (
-            <p>Loading content for {selectedFile}...</p>
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
+               <div className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
+               <p className="text-[10px] font-black uppercase tracking-widest">Opening Archive {selectedFile}...</p>
+            </div>
           ) : selectedFile ? (
             <pre className="whitespace-pre-wrap">{fileContent}</pre>
           ) : (
-            <p className="text-muted">Select a daily memory file to view its content.</p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-30 italic">
+               <p className="text-[10px] font-black uppercase tracking-[0.3em]">Select a node to begin stream</p>
+            </div>
           )}
         </div>
       </div>
