@@ -47,8 +47,24 @@
     "id": "task-6",
     "title": "Social media auto-posts on show acceptance",
     "description": "When an artwork is accepted to a juried show, automatically generate and post to social media (Instagram, Facebook, etc.) with the artwork image, show name, and a celebratory caption.",
-    "assignedTo": "T",
-    "status": "Backlog",
+    "assignedTo": "M",
+    "status": "Done",
     "tags": ["automation", "social-media", "artwork"]
+  },
+  {
+    "id": "task-8",
+    "title": "Media Retention Policy",
+    "description": "Implemented automated cleanup for celebration assets older than 30 days.",
+    "assignedTo": "M",
+    "status": "Done",
+    "tags": ["automation", "maintenance"]
+  },
+  {
+    "id": "task-9",
+    "title": "Discovery Digest Integration",
+    "description": "Surfaced Pathfinder Trend Radar research directly on the Art Tracker Dashboard.",
+    "assignedTo": "M",
+    "status": "Done",
+    "tags": ["feature", "ui"]
   }
 ]

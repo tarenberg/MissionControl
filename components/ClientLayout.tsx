@@ -1,10 +1,36 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import dynamic from 'next/dynamic';
+
+const VoiceInterface = dynamic(() => import('./VoiceInterface'), { ssr: false });
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Block Ctrl + Wheel zoom and pinch-to-zoom (standard browser "resize" behaviors)
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    };
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen">
@@ -28,7 +54,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto custom-scrollbar pr-1 overflow-x-hidden">
+        <nav className="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
           <ul className="space-y-1.5">
             {[
               { name: 'Dashboard', href: '/', icon: '🏠' },
@@ -44,7 +70,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               <li key={item.name}>
                 <a 
                   href={item.href} 
-                  className={`flex items-center gap-3 px-4 py-2.5 text-gray-600 dark:text-gray-400 font-bold text-[11px] uppercase tracking-widest bg-neo-bg hover:text-blue-600 dark:hover:text-blue-400 rounded-2xl transition-all duration-300 group relative border border-white/20 dark:border-white/5 shadow-[0_4px_0_0_var(--shadow-color),0_8px_15px_-3px_var(--btn-shadow)] hover:shadow-[0_6px_0_0_var(--shadow-color),0_0_30px_2px_rgba(59,130,246,0.8)] hover:-translate-y-1 active:translate-y-1 active:shadow-none ${isCollapsed ? 'justify-center px-0' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-2.5 text-gray-600 dark:text-gray-400 font-bold text-[11px] uppercase tracking-widest neo-button hover:text-blue-600 dark:hover:text-blue-400 hover:neo-glow-blue active:neo-button-active ${isCollapsed ? 'justify-center px-0' : ''}`}
                   title={isCollapsed ? item.name : ''}
                 >
                   <span className={`text-sm group-hover:drop-shadow-[0_0_12px_rgba(59,130,246,1)] group-hover:scale-120 transition-all duration-300 z-10 ${isCollapsed ? 'text-xl' : ''}`}>{item.icon}</span>
@@ -58,7 +84,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className="mt-auto pt-6 border-t border-gray-300/30 dark:border-gray-700/30">
            <div className="neo-pressed p-4 rounded-3xl overflow-hidden min-h-[50px] flex items-center justify-center">
               <p className={`text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 scale-0' : 'opacity-100 w-auto h-auto scale-100'}`}>
-                OpenClaw v1.4.2
+                OpenClaw v1.4.3 (NEO)
               </p>
               {isCollapsed && <p className="text-[10px] font-black text-blue-600 text-center animate-in fade-in zoom-in">v1.4</p>}
            </div>
@@ -71,6 +97,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           {children}
         </div>
       </main>
+      <VoiceInterface />
     </div>
   );
 }

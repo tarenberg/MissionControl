@@ -506,11 +506,13 @@ export default function ProjectsPage() {
 
             <div className="space-y-6">
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="project-title" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Title *
                 </label>
                 <div className="neo-pressed p-1 rounded-2xl">
                   <input
+                    id="project-title"
+                    name="project-title"
                     type="text"
                     value={formData.title}
                     onChange={(e) =>
@@ -523,11 +525,13 @@ export default function ProjectsPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="project-desc" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Description
                 </label>
                 <div className="neo-pressed p-1 rounded-2xl">
                   <textarea
+                    id="project-desc"
+                    name="project-desc"
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
@@ -540,11 +544,13 @@ export default function ProjectsPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="project-status" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Status
                 </label>
                 <div className="neo-pressed p-1 rounded-2xl">
                   <select
+                    id="project-status"
+                    name="project-status"
                     value={formData.status}
                     onChange={(e) =>
                       setFormData({ ...formData, status: e.target.value })
@@ -562,11 +568,13 @@ export default function ProjectsPage() {
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <label htmlFor="project-github" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     GitHub URL
                   </label>
                   <div className="neo-pressed p-1 rounded-2xl">
                     <input
+                      id="project-github"
+                      name="project-github"
                       type="url"
                       value={formData.githubUrl}
                       onChange={(e) =>
@@ -579,11 +587,13 @@ export default function ProjectsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <label htmlFor="project-local" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     Local Path
                   </label>
                   <div className="neo-pressed p-1 rounded-2xl">
                     <input
+                      id="project-local"
+                      name="project-local"
                       type="text"
                       value={formData.localUrl}
                       onChange={(e) =>
@@ -596,11 +606,13 @@ export default function ProjectsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <label htmlFor="project-dev-url" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     Dev URL
                   </label>
                   <div className="neo-pressed p-1 rounded-2xl">
                     <input
+                      id="project-dev-url"
+                      name="project-dev-url"
                       type="text"
                       value={formData.devUrl}
                       onChange={(e) =>

@@ -267,8 +267,10 @@ export default function TasksPage() {
         <div className="h-10 w-[1px] bg-gray-300/50 dark:bg-gray-700/50"></div>
         
         <div className="flex flex-col gap-1.5 flex-1 max-w-[300px]">
-          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Filter by Project</span>
+          <label htmlFor="filter-project" className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Filter by Project</label>
           <select
+            id="filter-project"
+            name="filter-project"
             value={filterProjectId}
             onChange={(e) => setFilterProjectId(e.target.value)}
             className="neo-button no-3d w-full px-5 py-2.5 rounded-2xl text-[10px] uppercase font-black tracking-widest bg-neo-bg focus:outline-none shadow-neo-button active:neo-button-active text-gray-700 dark:text-gray-300 border-none cursor-pointer"
@@ -351,9 +353,12 @@ export default function TasksPage() {
                         </span>
                         
                         <select 
+                          id={`task-status-${task.id}`}
+                          name={`task-status-${task.id}`}
                           value={task.status}
                           onChange={(e) => handleStatusChange(task.id, e.target.value)}
                           className="text-[9px] bg-neo-bg border-none neo-pressed rounded-full px-3 py-1 text-gray-500 dark:text-gray-400 font-black tracking-[0.15em] uppercase focus:ring-0 cursor-pointer active:neo-button-active transition-all"
+                          title="Change task status"
                         >
                           {columns.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -384,11 +389,13 @@ export default function TasksPage() {
             
             <div className="space-y-6">
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="task-title" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Title *
                 </label>
                 <div className="neo-pressed p-1 rounded-2xl">
                   <input
+                    id="task-title"
+                    name="task-title"
                     type="text"
                     value={formData.title}
                     onChange={(e) =>
@@ -401,11 +408,13 @@ export default function TasksPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="task-desc" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Description
                 </label>
                 <div className="neo-pressed p-1 rounded-2xl">
                   <textarea
+                    id="task-desc"
+                    name="task-desc"
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
@@ -419,11 +428,13 @@ export default function TasksPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <label htmlFor="task-status-select" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     Status
                   </label>
                   <div className="neo-pressed p-1 rounded-2xl">
                     <select
+                      id="task-status-select"
+                      name="task-status-select"
                       value={formData.status}
                       onChange={(e) =>
                         setFormData({ ...formData, status: e.target.value })
@@ -440,11 +451,13 @@ export default function TasksPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <label htmlFor="task-project-select" className="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     Project
                   </label>
                   <div className="neo-pressed p-1 rounded-2xl">
                     <select
+                      id="task-project-select"
+                      name="task-project-select"
                       value={formData.projectId}
                       onChange={(e) =>
                         setFormData({ ...formData, projectId: e.target.value })

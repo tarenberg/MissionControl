@@ -133,7 +133,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="neo-flat p-8 rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat relative group overflow-hidden">
+            <div className="neo-flat interactive-card p-8 rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
                 <span className="text-4xl">🌐</span>
               </div>
@@ -161,7 +161,7 @@ export default function HomePage() {
               )}
             </div>
 
-            <div className="neo-flat p-8 rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat relative group overflow-hidden">
+            <div className="neo-flat interactive-card p-8 rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat relative group overflow-hidden">
               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
                 <span className="text-4xl">🏠</span>
               </div>
@@ -215,7 +215,7 @@ export default function HomePage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {grouped[cat].map((skill) => (
-                  <div key={skill.name} className="neo-button no-3d border border-white/40 dark:border-white/5 rounded-[28px] px-6 py-5 shadow-neo-button active:neo-button-active group transition-all">
+                  <div key={skill.name} className="neo-button interactive-card no-3d border border-white/40 dark:border-white/5 rounded-[28px] px-6 py-5 shadow-neo-button active:neo-button-active group transition-all">
                     <div className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight">{skill.name}</div>
                     <div className="text-gray-500 dark:text-gray-400 text-[10px] leading-relaxed font-medium line-clamp-2">{skill.description}</div>
                   </div>

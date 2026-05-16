@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { getDailyMemoryFileNames, getDailyMemoryContent } from '../app/memory/actions';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DailyMemoryList: React.FC = () => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
@@ -40,42 +42,54 @@ const DailyMemoryList: React.FC = () => {
   }, [selectedFile]);
 
   return (
-    <div className="neo-flat rounded-[40px] p-10 border border-white/50 dark:border-white/5 h-full flex flex-col shadow-neo-flat overflow-hidden">
-      <div className="flex items-center gap-4 mb-8 ml-2">
-        <div className="neo-pressed p-3 rounded-2xl text-orange-600 dark:text-orange-400">
-           <span className="text-xl neo-glow-orange">📅</span>
+    <div className="neo-flat rounded-[40px] p-10 border border-white/50 dark:border-white/5 h-full flex flex-col shadow-neo-flat overflow-hidden relative">
+      <div className="flex items-center justify-between mb-8 ml-2">
+        <div className="flex items-center gap-4">
+          <div className="neo-pressed p-3 rounded-2xl text-orange-600 dark:text-orange-400">
+             <span className="text-xl neo-glow-orange">📅</span>
+          </div>
+          <div>
+            <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter m-0 uppercase text-sm">Daily Memory</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Chronological Event Stream</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter m-0 uppercase text-sm">Daily Memory</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Chronological Event Stream</p>
-        </div>
+
+        <button 
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="neo-button p-2.5 rounded-xl border border-white/20 flex items-center justify-center hover:shadow-lg transition-all cursor-pointer no-3d"
+            title={isSidebarCollapsed ? "Expand History" : "Collapse History"}
+        >
+            {isSidebarCollapsed ? <ChevronRight size={16} className="text-orange-500" /> : <ChevronLeft size={16} className="text-gray-400" />}
+        </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden gap-6">
+      <div className="flex-1 flex overflow-hidden gap-0 relative">
         {/* File List Sidebar */}
-        <div className="w-56 flex flex-col gap-3 overflow-y-auto pr-4 custom-scrollbar">
-          {loadingFiles ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-ping"></div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Indexing Files...</p>
-            </div>
-          ) : fileNames.length === 0 ? (
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic text-center py-12">No archives found.</p>
-          ) : (
-            fileNames.map(name => (
-              <button
-                key={name}
-                onClick={() => setSelectedFile(name)}
-                className={`w-full text-left px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                  selectedFile === name 
-                    ? 'neo-pressed text-orange-600 dark:text-orange-400 shadow-inner' 
-                    : 'text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 hover:neo-flat'
-                }`}
-              >
-                {name.replace('.md', '')}
-              </button>
-            ))
-          )}
+        <div className={`transition-all duration-300 ease-in-out flex flex-col gap-3 overflow-hidden ${isSidebarCollapsed ? 'w-0 opacity-0' : 'w-64 pr-6 opacity-100'}`}>
+          <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar h-full pr-2">
+            {loadingFiles ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-ping"></div>
+                <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Indexing Files...</p>
+              </div>
+            ) : fileNames.length === 0 ? (
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic text-center py-12">No archives found.</p>
+            ) : (
+              fileNames.map(name => (
+                <button
+                  key={name}
+                  onClick={() => setSelectedFile(name)}
+                  className={`w-full text-left px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    selectedFile === name 
+                      ? 'neo-pressed text-orange-600 dark:text-orange-400 shadow-inner' 
+                      : 'text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 hover:neo-flat'
+                  }`}
+                >
+                  {name.replace('.md', '')}
+                </button>
+              ))
+            )}
+          </div>
         </div>
 
         {/* File Content Display */}

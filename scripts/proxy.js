@@ -12,13 +12,13 @@ const proxy = httpProxy.createProxyServer({});
 const server = http.createServer((req, res) => {
   console.log(`[Proxy] ${req.method} ${req.url}`);
   proxy.web(req, res, {
-    target: 'http://127.0.0.1:3002',
+    target: 'http://127.0.0.1:3000',
   });
 });
 
 const PORT = 3001;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[Proxy] Listening on port ${PORT}, forwarding to localhost:3002`);
+  console.log(`[Proxy] Listening on port ${PORT}, forwarding to localhost:3000`);
 });
 
 server.on('error', (err) => {

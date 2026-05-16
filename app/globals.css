@@ -16,7 +16,6 @@
   --neo-shadow-light: #ffffff;
 }
 
-/* Explicit dark class */
 .dark {
   --background: #151719;
   --foreground: #d1d5db;
@@ -28,29 +27,9 @@
   --btn-glow: rgba(59, 130, 246, 0.2);
   --btn-shadow: rgba(0, 0, 0, 0.4);
 
-  /* Loosely Twisted Dark Palette */
   --neo-bg: #1c1e22;
   --neo-shadow-dark: #121417;
   --neo-shadow-light: #26292e;
-}
-
-/* System dark mode fallback */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #151719;
-    --foreground: #d1d5db;
-    --card-bg: #1c1e22;
-    --sidebar-bg: #151719;
-    --border: rgba(255, 255, 255, 0.03);
-    --shadow-color: rgba(0, 0, 0, 0.4);
-    --muted: #9ca3af;
-    --btn-glow: rgba(59, 130, 246, 0.2);
-    --btn-shadow: rgba(0, 0, 0, 0.4);
-
-    --neo-bg: #1c1e22;
-    --neo-shadow-dark: #121417;
-    --neo-shadow-light: #26292e;
-  }
 }
 
 @theme inline {
@@ -101,157 +80,17 @@
 @utility neo-glow-blue {
   box-shadow: 
     var(--shadow-neo-button),
-    0 0 25px rgba(59, 130, 246, 0.5),
-    0 0 10px rgba(59, 130, 246, 0.3);
+    0 0 20px rgba(59, 130, 246, 0.4);
 }
 
 @utility neo-glow-cyan {
   box-shadow: 
     var(--shadow-neo-button),
-    0 0 25px rgba(0, 255, 255, 0.4),
-    0 0 10px rgba(0, 255, 255, 0.2);
+    0 0 20px rgba(0, 255, 255, 0.3);
 }
 
 @utility neo-glow-icon {
   filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
-}
-
-.dark .neo-glow-blue {
-  box-shadow: 
-    var(--shadow-neo-button),
-    0 0 35px rgba(59, 130, 246, 0.5),
-    0 0 15px rgba(59, 130, 246, 0.3);
-}
-
-.dark .neo-glow-cyan {
-  box-shadow: 
-    var(--shadow-neo-button),
-    0 0 45px rgba(0, 255, 255, 0.6),
-    0 0 20px rgba(0, 255, 255, 0.4),
-    inset 0 0 15px rgba(0, 255, 255, 0.15);
-}
-
-@keyframes slowPulse {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-}
-@keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-}
-@keyframes ripple {
-  0% { transform: scale(0.95); opacity: 0.7; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-@keyframes rippleSlow {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  100% { transform: scale(1.8); opacity: 0; }
-}
-@keyframes rippleFast {
-  0% { transform: scale(1); opacity: 0.4; }
-  100% { transform: scale(2); opacity: 0; }
-}
-@keyframes rippleOuter {
-  0% { transform: scale(1); opacity: 0.25; }
-  100% { transform: scale(2.3); opacity: 0; }
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-@keyframes ringPulse1 {
-  0%, 100% { transform: scale(1); opacity: 0.3; }
-  50% { transform: scale(1.15); opacity: 0.15; }
-}
-@keyframes ringPulse2 {
-  0%, 100% { transform: scale(1.1); opacity: 0.2; }
-  50% { transform: scale(1.25); opacity: 0.1; }
-}
-@keyframes ringPulse3 {
-  0%, 100% { transform: scale(1.2); opacity: 0.12; }
-  50% { transform: scale(1.35); opacity: 0.06; }
-}
-@keyframes particleFloat {
-  0% { transform: translateY(0px) scale(1); }
-  100% { transform: translateY(-8px) scale(1.3); }
-}
-@keyframes shimmerRotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@layer base {
-  h1 {
-    @apply text-2xl font-semibold tracking-tight;
-  }
-  h2 {
-    @apply text-lg font-semibold tracking-tight;
-  }
-  h3 {
-    @apply text-base font-medium;
-  }
-  h4 {
-    @apply text-sm font-medium;
-  }
-
-  button:not([disabled]):not(.no-3d), 
-  .btn:not([disabled]):not(.no-3d),
-  .btn-3d:not([disabled]):not(.no-3d),
-  a[class*="bg-"]:not([disabled]):not(.no-3d) {
-    @apply rounded-2xl transition-all duration-200 relative overflow-hidden;
-    box-shadow: 0 4px 0 0 var(--shadow-color), 0 8px 15px -3px var(--btn-shadow);
-    transform: translateY(-2px);
-  }
-
-  button:not([disabled]):not(.no-3d):hover,
-  .btn:not([disabled]):not(.no-3d):hover,
-  .btn-3d:not([disabled]):not(.no-3d):hover,
-  a[class*="bg-"]:not([disabled]):not(.no-3d):hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 0 0 var(--shadow-color), 0 15px 30px -5px var(--btn-glow);
-    border-color: rgba(59, 130, 246, 0.5);
-  }
-
-  button:not([disabled]):not(.no-3d):active,
-  .btn:not([disabled]):not(.no-3d):active,
-  .btn-3d:not([disabled]):not(.no-3d):active,
-  a[class*="bg-"]:not([disabled]):not(.no-3d):active {
-    transform: translateY(2px);
-    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  /* Reset for buttons that shouldn't have the 3D effect */
-  .no-3d {
-    @apply shadow-none transform-none rounded-none overflow-visible;
-    box-shadow: none !important;
-    transform: none !important;
-  }
-
-  /* Color-specific shadow overrides */
-  button.bg-blue-600, .btn-blue {
-    box-shadow: 0 4px 0 0 #1d4ed8, 0 8px 15px -3px var(--btn-shadow);
-  }
-  button.bg-blue-600:hover {
-    box-shadow: 0 6px 0 0 #1e40af, 0 15px 30px -5px var(--btn-glow);
-  }
-
-  button.bg-red-600:hover {
-    box-shadow: 0 6px 0 0 #b91c1c, 0 12px 20px -5px rgba(255, 0, 255, 0.5);
-  }
-
-  button.bg-green-600:hover {
-    box-shadow: 0 6px 0 0 #15803d, 0 12px 20px -5px rgba(255, 0, 255, 0.5);
-  }
-
-  /* Interactive Card Glow */
-  .interactive-card {
-    @apply transition-all duration-300;
-  }
-
-  .interactive-card:hover, .interactive-card:focus-within {
-    @apply border-blue-400/50 shadow-[0_0_25px_-5px_rgba(59,130,246,0.3)];
-    transform: translateY(-2px);
-  }
 }
 
 body {
@@ -260,43 +99,45 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Global Custom Scrollbars */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--background);
+  border-radius: 10px;
+  box-shadow: inset 1px 1px 3px var(--neo-shadow-dark), 
+              inset -1px -1px 3px var(--neo-shadow-light);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(59, 130, 246, 0.4);
   border-radius: 10px;
-  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
-/* --- Global Overrides for Art Tracker --- */
-.art-tracker-container::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-.art-tracker-container::-webkit-scrollbar-track {
-  background: #0a0a20; 
-}
-.art-tracker-container::-webkit-scrollbar-thumb {
-  background: rgba(0, 170, 255, 0.4); 
-  border-radius: 5px;
-}
-.art-tracker-container::-webkit-scrollbar-thumb:hover {
-  background: #00ffff; 
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.8);
 }
 
-.art-tracker-container {
-  scroll-behavior: smooth;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
 }
 
-.art-tracker-container section[id] {
-  scroll-margin-top: 100px;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.8);
+}

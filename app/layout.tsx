@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className="min-h-screen bg-background text-foreground font-sans relative overflow-x-hidden transition-colors duration-300">
         <ClientLayout>
           {children}

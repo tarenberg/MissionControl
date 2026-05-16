@@ -1,0 +1,17 @@
+{
+  "fees": "N/A",
+  "maxSize": "N/A",
+  "mediums": "N/A",
+  "framing": "N/A",
+  "location": "N/A",
+  "entryFormUrl": null,
+  "importantDates": {
+    "receipt_date": null,
+    "ship_date": null,
+    "return_date": null,
+    "show_start": null,
+    "show_end": null,
+    "deadline": null
+  },
+  "status": "complete"
+}

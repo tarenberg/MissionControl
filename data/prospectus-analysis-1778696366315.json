@@ -1,0 +1,18 @@
+{
+  "fees": "Not specified (payment must be completed online)",
+  "maxSize": "Not specified",
+  "mediums": "oils, acrylics, pastels, watercolors, printmaking, mixed media, collage, wall-hung relief art, or sculpture",
+  "framing": "Not specified",
+  "location": "Eli Whitney Barn, 940 Whitney Avenue, Hamden, CT 06517",
+  "entryFormUrl": "https://www.hamdenartleague.org/exhibitions.html",
+  "isLocalOnly": true,
+  "importantDates": {
+    "receipt_date": "2026-05-27",
+    "ship_date": null,
+    "return_date": "2026-05-31",
+    "show_start": "2026-05-28",
+    "show_end": "2026-05-31",
+    "deadline": "2026-05-15"
+  },
+  "status": "complete"
+}

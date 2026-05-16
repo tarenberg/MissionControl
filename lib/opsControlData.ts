@@ -366,14 +366,14 @@ export interface GetExternalSchedulersResult {
 export async function getExternalSchedulers(): Promise<GetExternalSchedulersResult> {
   return new Promise((resolve) => {
     const { exec } = require('child_process');
-    exec('schtasks /query /fo CSV /nh', { timeout: 5000 }, (error, stdout) => {
+    exec('schtasks /query /fo CSV /nh', { timeout: 5000 }, (error: any, stdout: string) => {
       if (error) {
         resolve({ schedulers: [], error: error.message });
         return;
       }
-      const lines = stdout.split('\n').filter((l) => l.trim().length > 0);
-      const schedulers: ExternalScheduler[] = lines.slice(0, 20).map((line, idx) => {
-        const cols = line.split('","').map((c) => c.replace(/^"|"$/g, '').trim());
+      const lines = stdout.split('\n').filter((l: string) => l.trim().length > 0);
+      const schedulers: ExternalScheduler[] = lines.slice(0, 20).map((line: string, idx: number) => {
+        const cols = line.split('","').map((c: string) => c.replace(/^"|"$/g, '').trim());
         const name = cols[0] ?? `Task ${idx + 1}`;
         const nextRun = cols[1] ? new Date(cols[1]) : null;
         const status = cols[2]?.toLowerCase() ?? 'unknown';

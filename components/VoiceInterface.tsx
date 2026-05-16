@@ -1,7 +1,10 @@
+"use client";
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import VoiceOrb, { OrbState } from './VoiceOrb';
-import styles from './ArtTrackerDashboard.module.css';
 import { GoogleGenAI, Modality } from '@google/genai';
+
+const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
 // --- Helpers ---
 
@@ -35,7 +38,6 @@ function pcmToAudioBuffer(data: Uint8Array, ctx: AudioContext, sampleRate: numbe
   return buffer;
 }
 
-
 const systemInstruction = `You are Muffin, a creative AI assistant integrated into the Mission Control dashboard for an artist named Tom. 
 
 Your purpose is to provide quick, hands-free assistance.
@@ -50,12 +52,14 @@ Be concise, helpful, and maintain a slightly playful and creative personality.
 `;
 
 const VoiceInterface: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [audioLevel, setAudioLevel] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const connectedRef = useRef(false);
+  const connectingRef = useRef(false);
   const sessionRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const inputCtxRef = useRef<AudioContext | null>(null);
@@ -64,9 +68,12 @@ const VoiceInterface: React.FC = () => {
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const lastToggleRef = useRef<number>(0);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback((reason?: string) => {
+    console.log(`VoiceInterface: disconnect() called. Reason: ${reason || 'Not specified'}`);
     connectedRef.current = false;
+    connectingRef.current = false;
 
     sourcesRef.current.forEach(s => { try { s.stop(); } catch {} });
     sourcesRef.current.clear();
@@ -91,27 +98,49 @@ const VoiceInterface: React.FC = () => {
   }, []);
 
   const connect = useCallback(async () => {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) {
-      setError('API key missing. Set NEXT_PUBLIC_GEMINI_API_KEY in .env.local');
+    if (connectingRef.current || connectedRef.current) {
+      console.log("VoiceInterface: Already connecting or connected. Ignoring.");
       return;
     }
 
+    console.log("VoiceInterface: connect() started");
+    connectingRef.current = true;
+    setError(null);
+    setOrbState('connecting');
+
     try {
-      setError(null);
-      setOrbState('connecting');
+      const apiKey = GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('API key missing. Set NEXT_PUBLIC_GEMINI_API_KEY in .env');
+      }
+
+      // Create AudioContexts IMMEDIATELY on user gesture
+      const InputCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const OutputCtx = window.AudioContext || (window as any).webkitAudioContext;
+      
+      inputCtxRef.current = new InputCtx({ sampleRate: 16000 });
+      outputCtxRef.current = new OutputCtx({ sampleRate: 24000 });
+
+      // Resume immediately while still in the user gesture context
+      if (inputCtxRef.current.state === 'suspended') await inputCtxRef.current.resume();
+      if (outputCtxRef.current.state === 'suspended') await outputCtxRef.current.resume();
+
+      console.log("VoiceInterface: AudioContexts resumed. State:", inputCtxRef.current.state);
 
       const ai = new GoogleGenAI({ apiKey });
 
-      inputCtxRef.current = new AudioContext({ sampleRate: 16000 });
-      outputCtxRef.current = new AudioContext({ sampleRate: 24000 });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Insecure Context: navigator.mediaDevices is undefined. HTTPS or localhost is required.');
+      }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
       const callbacks = {
         onopen: () => {
+          console.log("VoiceInterface: WebSocket onopen");
           connectedRef.current = true;
+          connectingRef.current = false;
           setOrbState('listening');
 
           if (inputCtxRef.current) {
@@ -135,7 +164,6 @@ const VoiceInterface: React.FC = () => {
               }
               const rms = Math.sqrt(sum / inputData.length);
               setAudioLevel(Math.min(1, rms * 5));
-
             };
 
             source.connect(processor);
@@ -184,61 +212,101 @@ const VoiceInterface: React.FC = () => {
           }
         },
         onclose: () => {
-          disconnect();
+          console.log("VoiceInterface: session onclose triggered");
+          disconnect('session_onclose');
         },
         onerror: (e: any) => {
-          console.error('Session error', e);
+          console.error('VoiceInterface: session onerror triggered:', e);
           setError('Connection lost. Try again.');
-          disconnect();
+          disconnect('session_onerror');
         },
       };
 
+      console.log("VoiceInterface: Attempting ai.live.connect with model: gemini-2.0-flash-exp");
       sessionRef.current = await ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+        model: 'gemini-2.0-flash-exp',
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } },
           },
-          systemInstruction: systemInstruction,
+          systemInstruction: { parts: [{ text: systemInstruction }] },
         },
         callbacks,
       });
+      console.log("VoiceInterface: session.connect() successful.");
     } catch (err: any) {
-      console.error(err);
+      console.error("VoiceInterface: Connection error:", err);
+      setIsExpanded(true);
+      connectingRef.current = false;
       if (err?.name === 'NotAllowedError') {
         setError('Microphone permission denied.');
+      } else if (err.message.includes('Insecure Context')) {
+        setError('HTTPS Required. Use http://localhost:3000 or see instructions.');
       } else {
         setError('Could not connect. Check your API key and try again.');
       }
       setOrbState('idle');
     }
-  }, [disconnect, systemInstruction]);
+  }, [disconnect]);
+
+  const handleToggle = useCallback(() => {
+    const now = Date.now();
+    if (now - lastToggleRef.current < 600) {
+      console.log("VoiceInterface: Ignoring rapid toggle");
+      return;
+    }
+    lastToggleRef.current = now;
+
+    console.log("VoiceInterface: handleToggle triggered. Current state:", orbState);
+    if (orbState === 'idle') {
+      setIsExpanded(true);
+      connect();
+    } else {
+      disconnect('user_toggle');
+    }
+  }, [orbState, connect, disconnect]);
 
   useEffect(() => {
+    setMounted(true);
     return () => {
-      disconnect();
+      console.log("VoiceInterface: Unmounting, calling disconnect()");
+      disconnect('component_unmount');
     };
   }, [disconnect]);
 
+  useEffect(() => {
+    const handleVoiceToggleEvent = (e: any) => {
+      console.log("VoiceInterface: Received toggle-voice event", e.detail || "");
+      handleToggle();
+    };
+    window.addEventListener('toggle-voice', handleVoiceToggleEvent);
+    return () => {
+      window.removeEventListener('toggle-voice', handleVoiceToggleEvent);
+    };
+  }, [handleToggle]);
 
-  // For now, this is a UI-only stub to verify the glow and orb
-  const handleToggle = () => {
-    if (orbState === 'idle') {
-      connect();
-    } else {
-      disconnect();
-    }
-  };
+  if (!mounted) return null;
 
   return (
-    <div className={styles.voiceInterfaceContainer}>
-      {isExpanded && (
-        <div className={styles.voiceStatus}>
-          {error ? <span style={{color: 'red'}}>{error}</span> :
-           orbState === 'idle' ? 'Muffin is sleeping' : 
-           orbState === 'connecting' ? 'Waking up...' :
-           orbState === 'listening' ? 'Listening to you...' : 'Muffin is thinking...'}
+    <div className="voiceInterfaceContainer" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+      {(isExpanded || orbState !== 'idle') && (
+        <div className="voiceStatus" style={{ 
+          marginBottom: '10px', 
+          textAlign: 'right', 
+          backgroundColor: 'rgba(0,0,0,0.7)', 
+          padding: '8px 12px', 
+          borderRadius: '12px',
+          fontSize: '13px',
+          color: '#fff',
+          backdropFilter: 'blur(4px)'
+        }}>
+          {error ? <span style={{color: '#ff4d4d'}}>{error}</span> :
+           orbState === 'idle' ? <span>Muffin is sleeping</span> : 
+           orbState === 'connecting' ? <span style={{color: '#7c3aed'}}>Waking up...</span> :
+           orbState === 'listening' ? <span style={{color: '#3b82f6'}}>Listening...</span> : 
+           orbState === 'speaking' ? <span style={{color: '#a855f7'}}>Speaking...</span> : 
+           <span>Thinking...</span>}
         </div>
       )}
       

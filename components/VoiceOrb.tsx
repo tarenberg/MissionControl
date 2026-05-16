@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo } from 'react';
 
 export type OrbState = 'idle' | 'connecting' | 'listening' | 'speaking';
@@ -217,6 +219,57 @@ const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 180 }) => {
           <div style={styles.shimmer} />
         )}
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slowPulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+        @keyframes ripple {
+          0% { transform: scale(0.95); opacity: 0.7; }
+          100% { transform: scale(1.6); opacity: 0; }
+        }
+        @keyframes rippleSlow {
+          0% { transform: scale(0.95); opacity: 0.5; }
+          100% { transform: scale(1.8); opacity: 0; }
+        }
+        @keyframes rippleFast {
+          0% { transform: scale(1); opacity: 0.4; }
+          100% { transform: scale(2); opacity: 0; }
+        }
+        @keyframes rippleOuter {
+          0% { transform: scale(1); opacity: 0.25; }
+          100% { transform: scale(2.3); opacity: 0; }
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes ringPulse1 {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.15); opacity: 0.15; }
+        }
+        @keyframes ringPulse2 {
+          0%, 100% { transform: scale(1.1); opacity: 0.2; }
+          50% { transform: scale(1.25); opacity: 0.1; }
+        }
+        @keyframes ringPulse3 {
+          0%, 100% { transform: scale(1.2); opacity: 0.12; }
+          50% { transform: scale(1.35); opacity: 0.06; }
+        }
+        @keyframes particleFloat {
+          0% { transform: translateY(0px) scale(1); }
+          100% { transform: translateY(-8px) scale(1.3); }
+        }
+        @keyframes shimmerRotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}} />
     </div>
   );
 };

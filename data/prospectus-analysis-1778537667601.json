@@ -1,0 +1,15 @@
+{
+  "fees": "Submission and payment must be completed online; specific fee amount not listed.",
+  "maxSize": "Not specified",
+  "mediums": "Oils, acrylics, pastels, watercolors, printmaking, mixed media, collage, wall-hung relief art, or sculpture.",
+  "framing": "Not specified (mentions wall-hung relief art).",
+  "location": "Eli Whitney Barn, 940 Whitney Avenue, Hamden, CT 06517",
+  "entryFormUrl": "https://www.hamdenartleague.org/exhibitions.html",
+  "importantDates": {
+    "receipt_date": null,
+    "show_start": null,
+    "show_end": null,
+    "deadline": null
+  },
+  "status": "complete"
+}

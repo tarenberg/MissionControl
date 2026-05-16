@@ -11,7 +11,7 @@ export default function Sidebar() {
     <aside className={`bg-neo-bg p-6 fixed h-[calc(100vh-2.5rem)] top-5 left-5 z-50 rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat flex flex-col transition-all duration-500 ease-in-out ${isCollapsed ? 'w-24' : 'w-64'}`}>
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-10 w-8 h-8 neo-button no-3d rounded-full flex items-center justify-center text-[10px] z-[60] hover:neo-glow-blue active:neo-button-active transition-all"
+        className="absolute -right-3 top-10 w-8 h-8 neo-button rounded-full flex items-center justify-center text-[10px] z-[60] hover:neo-glow-blue active:neo-button-active transition-all"
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? '→' : '←'}
@@ -26,7 +26,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto pr-1 overflow-x-hidden">
+      <nav className="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
         <ul className="space-y-3">
           {[
             { name: 'Dashboard', href: '/', icon: '🏠' },
@@ -42,7 +42,7 @@ export default function Sidebar() {
             <li key={item.name}>
               <a 
                 href={item.href} 
-                className={`flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 font-bold text-[11px] uppercase tracking-widest bg-neo-bg hover:text-blue-600 dark:hover:text-blue-400 rounded-2xl transition-all duration-300 group relative border border-white/20 dark:border-white/5 shadow-[0_4px_0_0_var(--shadow-color),0_8px_15px_-3px_var(--btn-shadow)] hover:shadow-[0_6px_0_0_var(--shadow-color),0_0_30px_2px_rgba(59,130,246,0.8)] hover:-translate-y-1 active:translate-y-1 active:shadow-none ${isCollapsed ? 'justify-center px-0' : ''}`}
+                className={`flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 font-bold text-[11px] uppercase tracking-widest neo-button hover:text-blue-600 dark:hover:text-blue-400 hover:neo-glow-blue active:neo-button-active ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title={isCollapsed ? item.name : ''}
               >
                 <span className={`text-sm group-hover:drop-shadow-[0_0_12px_rgba(59,130,246,1)] group-hover:scale-120 transition-all duration-300 z-10 ${isCollapsed ? 'text-xl' : ''}`}>{item.icon}</span>
@@ -56,7 +56,7 @@ export default function Sidebar() {
       <div className="mt-auto pt-6 border-t border-gray-300/30 dark:border-gray-700/30">
          <div className="neo-pressed p-4 rounded-3xl overflow-hidden min-h-[50px] flex items-center justify-center">
             <p className={`text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 scale-0' : 'opacity-100 w-auto h-auto scale-100'}`}>
-              OpenClaw v1.4.2
+              OpenClaw v1.4.3 (NEO)
             </p>
             {isCollapsed && <p className="text-[10px] font-black text-blue-600 text-center animate-in fade-in zoom-in">v1.4</p>}
          </div>

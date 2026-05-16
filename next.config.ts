@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' 'unsafe-inline' blob: https://*.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: http://localhost:8080 http://100.109.216.115:8080 http://twisted:8080 http://twisted.tail39532b.ts.net:8080; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com wss://*.googleapis.com http://localhost:3000 http://localhost:3001 http://localhost:8080 http://100.109.216.115:3000 http://100.109.216.115:3001 http://100.109.216.115:8080 http://twisted:8080 http://twisted.tail39532b.ts.net:8080; frame-src 'self' https://*.google.com; media-src 'self' data: blob: http://localhost:3000 http://100.109.216.115:3000 http://localhost:8080 http://100.109.216.115:8080 http://twisted:8080 http://twisted.tail39532b.ts.net:8080; worker-src 'self' blob:; child-src 'self' blob:;",
+          },
+        ],
+      },
+      {
         source: '/__nextjs_font/:path*',
         headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
       },

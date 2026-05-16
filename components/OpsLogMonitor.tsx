@@ -56,7 +56,7 @@ const OpsLogMonitor = () => {
   };
 
   return (
-    <div className="neo-flat rounded-[40px] overflow-hidden mb-12 transition-all duration-300 ease-in-out border border-white/50 dark:border-white/5 shadow-neo-flat">
+    <div className="neo-flat interactive-card rounded-[40px] overflow-hidden mb-12 transition-all duration-300 ease-in-out border border-white/50 dark:border-white/5 shadow-neo-flat">
       {/* Header Bar */}
       <div 
         className="flex justify-between items-center px-10 py-6 cursor-pointer select-none border-b border-gray-300/30 dark:border-gray-700/30"

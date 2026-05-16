@@ -465,6 +465,8 @@ const DocsBrowserContent: React.FC = () => {
         <form onSubmit={handleSearch} className="flex-shrink-0 mr-4">
           <div className="relative">
             <input
+              id="docs-search"
+              name="docs-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -594,8 +596,10 @@ const DocsBrowserContent: React.FC = () => {
             
             {showCreateModal === 'file' && (
               <div className="mb-6">
-                <label className="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Template</label>
+                <label htmlFor="template-select" className="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Template</label>
                 <select 
+                  id="template-select"
+                  name="template-select"
                   value={selectedTemplate}
                   onChange={handleTemplateChange}
                   className="w-full bg-background border border-border-custom rounded-xl px-4 py-3 text-sm text-foreground focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
@@ -607,8 +611,10 @@ const DocsBrowserContent: React.FC = () => {
             )}
 
             <div className="mb-8">
-              <label className="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Name</label>
+              <label htmlFor="item-name" className="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Name</label>
               <input
+                id="item-name"
+                name="item-name"
                 type="text"
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
@@ -645,6 +651,8 @@ const DocsBrowserContent: React.FC = () => {
               </div>
             </div>
             <textarea
+              id="edit-content"
+              name="edit-content"
               value={editingFileContent}
               onChange={(e) => {
                 setEditingFileContent(e.target.value);
@@ -682,6 +690,8 @@ const DocsBrowserContent: React.FC = () => {
             <h2 className="text-xl font-black text-foreground tracking-tight uppercase tracking-widest text-[11px] bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800 w-fit mb-4">Scratchpad</h2>
             <div className="text-2xl font-black text-foreground mb-6">Paste Content</div>
             <textarea
+              id="paste-content"
+              name="paste-content"
               value={pasteContent}
               onChange={(e) => setPasteContent(e.target.value)}
               className="flex-1 block w-full bg-background border border-border-custom rounded-2xl shadow-inner text-foreground focus:ring-2 focus:ring-blue-500/50 outline-none mb-6 p-8 font-mono text-sm resize-none scrollbar-hide"
@@ -708,6 +718,8 @@ const DocsBrowserContent: React.FC = () => {
             <div className="text-2xl font-black text-foreground mb-6">Import from URL</div>
             <div className="flex gap-3 mb-6">
               <input
+                id="import-url"
+                name="import-url"
                 type="text"
                 value={importUrl}
                 onChange={(e) => setImportUrl(e.target.value)}
@@ -723,6 +735,8 @@ const DocsBrowserContent: React.FC = () => {
               </button>
             </div>
             <textarea
+              id="import-preview"
+              name="import-preview"
               value={importPreviewContent}
               onChange={(e) => setImportPreviewContent(e.target.value)}
               className="flex-1 block w-full bg-background border border-border-custom rounded-2xl shadow-inner text-foreground focus:ring-2 focus:ring-blue-500/50 outline-none mb-6 p-8 font-mono text-sm resize-none scrollbar-hide"
@@ -771,8 +785,10 @@ const DocsBrowserContent: React.FC = () => {
             </div>
 
             <div className="mb-8">
-              <label className="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Target Path</label>
+              <label htmlFor="move-target" className="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Target Path</label>
               <input
+                id="move-target"
+                name="move-target"
                 type="text"
                 value={moveToPath}
                 onChange={(e) => setMoveToPath(e.target.value)}
