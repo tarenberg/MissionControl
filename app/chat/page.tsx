@@ -591,11 +591,11 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       onDragEnter={handleDrag}
     >
       {/* Sidebar (Left Column) */}
-      <div className={`${showMobileChat ? 'max-lg:hidden' : 'flex'} w-80 shrink-0 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-900/10 dark:bg-zinc-950/20`}>
+      <div className={`${showMobileChat ? 'max-md:hidden' : 'flex'} w-80 shrink-0 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-900/10 dark:bg-zinc-950/20`}>
         {/* Search & Action Panel */}
         <div className="p-4 border-b border-zinc-300/20 dark:border-zinc-800/40 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-sm font-black uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+            <h1 className="text-sm font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-300 flex items-center gap-2">
               <Terminal size={14} className="text-blue-500 animate-pulse-soft" />
               VAT Channels
             </h1>
@@ -653,7 +653,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                       {room.name?.substring(0, 2) || 'MC'}
                     </div>
                     <div className="flex flex-col truncate">
-                      <span className="text-xs font-bold truncate leading-tight">
+                      <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate leading-tight">
                         {room.name || 'Agent Thread'}
                       </span>
                       <span className="text-[10px] text-zinc-500 truncate leading-relaxed">
@@ -675,7 +675,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       </div>
 
       {/* Main Conversation Pane (Right Column) */}
-      <div className={`${showMobileChat ? 'flex' : 'max-lg:hidden'} flex-1 flex flex-col bg-[#161619]/40 relative`}>
+      <div className={`${showMobileChat ? 'flex' : 'max-md:hidden'} flex-1 flex flex-col bg-[#161619]/40 relative`}>
         {activeRoomId ? (
           <>
             {/* Header section */}
@@ -684,7 +684,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                 {/* Back Button for Mobile */}
                 <button
                   onClick={() => setShowMobileChat(false)}
-                  className="lg:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-400 hover:text-white transition-all mr-1 cursor-pointer"
+                  className="md:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-400 hover:text-white transition-all mr-1 cursor-pointer"
                   title="Back to Channels"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

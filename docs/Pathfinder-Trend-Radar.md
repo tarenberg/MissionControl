@@ -1,5 +1,5 @@
 # Pathfinder Trend Radar - Daily Digest
-**Date:** Wednesday, May 20, 2026
+**Date:** Thursday, May 21, 2026
 **Initiative:** Scout / Trend Radar (Muffin 🧁)
 
 ## 🎨 Market Trends & Curator Patterns
