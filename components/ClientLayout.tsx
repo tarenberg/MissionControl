@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import dynamic from 'next/dynamic';
 
 const VoiceInterface = dynamic(() => import('./VoiceInterface'), { ssr: false });
+const ChatPopup = dynamic(() => import('./Chat/ChatPopupV3'), { ssr: false });
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -83,9 +84,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         
         <div className="mt-auto pt-6 border-t border-gray-300/30 dark:border-gray-700/30">
            <div className="neo-pressed p-4 rounded-3xl overflow-hidden min-h-[50px] flex items-center justify-center">
-              <p className={`text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 scale-0' : 'opacity-100 w-auto h-auto scale-100'}`}>
-                OpenClaw v1.4.3 (NEO)
-              </p>
+              <div className="flex flex-col items-center">
+                <p className={`text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] text-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 scale-0' : 'opacity-100 w-auto h-auto scale-100'}`}>
+                  OpenClaw v1.4.3 (NEO)
+                </p>
+                <p className="text-[6px] text-blue-500/50 font-mono mt-1">Ref: 2026-05-18 13:54</p>
+              </div>
               {isCollapsed && <p className="text-[10px] font-black text-blue-600 text-center animate-in fade-in zoom-in">v1.4</p>}
            </div>
         </div>
@@ -97,7 +101,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           {children}
         </div>
       </main>
-      <VoiceInterface />
+      <ChatPopup />
+      {/* <VoiceInterface /> */}
     </div>
   );
 }

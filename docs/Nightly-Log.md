@@ -45,6 +45,31 @@
 - Monitor AI cost syncing logic for potential Gmail API token expiration.
 - Finalize the Daily Trend Digest for the Pathfinder initiative.
 
+## 2026-05-17 (Nightly Sprint)
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **Full-Duplex Voice Expansion (Studio Bridge)**:
+    - Expanded the **Gemini Live Action Dispatcher** to handle `CHECK_STUDIO` and `STUDIO_COMMAND` actions.
+    - Updated `ChatPopup.tsx` to listen for these actions and trigger backend API calls.
+    - This allows Tom to ask "Check the studio" or "Set temperature to 72" via voice (requires Studio Bridge re-auth).
+- **Studio Command API**:
+    - Implemented `POST` handler in `/api/studio/environment` to support device commands via the Nest SDM API.
+    - Added logic to automatically target the first available thermostat if no `deviceId` is provided.
+    - Mapped high-level commands (like `SET_TEMPERATURE`) to specific Nest traits (Fahrenheit to Celsius conversion handled).
+- **Dashboard Maintenance**:
+    - Stabilized the development environment by verifying port 3000/8080 hygiene.
+    - Hardened `fetch-art-deadlines.js` to ensure the Jina bypass correctly handles markdown-based parsing for ArtShow and Artists Network.
+
+### Lessons Learned:
+- Integrating Gemini Live with side-effects (like Nest commands) requires a robust dispatcher that can handle asynchronous state updates and provide visual feedback (Toasts/Events) since the AI's "voice" doesn't automatically know if the command succeeded.
+- Jina AI's markdown conversion is excellent for regex-based scraping, but requires the parser to switch from DOM queries to text processing.
+
+### Next Steps:
+- **Nest Token Recovery**: Tom needs to re-authorize the Nest app to clear the `invalid_grant` error. I've prepared the UI and API to respond immediately once restored.
+- **Studio Environment Trend Widget**: Build a more detailed "Environment History" view using the `ClimateLog` table data.
+- **Audio Feedback**: Add a "Command Confirmed" sound effect or voice confirmation for successful actions triggered via voice.
+
 ## 2026-05-14 - Discovery Digest & Retention Policy
 **Agent:** Muffin 🧁
 
@@ -120,3 +145,92 @@
     - Automatically forces physical aspect ratios (e.g., 1.5 for 24x16) to prevent image stretching.
     - Generates **True 5K (5000px+)** masters and archives them automatically in `docs/artwork-archive/`.
 - **ROI Audit**: Complete the manual re-entry of sale prices for artworks 1, 4, and 57 using the new hybrid format.
+
+## 2026-05-16 - VAT Chat & Action Dispatcher
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **VAT Chat Evolution (Continuous Mode)**:
+    - Transitioned from silence-detection to a **"Hot Mic"** interaction model.
+    - Implemented **Auto-Restart** logic: the microphone stays active/re-activates automatically after the AI response, enabling hands-free back-and-forth.
+    - Added **Smart Mode Switching**: Typing in the chat bar now automatically "discards" the voice buffer and disables the mic to prevent ghost submissions.
+- **Action Dispatcher (Voice-Command Bridge)**:
+    - Enabled the LLM (Ollama/gemma2) to output structured `[[ACTION: ...]]` tags.
+    - Implemented `executeAction` in the frontend to handle navigation and UI states.
+    - Successfully tested "Search [term]", "Open Art Tracker", and "Toggle View" voice commands.
+- **Art Tracker Database Audit**:
+    - Verified database `looselyt_artwork` and table `paintings`.
+    - Synchronized metadata for IDs 1, 4, and 57.
+    - Implemented the hybrid price format (`Sold $[price]`) for ROI tracking.
+- **System Maintenance**:
+    - Purged ~450KB of automated error-monitor noise from `tasks/todo.md` to resolve context-bloat issues.
+    - Stabilized the dev server with targeted PID kills for port 3000 conflicts.
+
+### Lessons Learned:
+- **Hot Mic UX**: Continuous listening is more natural for complex tasks, but needs a clear "Cancel" or "Discard" path (like the typing focus trigger) to avoid unintentional inputs.
+- **Event-Driven UI**: Using `window.dispatchEvent` for voice actions allows the chat popup to control sibling components without prop-drilling or complex state management.
+
+### Next Steps:
+- Refresh the Nest Token (`invalid_grant`) to restore Studio Bridge connectivity.
+- Verify Jina-based bypass reliability for `artistsnetwork.com` scraper.
+- Monitor VAT sensitivity in the studio environment.
+
+## 2026-05-18 (Nightly Sprint)
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **Resolved Gemini Live "Immediate Disconnect" (Handshake Fix)**:
+    - Identified a critical React dependency loop in `useGeminiLiveV6.ts`. The `options` object was being re-created every render, triggering the `useEffect` cleanup and closing the WebSocket immediately (Error 1000).
+    - Refactored the hook to use `optionsRef`, decoupling the WebSocket lifecycle from component re-renders.
+    - Result: Stable, persistent Full-Duplex audio streams.
+- **Protocol & Model Hardening**:
+    - Locked the SDK to `apiVersion: v1alpha` and `models/gemini-2.5-flash-native-audio-latest`.
+    - Verified model compatibility via live API discovery script.
+    - Updated UI to **v2.5.7** (Timestamp **23:05**) for verification.
+- **Nest Bridge Diagnostics**:
+    - Performed a database audit on `ClimateLog`. Confirmed that no data has been received since **2026-05-08**, confirming the Nest token revocation is global and not a transient error.
+    - Added diagnostic logging to the Studio Bridge to better surface `invalid_grant` errors to the dashboard.
+- **Nightly Maintenance**:
+    - Cleaned up stale `useGeminiLiveV5` files to reduce codebase clutter.
+    - Verified art deadline scraper status (nominal).
+
+### Lessons Learned:
+- **Hook Dependencies**: Passing inline functions as options to a custom hook that uses them in a `useCallback` or `useEffect` is a silent killer for WebSockets. Always use a Ref for "options" objects in long-lived stateful hooks.
+- **Model Discoverability**: `gemini-2.0-flash-exp` is a powerful general model, but specialized tasks like `bidiGenerateContent` often require the specific `-native-audio-` variants.
+
+### Next Steps:
+- **Nest Re-Auth**: Tom needs to run `node scripts/test-nest-auth.js` to restore the thermostat bridge.
+- **Studio Action Logging**: Implement the `StudioAction` model to track voice-commanded environmental changes.
+- **VAD Sensitivity**: Fine-tune client-side audio thresholds to handle studio background noise (fans/music).
+
+## 2026-05-19 (Nightly Sprint)
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **Periodic Scraper Scheduled (OpenClaw Cron)**:
+    - Officially scheduled `fetch-art-deadlines.js` to run as an OpenClaw Housekeeper cron job every Monday at 3:00 AM (`0 3 * * 1`).
+    - Verified the scraper's stability with a live execution: successfully bypassed Cloudflare via Jina bypass to scrape **64 art deadlines** (19 from The Art Guide, 40 from ArtShow, and 5 from Artists Network) and updated `data/art-deadlines.json` cleanly.
+- **Robust VAD & State Machine Overhaul (v7.2)**:
+    - Resolved the voice-recognition failure ("not hearing me") by **removing client-side audio transmission gating**. Once connected, 100% of microphone data is now streamed directly to Gemini to allow its native, cloud-side noise-suppression and VAD to process quiet speech and whispers without clipping.
+    - Redesigned the local voice detection threshold to be highly sensitive (`0.002` RMS) for visual UI transitions only.
+    - Reconstructed the silence detection timer so it triggers symmetrically on the falling edge of speech, shifting the Orb state into "Processing..." cleanly.
+- **Fail-safe Recovery (Processing Hang-up Resolved)**:
+    - Fixed the deadlock where the Orb got stuck in "Processing..." (thinking) forever if Gemini responded with text-only or finished a turn without audio.
+    - Added a **5-second fail-safe timer** that automatically resets the state from `connecting` back to `listening`.
+    - Integrated `serverContent.turnComplete` handling to drop back to `listening` if no audio is playing.
+    - Added clean **interruption recovery**: the model stops talking immediately and transitions back to listening when the user interrupts.
+- **Browser Overlay & Telemetry Sanitization**:
+    - Traced the "seven browser errors" to our use of `console.error` for success milestones (like `WebSocket Opened`, `Setup Complete`, `Turn Complete`) in `useGeminiLiveV7.ts`. Since Next.js Dev Mode intercepts *every* client-side `console.error` as a crash banner, these success alerts presented as errors.
+    - Refactored all client-side telemetry logs to `console.log`.
+- **Zero TypeScript / Compilation Errors**:
+    - Purged the obsolete, unused `ChatPopupV2.tsx` file from the repository.
+    - Verified the entire repository with `npx tsc --noEmit` and completed a full production build (`npm run build`) with **0 errors, 0 warnings, and 0 crashes**.
+
+### Lessons Learned:
+- **Cloud-side VAD > Client-side Gating**: Gating raw audio sending on the client side leads to terrible clipping of initial syllables and quiet phrases. Always pipe the full, continuous mic stream to the LLM (which has custom audio model conditioning) and limit client-side VAD thresholds exclusively to UI transitions.
+- **Dev Overlay Interception**: Never use `console.error` for debug telemetry or success tracing inside browser hooks in Next.js development mode, as it triggers unhandled exception blocks.
+
+### Next Steps:
+- **Nest Token Recovery**: Coordinate with Tom to run `node scripts/test-nest-auth.js` to refresh the expired Nest thermostat token.
+- **UI Testing**: Collect Tom's feedback on the updated, highly sensitive voice orb and zero-error dashboard.
+

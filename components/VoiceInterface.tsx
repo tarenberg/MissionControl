@@ -252,28 +252,25 @@ const VoiceInterface: React.FC = () => {
 
   const handleToggle = useCallback(() => {
     const now = Date.now();
-    if (now - lastToggleRef.current < 600) {
-      console.log("VoiceInterface: Ignoring rapid toggle");
-      return;
-    }
+    if (now - lastToggleRef.current < 600) return;
     lastToggleRef.current = now;
 
-    console.log("VoiceInterface: handleToggle triggered. Current state:", orbState);
-    if (orbState === 'idle') {
-      setIsExpanded(true);
-      connect();
-    } else {
-      disconnect('user_toggle');
-    }
-  }, [orbState, connect, disconnect]);
+    console.log("VoiceInterface: Dispatching toggle-voice event");
+    window.dispatchEvent(new CustomEvent('toggle-voice'));
+  }, []);
 
   useEffect(() => {
     setMounted(true);
-    return () => {
-      console.log("VoiceInterface: Unmounting, calling disconnect()");
-      disconnect('component_unmount');
+    // Listen for state changes from the central chat system to keep the orb in sync
+    const handleSync = (e: any) => {
+      if (e.detail?.state) setOrbState(e.detail.state);
+      if (e.detail?.level !== undefined) setAudioLevel(e.detail.level);
     };
-  }, [disconnect]);
+    window.addEventListener('voice-sync', handleSync);
+    return () => {
+      window.removeEventListener('voice-sync', handleSync);
+    };
+  }, []);
 
   useEffect(() => {
     const handleVoiceToggleEvent = (e: any) => {

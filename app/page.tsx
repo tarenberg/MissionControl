@@ -36,6 +36,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function HomePage() {
+  console.log('DASHBOARD_RENDER_TRIGGER: 2026-05-18 20:57');
+  console.log('PUBLIC_KEY_CHECK:', process.env.NEXT_PUBLIC_GEMINI_API_KEY ? 'DEFINED' : 'UNDEFINED');
   const [availableSkills, setAvailableSkills] = useState<SkillInfo[]>([]);
 
   const [modelStatus, setModelStatus] = useState({
@@ -96,7 +98,7 @@ export default function HomePage() {
           <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl mb-2 drop-shadow-sm uppercase">Mission Control</h1>
           <div className="flex items-center gap-3">
             <div className="neo-pressed px-4 py-1.5 rounded-full">
-              <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest m-0">Studio Command Center v2.5</p>
+              <p className="text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest m-0">Studio Command Center v2.5.7</p>
             </div>
             <div className="h-[1px] w-12 bg-gray-300 dark:bg-gray-700"></div>
             <p className="text-gray-400 dark:text-gray-500 text-xs font-bold italic">Ready for your command, Tom.</p>

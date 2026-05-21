@@ -66,10 +66,27 @@ export default function Sidebar() {
         aside {
           margin-left: ${isCollapsed ? '0' : '0'};
         }
+        @media (max-width: 1024px) {
+          aside {
+            transform: translateX(${isCollapsed ? '-100%' : '0'});
+            left: 0;
+            top: 0;
+            height: 100vh;
+            border-radius: 0;
+          }
+        }
       `}</style>
       <script dangerouslySetInnerHTML={{
         __html: `
-          document.body.style.paddingLeft = '${isCollapsed ? '128px' : '288px'}';
+          function updatePadding() {
+            if (window.innerWidth > 1024) {
+              document.body.style.paddingLeft = '${isCollapsed ? '128px' : '288px'}';
+            } else {
+              document.body.style.paddingLeft = '0';
+            }
+          }
+          window.addEventListener('resize', updatePadding);
+          updatePadding();
         `
       }} />
     </aside>

@@ -1,0 +1,381 @@
+{
+  "version": 1,
+  "updatedAt": "2026-05-20T19:55:03.083Z",
+  "entries": {
+    "memory:memory/2026-04-27.md:1:17": {
+      "key": "memory:memory/2026-04-27.md:1:17",
+      "path": "memory/2026-04-27.md",
+      "startLine": 1,
+      "endLine": 17,
+      "source": "memory",
+      "snippet": "# Daily Memory – 2026-04-27 ## General - TODO: record highlights from the day. ## Gateway Instability and Model Failures - **Initial Report**: Tom reported \"a lot of problems with the gateway\". - **Investigation**: I checked `openclaw gateway status` (which appeared normal) and then the logs (`\\tmp\\openclaw\\openclaw-2026-04-27.log`). - **Finding 1**: The logs showed a recurring warning: `failed to start server \"mempalace\"`. This indicates a problem with the bundled MemPalace service. - **Action 1**: I attempted to resolve the issue by restarting the gateway with `openclaw gateway restart`. - **Finding 2 (Post-Restart)**: The restart did not solve the MemPalace issue. A deeper log review r",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.0959628309308371,
+      "maxScore": 0.5826738292618081,
+      "firstRecalledAt": "2026-04-30T17:09:44.662Z",
+      "lastRecalledAt": "2026-04-30T22:10:58.622Z",
+      "queryHashes": [
+        "18fec060abb8",
+        "3bf79eb9cf27"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "gateway",
+        "openclaw-2026-04-27.log",
+        "post-restart",
+        "general",
+        "todo",
+        "record",
+        "highlights",
+        "the"
+      ]
+    },
+    "memory:memory/2026-04-21.md:1:14": {
+      "key": "memory:memory/2026-04-21.md:1:14",
+      "path": "memory/2026-04-21.md",
+      "startLine": 1,
+      "endLine": 14,
+      "source": "memory",
+      "snippet": "# Daily Memory – 2026-04-21 ## General - TODO: record highlights from the day. ## Conversation Summary - **Jason Coding Agent Status:** The Jason coding agent (Codex) failed to spawn due to an `AcpRuntimeError: Internal error`. Initial troubleshooting indicated `openclaw` and `acpx` were not found in the system's PATH. I've been asked to find the OpenClaw installation path to continue investigation. - **\"Morning Kickoff\" Cron Job Failure:** The cron job failed with `FailoverError: Unknown model: ollama/llama3`. This indicates an issue with Ollama or the `llama3` model. I've been instructed to prioritize troubleshooting this. - **Daily Digest:** A daily digest was requested and provided. -",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.5090178325708771,
+      "maxScore": 0.5090178325708771,
+      "firstRecalledAt": "2026-04-30T17:09:44.662Z",
+      "lastRecalledAt": "2026-04-30T17:09:44.662Z",
+      "queryHashes": [
+        "18fec060abb8"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "failover",
+        "ollama/llama3",
+        "general",
+        "todo",
+        "record",
+        "highlights",
+        "the",
+        "day"
+      ]
+    },
+    "memory:memory/2026-04-20.md:1:4": {
+      "key": "memory:memory/2026-04-20.md:1:4",
+      "path": "memory/2026-04-20.md",
+      "startLine": 1,
+      "endLine": 4,
+      "source": "memory",
+      "snippet": "2026-04-20 14:40:27 EDT: Heartbeat updated successfully. ## Conversation Summary - **Jason Coding Agent Status:** Multiple background tasks for the Jason coding agent failed due to internal errors. I offered to restart the OpenClaw ACPX gateway to attempt to resolve the issue.",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.501092441321685,
+      "maxScore": 0.501092441321685,
+      "firstRecalledAt": "2026-04-30T22:10:58.622Z",
+      "lastRecalledAt": "2026-04-30T22:10:58.622Z",
+      "queryHashes": [
+        "3bf79eb9cf27"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "gateway",
+        "edt",
+        "heartbeat",
+        "updated",
+        "successfully",
+        "conversation",
+        "summary",
+        "jason"
+      ]
+    },
+    "memory:memory/2026-03-26.md:14:19": {
+      "key": "memory:memory/2026-03-26.md:14:19",
+      "path": "memory/2026-03-26.md",
+      "startLine": 14,
+      "endLine": 19,
+      "source": "memory",
+      "snippet": "- **OpenAI Quotas**: Hit a hard 429 rate limit on `gpt-5.1-codex` and embeddings, preventing semantic `memory_search` and cloud subagent spawning. - **Local Fallback**: Configured OpenClaw to allow `ollama/qwen2.5-coder:7b` as a subagent model to successfully bypass cloud restrictions and execute tasks entirely locally on Jason. - **Snake Game**: Built a working HTML/CSS/JS snake game in `~/workspace/snake-game` to test local coding execution. ## Miscellaneous - **Cron Jobs**: Scheduled a one-shot reminder cron for \"Doctor Wolfson\" at 12:00 EDT.",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.5323120104456925,
+      "maxScore": 0.5323120104456925,
+      "firstRecalledAt": "2026-04-30T22:19:13.363Z",
+      "lastRecalledAt": "2026-04-30T22:19:13.363Z",
+      "queryHashes": [
+        "5ac94dd059dc"
+      ],
+      "recallDays": [
+        "2026-04-30"
+      ],
+      "conceptTags": [
+        "embedding",
+        "embeddings",
+        "gpt",
+        "openai",
+        "gpt-5.1-codex",
+        "memory-search",
+        "ollama/qwen2.5-coder",
+        "html/css/js"
+      ]
+    },
+    "memory:memory/2026-04-30.md:1:16": {
+      "key": "memory:memory/2026-04-30.md:1:16",
+      "path": "memory/2026-04-30.md",
+      "startLine": 1,
+      "endLine": 16,
+      "source": "memory",
+      "snippet": "# Daily Memory — 2026-04-30 ## Key Activities & Outcomes - **Gateway Stability**: Finalized the fix for OpenClaw gateway instability and resolved persistent API errors. - **Mission Control Cleanup**: Deleted duplicate directories and successfully synced the SQLite database with the UI. - **HTTPS Standardization**: Ensured all projects (Next.js, Vite, Static) are accessible via HTTPS to prevent browser protocol conflicts. - **Technical Debt**: Resolved file encoding issues where emojis in React components were causing build failures; moved to Unicode escape sequences. ## Lessons Learned - Targeted process kills for Port 3000 are safer than closing the entire gateway when debugging",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3974942445755005,
+      "maxScore": 0.3974942445755005,
+      "firstRecalledAt": "2026-05-16T19:53:46.655Z",
+      "lastRecalledAt": "2026-05-16T19:53:46.655Z",
+      "queryHashes": [
+        "8922e9d11e32"
+      ],
+      "recallDays": [
+        "2026-05-16"
+      ],
+      "conceptTags": [
+        "gateway",
+        "next.js",
+        "key",
+        "activities",
+        "outcomes",
+        "stability",
+        "finalized",
+        "the"
+      ]
+    },
+    "memory:memory/2026-04-10.md:1:22": {
+      "key": "memory:memory/2026-04-10.md:1:22",
+      "path": "memory/2026-04-10.md",
+      "startLine": 1,
+      "endLine": 22,
+      "source": "memory",
+      "snippet": "# Daily Memory – 2026-04-10 ## General - TODO: record highlights from the day. ## Memory Flush - 2026-04-10 ### Mission Control Project Updates: **Backend (Node.js/Express) Status Inference Debugging:** - **Problem:** Initial backend status inference in `server.js` was too generic, leading to most sessions being `active` or `unknown` due to limited explicit status fields in `openclaw sessions --json` output. - **Root Cause Identified:** The raw `openclaw sessions --json` output often lacks explicit `endedAt`, `paused`, `error`, or `pending` fields. Statuses need to be derived heuristically from fields like `updatedAt`, `ageMs`, `abortedLastRun`, and `systemSent`. - **Action T",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.39657420516014097,
+      "maxScore": 0.39657420516014097,
+      "firstRecalledAt": "2026-05-16T19:53:46.655Z",
+      "lastRecalledAt": "2026-05-16T19:53:46.655Z",
+      "queryHashes": [
+        "8922e9d11e32"
+      ],
+      "recallDays": [
+        "2026-05-16"
+      ],
+      "conceptTags": [
+        "node.js/express",
+        "server.js",
+        "general",
+        "todo",
+        "record",
+        "highlights",
+        "the",
+        "day"
+      ]
+    },
+    "memory:memory/2026-05-02.md:1:21": {
+      "key": "memory:memory/2026-05-02.md:1:21",
+      "path": "memory/2026-05-02.md",
+      "startLine": 1,
+      "endLine": 21,
+      "source": "memory",
+      "snippet": "# 2026-05-02 ## Morning Sprint & Health Check (11:00 AM) - **OpenClaw Config Maintenance**: Identified and removed invalid keys (`log_level`, `auto_restart_on_error`) from `openclaw.json` that were causing `openclaw config validate` to fail. - **Service Status**: - **Mission Control**: Online at `localhost:3000`. - **Google Workspace (gog)**: Authentication expired. Needs `gog auth login`. - **Browser**: Port 9222 not reachable. - **Project Progress**: - Art Deadline scraper is operational; data stored in `data/art-deadlines.json`. - Art Tracker successfully stabilized on React 18/Vite 6 with enhanced error reporting in `main.tsx`. - **Identity**: Muffin 🧁 pe",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.39032143354415894,
+      "maxScore": 0.39032143354415894,
+      "firstRecalledAt": "2026-05-16T19:53:46.655Z",
+      "lastRecalledAt": "2026-05-16T19:53:46.655Z",
+      "queryHashes": [
+        "8922e9d11e32"
+      ],
+      "recallDays": [
+        "2026-05-16"
+      ],
+      "conceptTags": [
+        "log-level",
+        "auto-restart-on-error",
+        "openclaw.json",
+        "data/art-deadlines.json",
+        "18/vite",
+        "main.tsx",
+        "morning",
+        "sprint"
+      ]
+    },
+    "memory:memory/2026-05-07.md:1:17": {
+      "key": "memory:memory/2026-05-07.md:1:17",
+      "path": "memory/2026-05-07.md",
+      "startLine": 1,
+      "endLine": 17,
+      "source": "memory",
+      "snippet": "# Daily Memory – 2026-05-07 ## General - TODO: record highlights from the day. # Daily Memory – 2026-05-07 ## General - TODO: record highlights from the day. ## Session Highlights (12:00 - 19:37) - **Resilience Engineering**: Implemented 3000ms timeouts for shell-based API calls (`nvidia-smi`, `powershell`) in Mission Control to prevent dashboard hangs caused by slow OS queries. - **UI/UX**: Completed the \"Loosely Twisted\" neomorphic overhaul for the Dashboard Sidebar and Studio Monitor components. Standardized interactive card glows and lift animations across the task board and project view. - **Infrastructure**: Redirected live log monitoring from the stale `debug_docs.log` to active `C",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.7296928524971007,
+      "maxScore": 0.3743051707744598,
+      "firstRecalledAt": "2026-05-16T19:53:46.655Z",
+      "lastRecalledAt": "2026-05-18T20:44:07.382Z",
+      "queryHashes": [
+        "8922e9d11e32",
+        "b691f15830fc"
+      ],
+      "recallDays": [
+        "2026-05-16",
+        "2026-05-18"
+      ],
+      "conceptTags": [
+        "shell-based",
+        "nvidia-smi",
+        "ui/ux",
+        "debug-docs.log",
+        "general",
+        "todo",
+        "record",
+        "highlights"
+      ]
+    },
+    "memory:memory/2026-04-25.md:1:29": {
+      "key": "memory:memory/2026-04-25.md:1:29",
+      "path": "memory/2026-04-25.md",
+      "startLine": 1,
+      "endLine": 29,
+      "source": "memory",
+      "snippet": "# 2026-04-25 _No highlights yet. TODO: record highlights as the day progresses._ # 2026-04-25 ## Mission Control UI Session (9:00–9:37 AM) ### What we worked on - Opened the Mission Control project (React/Vite frontend at `localhost:5173`, Node backend at `localhost:3001`) - Fixed a parse error in `src/App.jsx` (line 129 — orphaned duplicate code block after CalendarView closing brace) - Applied the **Loosely Twisted Design Engine** to the full app: - Updated `index.css` with neo theme CSS variables (`--neo-bg: #e0e5ec`, shadow tokens) and utility classes (`.neo-flat`, `.neo-pressed`, `.neo-button`, `.neo-button-active`) - Cleared `App.css` to avoid overrides - Rewrote",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3640421688556671,
+      "maxScore": 0.3640421688556671,
+      "firstRecalledAt": "2026-05-18T20:44:07.382Z",
+      "lastRecalledAt": "2026-05-18T20:44:07.382Z",
+      "queryHashes": [
+        "b691f15830fc"
+      ],
+      "recallDays": [
+        "2026-05-18"
+      ],
+      "conceptTags": [
+        "react/vite",
+        "src/app.jsx",
+        "index.css",
+        "neo-bg",
+        "neo-flat",
+        "neo-pressed",
+        "neo-button",
+        "neo-button-active"
+      ]
+    },
+    "memory:memory/2026-05-03.md:23:31": {
+      "key": "memory:memory/2026-05-03.md:23:31",
+      "path": "memory/2026-05-03.md",
+      "startLine": 23,
+      "endLine": 31,
+      "source": "memory",
+      "snippet": "- **Tasks View Polish**: Added column-based sorting for Title and Status to the Tasks table to improve workflow management. ## Afternoon Sprint - Dashboard Evolution - **Kanban Transformation**: Refactored the task management system from a table to a full Kanban board with drag-and-drop-style status updates and quick-add functionality. - **System Status**: Rebuilt SystemMonitor with neomorphic circular gauges (CPU, RAM, Disk, GPU) on a light background for instant visibility. - **Agent Network**: Implemented a recursive tree-based visualization for the team hierarchy (Muffin -> Jason/Housekeeper -> Pixels). - **Project Evolution**: Added a new \"Planning\" status (indigo), implemented status",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.3575534105300903,
+      "maxScore": 0.3575534105300903,
+      "firstRecalledAt": "2026-05-18T20:44:07.382Z",
+      "lastRecalledAt": "2026-05-18T20:44:07.382Z",
+      "queryHashes": [
+        "b691f15830fc"
+      ],
+      "recallDays": [
+        "2026-05-18"
+      ],
+      "conceptTags": [
+        "network",
+        "column-based",
+        "drag-and-drop-style",
+        "quick-add",
+        "tree-based",
+        "jason/housekeeper",
+        "tasks",
+        "view"
+      ]
+    },
+    "memory:memory/2026-05-16.md:13:26": {
+      "key": "memory:memory/2026-05-16.md:13:26",
+      "path": "memory/2026-05-16.md",
+      "startLine": 13,
+      "endLine": 26,
+      "source": "memory",
+      "snippet": "- Integrated \"Send\" button to stop/transmit the current buffer. - Added auto-restart logic for the microphone after the AI finishes speaking, enabling seamless continuous conversation. - **VAT Fix (Race Condition & TDZ)**: - Resolved a `ReferenceError` (Cannot access 'isVATActive' before initialization) by removing circular dependencies in `ChatPopup.tsx`. - Centralized the \"auto-restart\" logic inside `useVAT.ts` using an `async/await` pattern on the `onstop` handler to ensure recording only restarts after the previous message is fully processed. - **Live Voice Feedback & Mode Switching**: - Integrated the Web Speech API into `useVAT.ts` to provide real-time transcript",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.6289521166238812,
+      "maxScore": 0.6289521166238812,
+      "firstRecalledAt": "2026-05-20T19:55:03.083Z",
+      "lastRecalledAt": "2026-05-20T19:55:03.083Z",
+      "queryHashes": [
+        "7afc8c8bbac6"
+      ],
+      "recallDays": [
+        "2026-05-20"
+      ],
+      "conceptTags": [
+        "stop/transmit",
+        "auto-restart",
+        "chatpopup.tsx",
+        "usevat.ts",
+        "async/await",
+        "real-time",
+        "integrated",
+        "send"
+      ]
+    },
+    "memory:memory/2026-05-16.md:1:16": {
+      "key": "memory:memory/2026-05-16.md:1:16",
+      "path": "memory/2026-05-16.md",
+      "startLine": 1,
+      "endLine": 16,
+      "source": "memory",
+      "snippet": "# Daily Memory — 2026-05-16 ## Key Activities & Outcomes - **System Recovery**: Resolved a cascade of errors in Mission Control. - **Process Management**: Terminated orphaned Node.js process (PID 48800) on port 3000. - **Server Stabilization**: Restarted Mission Control server with `npx next dev --hostname 0.0.0.0 --webpack`. Verified 200 responses for core APIs. - **Task Integrity**: Cleaned up `tasks/todo.md`, removing ~450KB of redundant error logs that were causing context overflow issues for specialized agents. - **VAT Monitoring**: Investigated 10s recording limit (safety valve) in `useVAT.ts`. Confirmed voice requests are hitting the backend successfully. - **Documentation**: Created",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.5458107164491548,
+      "maxScore": 0.5458107164491548,
+      "firstRecalledAt": "2026-05-20T19:55:03.083Z",
+      "lastRecalledAt": "2026-05-20T19:55:03.083Z",
+      "queryHashes": [
+        "7afc8c8bbac6"
+      ],
+      "recallDays": [
+        "2026-05-20"
+      ],
+      "conceptTags": [
+        "node.js",
+        "0.0.0.0",
+        "tasks/todo.md",
+        "usevat.ts",
+        "key",
+        "activities",
+        "outcomes",
+        "system"
+      ]
+    }
+  }
+}

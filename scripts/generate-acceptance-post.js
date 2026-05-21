@@ -8,10 +8,16 @@ const ART_BASE_PATH = 'C:/xampp/htdocs/tools/ArtTrackerDashboard/Artwork/Paintin
 const OUTPUT_BASE_PATH = path.join(__dirname, '..', 'media', 'celebrations');
 
 // Load API Key
-const envPath = path.join(__dirname, '..', '.env');
-const env = fs.readFileSync(envPath, 'utf8');
-const apiKeyMatch = env.match(/NEXT_PUBLIC_GEMINI_API_KEY=(.*)/);
-const GEMINI_API_KEY = apiKeyMatch ? apiKeyMatch[1].trim() : null;
+const envPath = path.join(process.cwd(), '.env');
+let GEMINI_API_KEY = null;
+try {
+    const env = fs.readFileSync(envPath, 'utf8');
+    const apiKeyMatch = env.match(/NEXT_PUBLIC_GEMINI_API_KEY=(.*)/);
+    GEMINI_API_KEY = apiKeyMatch ? apiKeyMatch[1].trim() : null;
+} catch (e) {
+    console.warn('Could not read .env for Gemini API key, using fallback.');
+}
+
 
 async function generateCaption(artworkTitle, showTitle) {
     if (!GEMINI_API_KEY) return "Accepted! So thrilled to announce my work was selected.";

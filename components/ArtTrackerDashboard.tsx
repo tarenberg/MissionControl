@@ -336,6 +336,43 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
   // Filtering & Sorting State
   const [searchTerm, setSearchTerm] = useState('');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search');
+      if (q) setSearchTerm(q);
+      
+      const act = params.get('action');
+      if (act === 'scan') setIsScanModalOpen(true);
+    }
+
+    const handleVoiceSearch = (e: any) => {
+      console.log('ArtTracker: Voice Search received:', e.detail);
+      setSearchTerm(e.detail);
+    };
+
+    const handleVoiceView = (e: any) => {
+      console.log('ArtTracker: Voice View received:', e.detail);
+      if (e.detail === 'grid' || e.detail === 'list') {
+        setViewMode(e.detail);
+      }
+    };
+
+    const handleOpenScan = () => {
+      console.log('ArtTracker: Voice Open Scan received');
+      setIsScanModalOpen(true);
+    };
+
+    window.addEventListener('art-tracker-search', handleVoiceSearch);
+    window.addEventListener('art-tracker-view', handleVoiceView);
+    window.addEventListener('open-studio-scan', handleOpenScan);
+    return () => {
+      window.removeEventListener('art-tracker-search', handleVoiceSearch);
+      window.removeEventListener('art-tracker-view', handleVoiceView);
+      window.removeEventListener('open-studio-scan', handleOpenScan);
+    };
+  }, []);
+
   const [artSearchInModal, setArtSearchInModal] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'}>({key: 'id', direction: 'desc'});
@@ -1211,7 +1248,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
         </nav>
 
         <div className={styles.artistStatus}>
-          <span className={styles.onlineIndicator}>●</span>
+          <span className={styles.onlineIndicator}>\u25cf</span>
           <span className={styles.artistName}>{artistName}</span>
         </div>
       </header>
@@ -1325,7 +1362,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
             <div className={styles.collapsibleHeader} onClick={() => setIsDeadlinesCollapsed(!isDeadlinesCollapsed)} style={{cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
               <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                 <h3 style={{margin: 0, borderBottom: 'none', paddingBottom: 0, fontSize: '1.2em'}}>Deadlines</h3>
-                <span className={styles.collapseIcon} style={{ transform: isDeadlinesCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease-in-out', fontSize: '0.8em' }} title={isDeadlinesCollapsed ? 'Expand Deadlines' : 'Collapse Deadlines'}>▼</span>
+                <span className={styles.collapseIcon} style={{ transform: isDeadlinesCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease-in-out', fontSize: '0.8em' }} title={isDeadlinesCollapsed ? 'Expand Deadlines' : 'Collapse Deadlines'}>\u25bc</span>
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); fetchDeadlines(); }}
@@ -1718,7 +1755,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
         <section id="artworks" className={styles.mainContentPanel}>
           <div className={styles.collapsibleHeader} onClick={() => setIsArtworksCollapsed(!isArtworksCollapsed)}>
             <h2 className={styles.panelTitle}>Artworks Overview</h2>
-            <span className={styles.collapseIcon} style={{ transform: isArtworksCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease-in-out' }} title={isArtworksCollapsed ? 'Expand Artworks section' : 'Collapse Artworks section'}>▼</span>
+            <span className={styles.collapseIcon} style={{ transform: isArtworksCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease-in-out' }} title={isArtworksCollapsed ? 'Expand Artworks section' : 'Collapse Artworks section'}>\u25bc</span>
           </div>
 
           {!isArtworksCollapsed && (
@@ -1891,7 +1928,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
         <section id="costs" className={styles.costTrackingPanel}>
           <div className={styles.collapsibleHeader} onClick={() => setIsExpensesCollapsed(!isExpensesCollapsed)}>
             <h2 className={styles.panelTitle}>Expense Tracker</h2>
-            <span className={styles.collapseIcon} style={{ transform: isExpensesCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease-in-out' }} title={isExpensesCollapsed ? 'Expand Expenses section' : 'Collapse Expenses section'}>▼</span>
+            <span className={styles.collapseIcon} style={{ transform: isExpensesCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease-in-out' }} title={isExpensesCollapsed ? 'Expand Expenses section' : 'Collapse Expenses section'}>\u25bc</span>
           </div>
 
           {!isExpensesCollapsed && (
@@ -1916,8 +1953,8 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                     <tr key={cost.id}>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button className={styles.editButton} onClick={() => openEditCost(cost)} title="Edit expense">✏️</button>
-                          <button className={styles.deleteButton} onClick={() => handleDeleteCost(cost.id)} title="Delete expense">🗑️</button>
+                          <button className={styles.editButton} onClick={() => openEditCost(cost)} title="Edit expense">\u270f\ufe0f</button>
+                          <button className={styles.deleteButton} onClick={() => handleDeleteCost(cost.id)} title="Delete expense">\ud83d\uddd1\ufe0f</button>
                         </div>
                       </td>
                       <td>{cost.date}</td>
@@ -2101,7 +2138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
               {/* Left Column: AI Assistant */}
               <div className={styles.assistantColumn}>
                 <div className={styles.assistantHeader} style={{ padding: '8px 12px', gap: '8px' }}>
-                  <div style={{ fontSize: '1.2em' }}>🧁</div>
+                  <div style={{ fontSize: '1.2em' }}>\ud83e\uddc1</div>
                   <div style={{ overflow: 'hidden', flex: 1 }}>
                     <h3 style={{ margin: 0, fontSize: '1.1em', fontWeight: 800, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', lineHeight: 1.1 }}>
                       {activeSubmissionDeadline.title}
@@ -2242,13 +2279,13 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                   </div>
                 ) : (isAnalyzingProspectus || !prospectusData) ? (
                 <div key="loading" style={{ textAlign: 'center', padding: '60px', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '3em', marginBottom: '20px' }}>⚙️</div>
+                  <div style={{ fontSize: '3em', marginBottom: '20px' }}>\u2699\ufe0f</div>
                   <p style={{ fontSize: '1.1em', fontWeight: 600 }}>Muffin is reading the prospectus...</p>
                   <p style={{ fontSize: '0.85em', color: 'var(--muted)', marginTop: '10px' }}>Finding fees, mediums, and entry forms.</p>
                 </div>
               ) : prospectusData && prospectusData.error ? (
                 <div key="error" style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
-                  <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>⚠️ Analysis Interrupted</p>
+                  <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>\u26a0\ufe0f Analysis Interrupted</p>
                   <p style={{ fontSize: '0.85em', margin: 0 }}>{prospectusData.error}</p>
                   <button
                     onClick={() => analyzeProspectus(activeSubmissionDeadline.link!)}
@@ -2332,7 +2369,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                   className={styles.submitButton}
                   style={{ background: 'rgba(0, 255, 150, 0.1)', color: '#00ff96', border: '1px solid #00ff96' }}
                 >
-                  📥 Sync AI Data
+                  \ud83d\udce5 Sync AI Data
                 </button>
               )}
               
@@ -2342,7 +2379,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                   className={styles.submitButton}
                   style={{ background: 'var(--primary)', color: 'white', border: 'none', marginLeft: prospectusData ? '10px' : '0' }}
                 >
-                  ✅ Mark Submitted
+                  \u2705 Mark Submitted
                 </button>
               )}
               
@@ -2518,7 +2555,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                     return (
                       <div key={id} className={styles.artworkChip}>
                         {art?.title}
-                        <button onClick={() => setEnterSelectedArtworks(prev => prev.filter(a => a !== id))}>×</button>
+                        <button onClick={() => setEnterSelectedArtworks(prev => prev.filter(a => a !== id))}>\u00d7</button>
                       </div>
                     );
                   })}
@@ -2607,7 +2644,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                         />
                         <div className={styles.selectionInfo}>
                           <span className={styles.selectionTitle}>{art.title}</span>
-                          <span className={styles.selectionMeta}>{art.medium} • {art.dimensions}</span>
+                          <span className={styles.selectionMeta}>{art.medium} \u2022 {art.dimensions}</span>
                         </div>
                         <div 
                           className={styles.selectionCheckbox}
@@ -2643,7 +2680,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
           <div className={styles.modalContent} style={{ maxWidth: '900px', width: '95%' }}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}><Camera style={{ verticalAlign: 'middle', marginRight: '10px' }} /> Studio Scan Processor</h2>
-              <button onClick={() => setIsScanModalOpen(false)} className={styles.closeButton}>×</button>
+              <button onClick={() => setIsScanModalOpen(false)} className={styles.closeButton}>\u00d7</button>
             </div>
             
             <div className={styles.modalBody} style={{ display: 'grid', gridTemplateColumns: scanPreviewUrl ? '1fr 1fr' : '1fr', gap: '20px' }}>
@@ -2821,7 +2858,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
           <div className={styles.celebrationModal} onClick={e => e.stopPropagation()}>
             <div className={styles.celebrationHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className={styles.celebrationIcon}>🧁</div>
+                <div className={styles.celebrationIcon}>\ud83e\uddc1</div>
                 <div>
                   <h2 style={{ margin: 0, fontSize: '1.2em' }}>Celebration Ready!</h2>
                   <p style={{ margin: 0, fontSize: '0.8em', opacity: 0.6 }}>Generated for {celebrationData.artworkTitle}</p>

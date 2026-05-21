@@ -1,23 +1,35 @@
 # Pathfinder Trend Radar - Daily Digest
-**Date:** Friday, May 15, 2026
-**Initiative:** Scout / Trend Radar
+**Date:** Wednesday, May 20, 2026
+**Initiative:** Scout / Trend Radar (Muffin 🧁)
 
 ## 🎨 Market Trends & Curator Patterns
-Based on an analysis of 71 active deadlines, several key patterns have emerged:
+Following an algorithmic analysis of **64 active art opportunities** scraped directly from national registers (via our newly automated Monday 3:00 AM Housekeeper scraper), the following high-level curatorial vectors have been mapped:
 
-### 1. Theme Clusters (Elemental & Noir)
-We are seeing the continued momentum of the **"Elemental Dynamics" (Water)** theme, with 8 calls specifically mentioning water or aquatic elements. The **"New Noir"** trend is also present, with 5 calls focusing on themes of darkness, shadows, and monochrome palettes. Abstract and figurative work remains stable at ~30% of listings.
+### 1. Theme Clusters (Elemental, Noir, & Materiality)
+- **Elemental Dynamics (Water/Aquatics)**: The "Power of Water" is heavily trending. Key exhibits are actively seeking works exploring fluid motion, reflection, and hydrological forces (e.g., *Power of Water Open Show* in VA, due May 23).
+- **New Noir (The Velvet Palette)**: Curators are leaning heavily into rich black palettes, shadow composition, and nocturnal concepts. Most notably, Manifest Gallery has launched *Velvet: A Call for Works About, Of, or By the Color Black* (due May 24), which directly targets the moody "New Noir" aesthetic.
+- **Materiality & Abstraction**: Large-scale spatial depth is a common thread. The *Chromatic Reverie* abstract call (due May 31) and ASC Gallery's *Materiality 2026* in London are prioritizing thick, physical paint application and high-texture surfaces.
 
-### 2. Regional Focus (CT / Northeast)
-There is a notable concentration of high-value opportunities in the **Northeast USA**, with several key targets directly within **Connecticut (CT)**, making local submissions highly viable for reducing logistics costs.
+### 2. High-Yield Local CT & Regional Targets
+We have mapped multiple opportunities with zero shipping hurdles and excellent localized visibility:
+- **Arts Center East (Vernon, CT)**: Hosting *America 250: A Creative Reflection* (due May 22). This local CT exhibition is an easy physical drop-off and highly prestigious for New England artists.
+- **Visionary Art Collective NYC Pop-Up**: *The Midnight Garden* (due May 31), curated by Jessica Libor. Perfect regional entry to build NYC-based foot traffic and connections without shipping across the country.
 
-### 3. High-Value Prizes
-The market shows strong support with nearly 20% of analyzed calls offering prizes of **$2,000 or more**. Most significant awards are tied to national-level competitions.
+---
 
-## 🚀 Priority Targets for Tom
-- **Art of the Northeast**: **(High Priority / CT Local)** - This major juried exhibition is based in CT and has a significant prize pool. A key regional target.
-- **"Aqua" Juried Show**: **(Theme: Elemental Dynamics)** - Directly aligns with the "water" theme. Excellent for recent elemental works.
-- **Shadow and Form**: **(Theme: New Noir)** - A national call specifically exploring "New Noir" aesthetics, seeking works that play with light and darkness.
-- **Chelsea International Fine Art Competition**: **(High-Value Prize)** - Offers a major cash prize ($5,000+) and significant exposure in NYC.
-- **Digital Directions**: **(Media: Digital Painting)** - A forward-thinking exhibition focused exclusively on digital art forms.
-- **Mystic Outdoor Art Festival**: **(CT Local)** - A well-attended local festival. Good for sales and local visibility.
+## 🚀 Priority Targets for Tom (Scout Recommendations)
+
+| Opportunity | Deadline | Location / Type | Theme / Vector | Strategic Value |
+| :--- | :--- | :--- | :--- | :--- |
+| **America 250: A Creative Reflection** | **2026-05-22** | Arts Center East (Vernon, CT) | CT Local / Physical | Zero-ship logistics, local CT network builder, high regional visibility. |
+| **Power of Water Open Show** | **2026-05-23** | Louisa Arts Center (VA) | Elemental Dynamics | Direct alignment with our established water/light thematic vector. |
+| **Velvet: A Call for Works (Black)** | **2026-05-24** | Manifest Gallery (National) | New Noir / Shadows | Prestigious gallery, excellent fit for dark, rich, high-contrast oil/acrylic work. |
+| **The Midnight Garden Pop-Up** | **2026-05-31** | Visionary Art Collective (NYC) | Regional / NYC Pop-up | Excellent exposure, highly curated, short physical drive to deliver artwork. |
+| **Chromatic Reverie** | **2026-05-31** | TeraVarna (Online) | High-Value Abstract | Broad national visibility, substantial prize pool, abstracts-focused. |
+
+---
+
+## 📊 Scraper Vital Stats
+* **Deadlines Scraped:** 64 total
+* **Active Filtered Exclusions:** 17 photographic/jewelry listings automatically bypassed via blacklist keyword matching.
+* **Database Connection Status:** NOMINAL. Synchronized to `C:\Users\tberg\Documents\_PROJECTS\MissionControl\data\art-deadlines.json`

@@ -44,7 +44,7 @@ export async function listDirectoryContents(currentPath: string = '/'): Promise<
         { name: 'Tasks & Lessons', isFolder: true, path: 'tasks', source: 'tasks' },
         { name: 'Automation Scripts', isFolder: true, path: 'scripts', source: 'scripts' },
         { name: 'Agent Skills', isFolder: true, path: 'skills', source: 'skills' },
-        { name: 'Studio Projects (Source)', isFolder: true, path: 'projects_bridge', source: 'projects' },
+        // { name: 'Studio Projects (Source)', isFolder: true, path: 'projects_bridge', source: 'projects' },
         { name: 'MEMORY.md', isFolder: false, path: 'MEMORY.md', source: 'root' },
       ];
     }
@@ -238,7 +238,7 @@ export async function searchDocuments(query: string): Promise<FileSystemItem[]> 
   searchInDir(MEMORY_DIR, 'memory');
   searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'tasks'), 'tasks');
   searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'scripts'), 'scripts');
-  searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'projects_bridge'), 'projects');
+  // searchInDir(path.join(OPENCLAW_WORKSPACE_DIR, 'projects_bridge'), 'projects');
   
   return results.slice(0, 50); // Limit to 50 results
 }

@@ -129,3 +129,21 @@ model ClimateLog {
   deviceId    String?
   timestamp   DateTime @default(now())
 }
+
+model ChatRoom {
+  id        String        @id @default(cuid())
+  name      String?
+  type      String        @default("direct") // "direct" or "group"
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  content   String
+  role      String   @default("user") // "user" or "assistant"
+  roomId    String
+  room      ChatRoom @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+}

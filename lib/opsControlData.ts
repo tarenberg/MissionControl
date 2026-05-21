@@ -93,7 +93,7 @@ export interface AgentModelItem {
 
 function deriveCronTags(name: string, schedule: string): string[] {
   const tags: string[] = ['automation'];
-  const lower = name.toLowerCase();
+  const lower = (name || '').toLowerCase();
   if (lower.includes('memory') || lower.includes('summary')) tags.push('memory');
   if (lower.includes('morning') || lower.includes('evening') || lower.includes('wrap')) tags.push('daily');
   if (lower.includes('trend') || lower.includes('digest') || lower.includes('research')) tags.push('research');

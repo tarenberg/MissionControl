@@ -141,3 +141,30 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 130, 246, 0.8);
 }
+
+/* --- Mobile Responsive Layout Fixes --- */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden; /* Prevent horizontal scroll on body */
+    width: 100%;
+    position: relative;
+  }
+
+  .voiceInterfaceContainer {
+    bottom: 10px !important;
+    right: 10px !important;
+    transform: scale(0.75);
+    transform-origin: bottom right;
+  }
+
+  /* Ensure all images stay within screen bounds */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Force vertical stacking for neo-flat panels that might be nested */
+  [class*="Panel"] {
+    padding: 15px !important;
+  }
+}

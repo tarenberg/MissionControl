@@ -74,7 +74,15 @@ export default function StudioMonitor() {
             </div>
             <div className="text-left">
               <h2 className="text-gray-500 dark:text-gray-400 font-black tracking-tighter m-0 uppercase text-sm">Studio Bridge</h2>
-              <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Offline or Auth Pending</p>
+              <div className="flex items-center gap-2">
+                <p className="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Offline or Auth Pending</p>
+                <button 
+                  onClick={() => alert('Nest Token Expired (invalid_grant). To fix:\n1. Run `node scripts/test-nest-auth.js` to check status.\n2. Re-authorize via Google Cloud Console if needed.\n3. Update NEST_REFRESH_TOKEN in .env')}
+                  className="text-[9px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 hover:bg-red-500/40 transition-colors uppercase font-black"
+                >
+                  Repair
+                </button>
+              </div>
             </div>
           </div>
           <button onClick={fetchData} className="neo-button no-3d p-2.5 rounded-2xl text-gray-400 hover:text-blue-500 active:neo-button-active">
