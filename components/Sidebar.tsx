@@ -38,6 +38,7 @@ export default function Sidebar() {
             { name: 'Art Tracker', href: '/art-tracker', icon: '🎨' },
             { name: 'Team', href: '/team', icon: '👥' },
             { name: 'Ops Control', href: '/ops', icon: '⚙️' },
+            { name: 'VAT Chat', href: '/chat', icon: '💬' },
           ].map((item) => (
             <li key={item.name}>
               <a 
