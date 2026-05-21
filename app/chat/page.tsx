@@ -100,12 +100,14 @@ export default function VATChatPage() {
     fetchRooms(true);
     const interval = setInterval(() => {
       fetchRooms(false);
-      if (activeRoomId) {
+      // Skip message polling while actively waiting for an LLM/voice response (isThinking is true)
+      // to prevent overwriting optimistic user message bubbles before the server returns.
+      if (activeRoomId && !isThinking) {
         fetchMessages(activeRoomId);
       }
     }, 1500);
     return () => clearInterval(interval);
-  }, [activeRoomId, fetchMessages]);
+  }, [activeRoomId, fetchMessages, isThinking]);
 
   // Load messages when active room changes
   useEffect(() => {

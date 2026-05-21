@@ -51,6 +51,19 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         />
       )}
 
+      {/* Mobile Hamburger Trigger Button (Visible only on mobile/tablet when sidebar is collapsed) */}
+      {isCollapsed && (
+        <button
+          onClick={() => setIsCollapsed(false)}
+          className="fixed top-4 left-4 z-45 p-3 rounded-2xl bg-neo-bg border border-white/50 dark:border-white/5 shadow-neo-flat lg:hidden flex items-center justify-center cursor-pointer hover:neo-glow-blue active:scale-95 transition-all text-gray-600 dark:text-gray-400 font-bold"
+          aria-label="Open Navigation"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      )}
+
       {/* Sidebar with state control */}
       <aside className={`bg-neo-bg p-6 fixed z-50 flex flex-col transition-all duration-500 ease-in-out
         lg:h-[calc(100vh-2.5rem)] lg:top-5 lg:left-5 lg:rounded-[40px] lg:border lg:border-white/50 lg:dark:border-white/5 lg:shadow-neo-flat
