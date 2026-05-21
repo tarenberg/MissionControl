@@ -95,6 +95,41 @@ export default function ChatPopupV3() {
       }
     },
     onAction: (action) => executeAction(action),
+    onUserSpeech: async (blob) => {
+      if (!roomIdRef.current) return;
+      console.log('VAT Chat: Live voice speech turn finished. Transcribing user audio silently...');
+      
+      const formData = new FormData();
+      formData.append('audio', blob);
+      formData.append('roomId', roomIdRef.current);
+      formData.append('triggerLLM', 'false'); // Silently transcribe & save in SQLite
+
+      try {
+        const res = await fetch('/api/chat/voice', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.userMsg) {
+            console.log('VAT Chat: Live voice user message transcribed and saved:', data.userMsg.content);
+            setMessages(prev => {
+              // Avoid duplicate messages
+              if (prev.some(m => m.id === data.userMsg.id || m.content === data.userMsg.content)) return prev;
+              return [...prev, {
+                id: data.userMsg.id,
+                content: data.userMsg.content,
+                role: 'user',
+                createdAt: data.userMsg.createdAt || new Date().toISOString()
+              }];
+            });
+          }
+        }
+      } catch (err) {
+        console.error('VAT Chat: Failed to silently transcribe user live speech:', err);
+      }
+    },
     onStateChange: (s) => {
       console.log('GeminiLive State Change:', s);
       setOrbState(s as OrbState);

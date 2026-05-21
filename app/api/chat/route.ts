@@ -3,15 +3,15 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Get or create the default "Muffin" room
+    // Get or create the default "Muffin 🧁" room
     let room = await prisma.chatRoom.findFirst({
-      where: { name: 'Muffin' }
+      where: { name: 'Muffin 🧁' }
     });
 
     if (!room) {
       room = await prisma.chatRoom.create({
         data: {
-          name: 'Muffin',
+          name: 'Muffin 🧁',
           type: 'direct',
         }
       });

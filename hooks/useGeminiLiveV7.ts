@@ -30,6 +30,43 @@ function pcmToAudioBuffer(data: Uint8Array, ctx: AudioContext, sampleRate: numbe
   return buffer;
 }
 
+// --- WAV Encoding Helpers ---
+function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+
+  floatTo16BitPCM(view, 44, samples);
+
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+function floatTo16BitPCM(output: DataView, offset: number, input: Float32Array) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, input[i]));
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+}
+
+function writeString(view: DataView, offset: number, string: string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
 const systemInstruction = `You are Muffin, Tom's studio assistant. Be concise.
 Available Actions:
 - [[ACTION: {"type": "NAVIGATE", "path": "/target"}]]
@@ -44,6 +81,7 @@ interface GeminiLiveOptions {
   onAction?: (action: any) => void;
   onStateChange?: (state: GeminiLiveState) => void;
   onLevelChange?: (level: number) => void;
+  onUserSpeech?: (blob: Blob) => void;
 }
 
 export function useGeminiLiveV7(options: GeminiLiveOptions) {
@@ -63,6 +101,7 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
   const userSpeakingRef = useRef(false);
   const silenceTimeoutRef = useRef<any>(null);
   const connectingTimeoutRef = useRef<any>(null);
+  const recordedChunksRef = useRef<Float32Array[]>([]);
 
   const shouldBeConnectedRef = useRef(false);
   const reconnectTimeoutRef = useRef<any>(null);
@@ -191,6 +230,7 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
             userSpeakingRef.current = true;
             console.log('GeminiLiveV7: User started speaking 🎙️');
             setInternalState('listening'); // Force Orb to green listening state
+            recordedChunksRef.current = []; // Reset recorded chunks buffer
           }
 
           // Clear silence timer as long as user is actively talking
@@ -198,6 +238,11 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
             clearTimeout(silenceTimeoutRef.current);
             silenceTimeoutRef.current = null;
           }
+        }
+
+        // Accumulate audio chunks while speaking
+        if (userSpeakingRef.current) {
+          recordedChunksRef.current.push(new Float32Array(inputData));
         } else {
           // If the user was speaking and now fell below threshold, initiate silence timer
           if (userSpeakingRef.current && !silenceTimeoutRef.current) {
@@ -206,6 +251,27 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
                 userSpeakingRef.current = false;
                 console.log('GeminiLiveV7: User stopped speaking (silence detected). Transitioning to connecting/thinking state.');
                 setInternalState('connecting'); // Shows "Processing..." on screen
+
+                // Export WAV blob and send to parent callback
+                const chunks = recordedChunksRef.current;
+                if (chunks.length > 0) {
+                  let totalLength = 0;
+                  for (const c of chunks) totalLength += c.length;
+                  const merged = new Float32Array(totalLength);
+                  let offset = 0;
+                  for (const c of chunks) {
+                    merged.set(c, offset);
+                    offset += c.length;
+                  }
+
+                  try {
+                    const wavBlob = encodeWAV(merged, 16000);
+                    console.log('GeminiLiveV7: Exported user speech WAV blob, size:', wavBlob.size);
+                    optionsRef.current.onUserSpeech?.(wavBlob);
+                  } catch (err) {
+                    console.error('GeminiLiveV7: Failed to encode WAV blob:', err);
+                  }
+                }
               }
               silenceTimeoutRef.current = null;
             }, 1000); // 1.0s of continuous silence triggers the thinking state

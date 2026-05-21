@@ -43,6 +43,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const triggerLLM = formData.get('triggerLLM') as string;
+    if (triggerLLM === 'false') {
+      return NextResponse.json({ userMsg });
+    }
+
     // --- LLM PROCESSING (Ollama) ---
     console.log('Thinking with Ollama (gemma2)...');
     const systemPrompt = `You are Muffin, a sharp, resourceful studio assistant for Tom.
