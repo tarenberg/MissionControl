@@ -58,6 +58,7 @@ export default function VATChatPage() {
   const [dragActive, setDragActive] = useState(false);
   const [playbackAudio, setPlaybackAudio] = useState<string | null>(null);
   const [loadingRooms, setLoadingRooms] = useState(true);
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -166,6 +167,7 @@ export default function VATChatPage() {
       const data = await res.json();
       if (data.room?.id) {
         setActiveRoomId(data.room.id);
+        setShowMobileChat(true);
         fetchRooms();
       }
     } catch (err) {
@@ -589,7 +591,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       onDragEnter={handleDrag}
     >
       {/* Sidebar (Left Column) */}
-      <div className="w-80 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-900/10 dark:bg-zinc-950/20">
+      <div className={`${showMobileChat ? 'max-lg:hidden' : 'flex'} w-80 shrink-0 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-900/10 dark:bg-zinc-950/20`}>
         {/* Search & Action Panel */}
         <div className="p-4 border-b border-zinc-300/20 dark:border-zinc-800/40 flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -636,7 +638,10 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
               return (
                 <button
                   key={room.id}
-                  onClick={() => setActiveRoomId(room.id)}
+                  onClick={() => {
+                    setActiveRoomId(room.id);
+                    setShowMobileChat(true);
+                  }}
                   className={`w-full text-left p-3.5 rounded-3xl transition-all duration-300 border flex items-center justify-between group ${
                     isActive 
                       ? 'neo-button text-blue-600 dark:text-blue-400 border-blue-500/30' 
@@ -670,12 +675,23 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       </div>
 
       {/* Main Conversation Pane (Right Column) */}
-      <div className="flex-1 flex flex-col bg-[#161619]/40 relative">
+      <div className={`${showMobileChat ? 'flex' : 'max-lg:hidden'} flex-1 flex flex-col bg-[#161619]/40 relative`}>
         {activeRoomId ? (
           <>
             {/* Header section */}
             <div className="px-6 py-4 border-b border-zinc-300/20 dark:border-zinc-800/40 flex items-center justify-between bg-zinc-900/10 backdrop-blur-md">
               <div className="flex items-center gap-3">
+                {/* Back Button for Mobile */}
+                <button
+                  onClick={() => setShowMobileChat(false)}
+                  className="lg:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-400 hover:text-white transition-all mr-1 cursor-pointer"
+                  title="Back to Channels"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
                 <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700/40 flex items-center justify-center text-base font-bold shadow-soft">
                   {activeRoomName.substring(0, 2)}
                 </div>
