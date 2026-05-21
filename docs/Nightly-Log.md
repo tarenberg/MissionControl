@@ -1,5 +1,28 @@
 # Nightly Log
 
+## 2026-05-20 (Nightly Sprint)
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **Standalone Telegram-Style VAT Chat Deployed (Task 1 - 8)**:
+    - Designed and implemented a dedicated, full-screen developer workspace at `/chat` aligned with the "Loosely Twisted" dark-neomorphic aesthetic.
+    - **Dual-Column layout**: Left sidebar handles channel management (direct lines to Muffin 🧁, Jason 🛠️, Scout 🔍, and Sentinel 🛡️, plus custom session creation and local search), while the right pane renders clean, conversation-focused bubbles.
+    - **Premium UI Integrations**: Rendered code blocks inside a custom `<CollapsibleCodeBlock />` with instant copy-to-clipboard actions and collapse toggles. Added inline interactive action cards (`[ Approve Execution ]` / `[ Reject ]`) generated from OpenClaw payloads, and drag-and-drop file upload overlays with instant Tailscale network sync.
+    - **Hybrid continuous input (5.c)**: Integrated the continuous `useVAT` hot-mic toggle directly into the input footer, supported by real-time voice feedback, global hotkeys (`Ctrl+M`), and auto-focusing textareas.
+    - **Slash Command Autocomplete**: Configured slash shortcuts overlay suggestions list (typing `/` pops up shortcuts for `/status`, `/reset`, `/logs`, `/help`).
+    - **Local Sync & Voice Playback**: Integrated a neat neomorphic speaker mute toggle in the header, enabling automatic spoken voice playback via local Piper TTS. Connected a 1.5s short-polling sync pipeline to dynamically mirror chat states across mobile and laptop over Tailscale.
+- **Production Compilation & CI Backup (Task 9)**:
+    - Ran full Next.js production build (`npm run build`), verifying **zero TypeScript compiler or syntax errors** for maximum stability.
+    - Successfully backed up the complete Mission Control repository state to GitHub on branch `muffin/vat-chat`.
+
+### Lessons Learned:
+- Integrating multi-agent personification via custom system prompt generation based on room name is a highly responsive way to split agent duties (like debugging vs research) inside a unified SQLite schema.
+- Short polling at 1.5s over Tailscale is incredibly fast, responsive, and completely removes the need for external cloud database connections for local-first sync.
+
+### Next Steps:
+- Add visual badge counts to the sidebar channels to indicate active unread notifications.
+- Polish TTS playback voices to map specific Piper audio voices to the respective agent persona (e.g., a deeper voice for Sentinel).
+
 ## 2026-05-13 - Social Celebration Engine & Pathfinder Scrape
 **Agent:** Muffin 🧁
 
