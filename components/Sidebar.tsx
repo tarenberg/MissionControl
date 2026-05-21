@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import ThemeToggle from './ThemeToggle';
 import Logo from './Logo';
+import Link from 'next/link';
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -41,14 +42,14 @@ export default function Sidebar() {
             { name: 'VAT Chat', href: '/chat', icon: '💬' },
           ].map((item) => (
             <li key={item.name}>
-              <a 
+              <Link 
                 href={item.href} 
                 className={`flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 font-bold text-[11px] uppercase tracking-widest neo-button hover:text-blue-600 dark:hover:text-blue-400 hover:neo-glow-blue active:neo-button-active ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title={isCollapsed ? item.name : ''}
               >
                 <span className={`text-sm group-hover:drop-shadow-[0_0_12px_rgba(59,130,246,1)] group-hover:scale-120 transition-all duration-300 z-10 ${isCollapsed ? 'text-xl' : ''}`}>{item.icon}</span>
                 {!isCollapsed && <span className="relative z-10 truncate">{item.name}</span>}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

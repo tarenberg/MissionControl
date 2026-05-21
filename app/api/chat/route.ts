@@ -31,7 +31,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { content, role, roomId } = await req.json();
+    const { content, role, roomId, triggerLLM = true } = await req.json();
 
     if (!content || !role || !roomId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     });
 
     // If it's a user message, generate an AI response
-    if (role === 'user') {
+    if (role === 'user' && triggerLLM !== false) {
       console.log(`Thinking with Ollama (gemma2) for text message: "${content.substring(0, 50)}..."`);
       try {
         const systemPrompt = `You are Muffin, a sharp, resourceful studio assistant for Tom.

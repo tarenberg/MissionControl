@@ -5,6 +5,7 @@ import { Send, Mic, MicOff, X, User, Bot, Volume2, VolumeX, Minimize2, GripHoriz
 import VoiceOrb, { OrbState } from './VoiceOrb';
 import { useVAT } from '@/hooks/useVAT';
 import { useGeminiLiveV7, GeminiLiveState } from '@/hooks/useGeminiLiveV7';
+import { useRouter } from 'next/navigation';
 
 const GEMINI_API_KEY = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
 
@@ -21,6 +22,7 @@ interface Message {
 }
 
 export default function ChatPopupV3() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,6 +31,8 @@ export default function ChatPopupV3() {
   const orbStateRef = useRef<OrbState>('idle');
   useEffect(() => { orbStateRef.current = orbState; }, [orbState]);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const roomIdRef = useRef<string | null>(null);
+  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const [isInitializing, setIsInitializing] = useState(false);
   const [lastAudio, setLastAudio] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -75,6 +79,20 @@ export default function ChatPopupV3() {
         if (lastMsg && lastMsg.content === cleanContent && lastMsg.role === role) return prev;
         return [...prev, { id: Math.random().toString(36).substring(7), content: cleanContent, role, createdAt: new Date() }];
       });
+
+      // Save live assistant message to SQLite database
+      if (roomIdRef.current) {
+        fetch('/api/chat/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: cleanContent,
+            role,
+            roomId: roomIdRef.current,
+            triggerLLM: false
+          })
+        }).catch(err => console.error('Failed to save live assistant message:', err));
+      }
     },
     onAction: (action) => executeAction(action),
     onStateChange: (s) => {
@@ -86,6 +104,108 @@ export default function ChatPopupV3() {
       window.dispatchEvent(new CustomEvent('voice-sync', { detail: { level: l } }));
     }
   });
+
+  // Background Speech Recognition for user's side of Gemini Live
+  const liveSpeechRecognitionRef = useRef<any>(null);
+  const [liveTranscript, setLiveTranscript] = useState('');
+
+  useEffect(() => {
+    // We only want the background transcription active when Gemini Live is actively connected
+    if (!isLiveConnected || !roomId) {
+      if (liveSpeechRecognitionRef.current) {
+        try {
+          liveSpeechRecognitionRef.current.stop();
+        } catch {}
+        liveSpeechRecognitionRef.current = null;
+      }
+      setLiveTranscript('');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('Browser does not support SpeechRecognition for live background transcription.');
+      return;
+    }
+
+    console.log('VAT Chat: Starting background SpeechRecognition for Gemini Live...');
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      let finalSpeech = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalSpeech += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+
+      if (interim) {
+        setLiveTranscript(interim);
+      }
+
+      if (finalSpeech.trim()) {
+        const text = finalSpeech.trim();
+        console.log('VAT Chat: Live Speech transcribing user:', text);
+        
+        // Optimistically add user message to local state
+        const userMsgId = 'live-user-' + Math.random().toString(36).substring(7);
+        setMessages(prev => [
+          ...prev, 
+          { id: userMsgId, content: text, role: 'user', createdAt: new Date() }
+        ]);
+        setLiveTranscript('');
+
+        // Save to SQLite database under the active roomId without triggering another LLM reply
+        fetch('/api/chat/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: text,
+            role: 'user',
+            roomId,
+            triggerLLM: false // Bypasses Ollama generation
+          })
+        }).catch(err => console.error('Failed to save user live transcript:', err));
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      if (e.error !== 'no-speech' && e.error !== 'aborted') {
+        console.error('VAT Chat: Live SpeechRecognition error:', e.error);
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if we are still connected to Gemini Live and not stopped manually
+      if (isLiveConnected && liveSpeechRecognitionRef.current) {
+        try {
+          recognition.start();
+        } catch {}
+      }
+    };
+
+    liveSpeechRecognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start Live SpeechRecognition:', err);
+    }
+
+    return () => {
+      if (liveSpeechRecognitionRef.current) {
+        try {
+          liveSpeechRecognitionRef.current.stop();
+        } catch {}
+        liveSpeechRecognitionRef.current = null;
+      }
+    };
+  }, [isLiveConnected, roomId]);
 
   const onSpeechStart = useCallback(() => setOrbState('listening'), []);
   const onSpeechEnd = useCallback(async (blob: Blob, text?: string) => {
@@ -261,19 +381,19 @@ export default function ChatPopupV3() {
     };
   }, [isDragging, onMouseMove, onMouseUp]);
 
-  // Fetch initial messages
+  // Fetch initial/latest messages when popup is opened
   useEffect(() => {
-    if (!isOpen || roomId || isInitializing) return;
+    if (!isOpen || isInitializing) return;
     const fetchMessages = async () => {
       setIsInitializing(true);
       try {
-        console.log('VAT Chat: Initializing room...');
+        console.log('VAT Chat: Syncing room messages...');
         const res = await fetch('/api/chat');
         const data = await res.json();
         if (data.room?.id) {
           setMessages(data.messages || []);
           setRoomId(data.room.id);
-          console.log('VAT Chat: Room initialized:', data.room.id);
+          console.log('VAT Chat: Room synchronized:', data.room.id, 'Message count:', (data.messages || []).length);
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
@@ -282,7 +402,7 @@ export default function ChatPopupV3() {
       }
     };
     fetchMessages();
-  }, [isOpen, roomId, isInitializing]);
+  }, [isOpen, isInitializing]);
 
   // Auto-scroll
   useEffect(() => {
@@ -479,7 +599,7 @@ export default function ChatPopupV3() {
     switch (action.type) {
       case 'NAVIGATE':
         if (action.path) {
-          window.location.href = action.path;
+          router.push(action.path);
         }
         break;
       case 'CHECK_STUDIO':
@@ -586,12 +706,24 @@ export default function ChatPopupV3() {
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] bg-[#1e2124] shadow-lg shrink-0">
                     {msg.role === 'user' ? <User size={10} /> : <Bot size={10} className="text-[#a29bfe]" />}
                   </div>
-                  <div className={`px-4 py-2 rounded-2xl text-[13px] leading-relaxed shadow-xl border border-white/5 ${msg.role === 'user' ? 'bg-[#2d3436]/40 rounded-br-none' : 'bg-[#1e2124]/40 rounded-bl-none border-l-[#a29bfe]'}`}>
+                  <div className={`px-4 py-2 rounded-2xl text-[13px] leading-relaxed shadow-xl border border-white/5 ${msg.role === 'user' ? 'bg-[#2d3436]/80 text-white rounded-br-none border-zinc-700/50' : 'bg-[#1e2124]/80 text-zinc-200 rounded-bl-none border-l-[#a29bfe] border-l-2'}`}>
                     {msg.content}
                   </div>
                 </div>
               </div>
             ))}
+            {isLiveConnected && liveTranscript && (
+              <div className="flex justify-end animate-pulse">
+                <div className="max-w-[85%] flex items-end space-x-2 flex-row-reverse space-x-reverse">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] bg-[#1e2124] shadow-lg shrink-0">
+                    <User size={10} />
+                  </div>
+                  <div className="px-4 py-2 rounded-2xl text-[13px] leading-relaxed shadow-xl border border-white/5 bg-[#2d3436]/30 text-zinc-400 rounded-br-none italic">
+                    {liveTranscript}...
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-6 pt-2 flex-shrink-0 border-t border-white/5 bg-[#1e2124]/40 rounded-b-[40px]">

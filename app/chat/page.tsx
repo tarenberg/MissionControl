@@ -21,6 +21,7 @@ import {
 import { useVAT } from '@/hooks/useVAT';
 import CollapsibleCodeBlock from '@/components/Chat/CollapsibleCodeBlock';
 import TelemetryIndicator from '@/components/Chat/TelemetryIndicator';
+import { useRouter } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -45,6 +46,7 @@ const SLASH_COMMANDS = [
 ];
 
 export default function VATChatPage() {
+  const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -349,7 +351,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       };
       setMessages(prev => [...prev, optMsg]);
       setTimeout(() => {
-        window.location.href = action.path;
+        router.push(action.path);
       }, 1000);
     } else if (action.type === 'SEARCH') {
       const optMsg: Message = {

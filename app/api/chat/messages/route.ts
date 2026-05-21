@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, role = 'user', roomId, mute = true } = await req.json();
+    const { content, role = 'user', roomId, mute = true, triggerLLM = true } = await req.json();
 
     if (!content || !roomId) {
       return NextResponse.json({ error: 'Missing content or roomId' }, { status: 400 });
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       data: { updatedAt: new Date() }
     });
 
-    if (role !== 'user') {
+    if (role !== 'user' || triggerLLM === false) {
       return NextResponse.json({ userMsg });
     }
 
