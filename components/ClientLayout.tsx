@@ -101,6 +101,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               { name: 'Calendar', href: '/calendar', icon: '📅' },
               { name: 'Tasks', href: '/tasks', icon: '✅' },
               { name: 'Art Tracker', href: '/art-tracker', icon: '🎨' },
+              { name: 'Journal', href: '/journal', icon: '📓' },
               { name: 'Team', href: '/team', icon: '👥' },
               { name: 'Ops Control', href: '/ops', icon: '⚙️' },
               { name: 'VAT Chat', href: '/chat', icon: '💬' },
