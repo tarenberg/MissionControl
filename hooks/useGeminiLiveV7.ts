@@ -64,6 +64,11 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
   const silenceTimeoutRef = useRef<any>(null);
   const connectingTimeoutRef = useRef<any>(null);
 
+  const shouldBeConnectedRef = useRef(false);
+  const reconnectTimeoutRef = useRef<any>(null);
+  const retryCountRef = useRef(0);
+  const connectRef = useRef<any>(null);
+
   const optionsRef = useRef(options);
   useEffect(() => { optionsRef.current = options; }, [options]);
 
@@ -90,6 +95,17 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
 
   const disconnect = useCallback((reason?: string) => {
     console.log(`GeminiLiveV7: Disconnect (${reason})`);
+    
+    // If we are closing cleanly, reset reconnection state
+    if (reason === 'user_toggle' || reason === 'unmount' || reason === 'init_error') {
+      shouldBeConnectedRef.current = false;
+      retryCountRef.current = 0;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    }
+
     connectedRef.current = false;
     setupCompleteRef.current = false;
     userSpeakingRef.current = false;
@@ -126,6 +142,12 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
 
   const connect = useCallback(async () => {
     if (connectedRef.current) return;
+
+    shouldBeConnectedRef.current = true;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
 
     setInternalState('connecting');
     setError(null);
@@ -216,6 +238,7 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
           if (msg.setupComplete) {
             console.log('GeminiLiveV7: Setup Complete 🚀');
             setupCompleteRef.current = true;
+            retryCountRef.current = 0; // Reset retry count upon successful connection and setup!
             setInternalState('listening');
           }
           if (msg.error) {
@@ -296,6 +319,16 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
           console.log('GeminiLiveV7: WS Close:', e.code, e.reason);
           if (e.code !== 1000 && e.code !== 1005) setError(`Closed (${e.code}): ${e.reason}`);
           disconnect('ws_close');
+
+          // Resilient auto-reconnect backoff if unexpectedly closed
+          if (shouldBeConnectedRef.current && retryCountRef.current < 5) {
+            const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 10000); // Exponential backoff up to 10s
+            retryCountRef.current += 1;
+            console.log(`GeminiLiveV7: Unexpected close (code ${e.code}). Reconnecting in ${delay}ms... (Attempt ${retryCountRef.current}/5)`);
+            reconnectTimeoutRef.current = setTimeout(() => {
+              connectRef.current?.();
+            }, delay);
+          }
         },
         onerror: (e: any) => {
           console.error('GeminiLiveV7: WS Error:', e);
@@ -330,7 +363,17 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
     else connect();
   }, [connect, disconnect]);
 
-  useEffect(() => () => disconnect('unmount'), [disconnect]);
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
+  useEffect(() => () => {
+    shouldBeConnectedRef.current = false;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    disconnect('unmount');
+  }, [disconnect]);
 
   return { state, error, toggle, connected: connectedRef.current };
 }
