@@ -63,6 +63,7 @@ export default function VATChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all active chat rooms
   const fetchRooms = async (selectFirst = false) => {
@@ -125,12 +126,20 @@ export default function VATChatPage() {
     }
   }, [input]);
 
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    if (scrollRef.current) {
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isThinking]);
+  }, []);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    scrollToBottom();
+    const t = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(t);
+  }, [messages, isThinking, scrollToBottom]);
 
   // Handle slash commands suggestions
   useEffect(() => {
@@ -516,6 +525,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
 
   // Render message bubble contents, extracting code blocks and interactive buttons
   const renderMessageContent = (content: string) => {
+    if (!content || typeof content !== 'string') return <span>{content || ''}</span>;
     const parts = [];
     const regex = /```(\w*)\n([\s\S]*?)```/g;
     let lastIndex = 0;
@@ -591,7 +601,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       onDragEnter={handleDrag}
     >
       {/* Sidebar (Left Column) */}
-      <div className={`${showMobileChat ? 'max-md:hidden' : 'flex'} w-80 shrink-0 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-900/10 dark:bg-zinc-950/20`}>
+      <div className={`${showMobileChat ? 'hidden md:flex' : 'flex'} w-80 shrink-0 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-100/5 dark:bg-zinc-950/20`}>
         {/* Search & Action Panel */}
         <div className="p-4 border-b border-zinc-300/20 dark:border-zinc-800/40 flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -675,7 +685,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
       </div>
 
       {/* Main Conversation Pane (Right Column) */}
-      <div className={`${showMobileChat ? 'flex' : 'max-md:hidden'} flex-1 flex flex-col bg-[#161619]/40 relative`}>
+      <div className={`${showMobileChat ? 'flex' : 'hidden md:flex'} flex-1 flex flex-col bg-zinc-100/10 dark:bg-zinc-950/40 relative`}>
         {activeRoomId ? (
           <>
             {/* Header section */}
@@ -696,7 +706,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                   {activeRoomName.substring(0, 2)}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-zinc-200">
+                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                     {activeRoomName}
                   </span>
                   <span className="text-[10px] text-emerald-500 flex items-center gap-1 leading-none mt-0.5 font-semibold">
@@ -745,7 +755,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                   <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
                     🧁
                   </div>
-                  <h3 className="text-xs font-bold text-zinc-300">Start a local discussion</h3>
+                  <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-300">Start a local discussion</h3>
                   <p className="text-[10px] text-zinc-500 max-w-xs">
                     Type a query or toggle the Hot Mic button below for continuous voice control.
                   </p>
@@ -760,10 +770,10 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                     >
                       <div className={`max-w-[70%] flex flex-col gap-1`}>
                         {/* Bubble */}
-                        <div className={`p-4 rounded-[28px] text-xs shadow-soft border transition-all ${
+                        <div className={`p-4 rounded-[28px] text-xs border transition-all ${
                           isUser 
-                            ? 'bg-zinc-800/80 border-zinc-700/40 text-zinc-100 rounded-tr-sm' 
-                            : 'bg-[#1a1a1e] border-zinc-800/50 text-zinc-300 rounded-tl-sm'
+                            ? 'bg-blue-600 dark:bg-blue-600 border-blue-500/50 text-white rounded-tr-sm shadow-soft' 
+                            : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800/50 text-zinc-800 dark:text-zinc-200 rounded-tl-sm shadow-soft'
                         }`}>
                           {renderMessageContent(msg.content)}
                         </div>
@@ -799,6 +809,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Section / Footer */}
@@ -842,7 +853,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                 </button>
 
                 {/* Textarea field */}
-                <div className="flex-1 relative neo-pressed rounded-[24px] overflow-hidden border border-zinc-300/10 dark:border-zinc-800/50 bg-zinc-950/20">
+                <div className="flex-1 relative neo-pressed rounded-[24px] overflow-hidden border border-zinc-300/10 dark:border-zinc-800/50 bg-zinc-200/40 dark:bg-zinc-950/20">
                   <textarea
                     ref={textareaRef}
                     rows={1}
@@ -850,7 +861,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={isHotMic ? "Hot Mic active... speak or type here" : "Message or use /commands..."}
-                    className="w-full pl-4 pr-10 py-3 bg-transparent text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none resize-none min-h-[40px] max-h-[120px] custom-scrollbar leading-relaxed"
+                    className="w-full pl-4 pr-10 py-3 bg-transparent text-xs text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none resize-none min-h-[40px] max-h-[120px] custom-scrollbar leading-relaxed"
                   />
                 </div>
 

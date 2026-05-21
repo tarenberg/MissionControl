@@ -33,7 +33,6 @@ export default function ChatPopupV3() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const roomIdRef = useRef<string | null>(null);
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
-  const [isInitializing, setIsInitializing] = useState(false);
   const [lastAudio, setLastAudio] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -418,9 +417,8 @@ export default function ChatPopupV3() {
 
   // Fetch initial/latest messages when popup is opened
   useEffect(() => {
-    if (!isOpen || isInitializing) return;
+    if (!isOpen) return;
     const fetchMessages = async () => {
-      setIsInitializing(true);
       try {
         console.log('VAT Chat: Syncing room messages...');
         const res = await fetch('/api/chat');
@@ -432,19 +430,49 @@ export default function ChatPopupV3() {
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
-      } finally {
-        setIsInitializing(false);
       }
     };
     fetchMessages();
-  }, [isOpen, isInitializing]);
+  }, [isOpen]);
 
-  // Auto-scroll
+  // Poll messages every 1.5s for Tailscale multi-device sync
   useEffect(() => {
+    if (!isOpen || !roomId) return;
+
+    const interval = setInterval(async () => {
+      // Don't poll if we're actively talking, recording, or connecting
+      if (orbState === 'listening' || orbState === 'connecting' || orbState === 'speaking') {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/chat/messages?roomId=${roomId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages) {
+            setMessages(data.messages);
+          }
+        }
+      } catch (err) {
+        console.error('ChatPopupV3: Polling messages failed:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isOpen, roomId, orbState]);
+
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isMinimized]);
+  }, []);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    scrollToBottom();
+    const t = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(t);
+  }, [messages, isMinimized, scrollToBottom]);
 
   // Dynamic UI-level action parser (last line of defense)
   useEffect(() => {
