@@ -11,6 +11,13 @@ const ChatPopup = dynamic(() => import('./Chat/ChatPopupV3'), { ssr: false });
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Auto-collapse sidebar on smaller screens on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsCollapsed(true);
+    }
+  }, []);
+
   // Block Ctrl + Wheel zoom and pinch-to-zoom (standard browser "resize" behaviors)
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -36,11 +43,26 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex min-h-screen">
+      {/* Mobile Backdrop */}
+      {!isCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setIsCollapsed(true)}
+        />
+      )}
+
       {/* Sidebar with state control */}
-      <aside className={`bg-neo-bg p-6 fixed h-[calc(100vh-2.5rem)] top-5 left-5 z-50 rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat flex flex-col transition-all duration-500 ease-in-out ${isCollapsed ? 'w-24' : 'w-64'}`}>
+      <aside className={`bg-neo-bg p-6 fixed z-50 flex flex-col transition-all duration-500 ease-in-out
+        lg:h-[calc(100vh-2.5rem)] lg:top-5 lg:left-5 lg:rounded-[40px] lg:border lg:border-white/50 lg:dark:border-white/5 lg:shadow-neo-flat
+        max-lg:h-screen max-lg:top-0 max-lg:left-0 max-lg:rounded-none max-lg:border-r max-lg:border-white/10 max-lg:shadow-2xl
+        ${isCollapsed 
+          ? 'w-24 max-lg:w-64 max-lg:-translate-x-full' 
+          : 'w-64 max-lg:w-64 max-lg:translate-x-0'
+        }
+      `}>
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-12 bg-neo-bg rounded-r-2xl flex items-center justify-center text-[10px] z-[60] border border-white/20 dark:border-white/5 border-l-0 shadow-[4px_0_10px_rgba(0,0,0,0.2)] hover:neo-glow-blue transition-all group cursor-pointer"
+          className="absolute -right-4 max-lg:-right-8 top-1/2 -translate-y-1/2 w-8 h-12 bg-neo-bg rounded-r-2xl flex items-center justify-center text-[10px] z-[60] border border-white/20 dark:border-white/5 border-l-0 shadow-[4px_0_10px_rgba(0,0,0,0.2)] hover:neo-glow-blue transition-all group cursor-pointer"
         >
           <span className="group-hover:scale-125 transition-transform font-black text-gray-500 dark:text-gray-400 group-hover:text-blue-600">
             {isCollapsed ? '→' : '←'}
@@ -98,7 +120,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </aside>
 
       {/* Main Content Area */}
-      <main className={`flex-1 min-h-screen pr-8 py-12 transition-all duration-500 ease-in-out ${isCollapsed ? 'pl-32' : 'pl-72'}`}>
+      <main className={`flex-1 min-h-screen py-6 px-4 lg:py-12 lg:pr-8 transition-all duration-500 ease-in-out ${isCollapsed ? 'lg:pl-32' : 'lg:pl-72'}`}>
         <div className="w-full">
           {children}
         </div>
