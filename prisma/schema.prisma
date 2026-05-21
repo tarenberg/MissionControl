@@ -147,3 +147,25 @@ model ChatMessage {
   room      ChatRoom @relation(fields: [roomId], references: [id])
   createdAt DateTime @default(now())
 }
+
+model JournalEntry {
+  id        String         @id @default(cuid())
+  title     String?
+  content   String
+  mood      String?        // e.g., "happy", "reflective", "inspired"
+  location  String?        // optional geotag or description (e.g. "New Haven, CT")
+  weather   String?        // e.g. "☀️ 72°F" or "🌧️ 58°F"
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  media     JournalMedia[]
+}
+
+model JournalMedia {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  url            String       // local URL, e.g., "/uploads/journal/abc.jpg"
+  type           String       // "image" or "video"
+  filename       String
+  createdAt      DateTime     @default(now())
+}
