@@ -95,11 +95,6 @@ interface Show {
 }
 
 const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    // If we're on localhost, hit port 8080. If on Tailscale, hit Tailscale IP port 8080.
-    return `http://${hostname}:8080/tools/ArtTrackerDashboard/api`;
-  }
   return '/tools/ArtTrackerDashboard/api';
 };
 
@@ -750,6 +745,93 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
       }
     } catch (err) {
       console.error("Error marking submission as complete:", err);
+    }
+  };
+
+  const handleMarkAccepted = async (targetDeadline?: Deadline | null) => {
+    const deadline = targetDeadline || activeSubmissionDeadline;
+    if (!deadline) return;
+
+    const confirmAccept = window.confirm(
+      `Congratulations! Mark "${deadline.title}" as Accepted?\n\n` +
+      `This will automatically:\n` +
+      `1. Update this show's status to "Accepted" in your logs.\n` +
+      `2. Update all linked artworks (${deadline.submittedArtworks?.length || 0}) to "Accepted" status in your inventory.`
+    );
+    if (!confirmAccept) return;
+
+    try {
+      // 1. Update the deadline status to 'Accepted'
+      const deadlineResponse = await fetch(`${API_BASE_URL}/deadlines.php?t=${Date.now()}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...deadline,
+          status: 'Accepted'
+        })
+      });
+
+      if (!deadlineResponse.ok) throw new Error("Failed to update show status.");
+
+      // 2. For each linked artwork, update its status to 'Accepted' in paintings table
+      if (deadline.submittedArtworks && deadline.submittedArtworks.length > 0) {
+        for (const linkedArt of deadline.submittedArtworks) {
+          const fullArt = artworks.find(a => a.id === linkedArt.id);
+          if (fullArt) {
+            await fetch(`${API_BASE_URL}/artworks.php?t=${Date.now()}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...fullArt,
+                status: 'Accepted'
+              })
+            });
+          }
+        }
+      }
+
+      // 3. Refresh data
+      fetchDeadlines();
+      fetchArtworks();
+      setIsSubmissionModalOpen(false);
+      if (!targetDeadline) setActiveSubmissionDeadline(null);
+      
+      alert(`Success! "${deadline.title}" and linked artworks marked as Accepted. You can now generate your Celebration post from the inventory page! 🏆`);
+    } catch (err) {
+      console.error("Error marking show as accepted:", err);
+      alert("Failed to update status. Check logs.");
+    }
+  };
+
+  const handleMarkSubmittedDirect = async (dl: Deadline) => {
+    const confirm = window.confirm(`Mark "${dl.title}" as complete? This will move it to your 'Submitted' records.`);
+    if (!confirm) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/deadlines.php?t=${Date.now()}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...dl,
+          status: 'Submitted'
+        })
+      });
+
+      if (response.ok) {
+        const show = shows.find(s => s.title === dl.title || (s.link && s.link === dl.link));
+        if (show && show.user_status !== 'Entered') {
+          await fetch(`${API_BASE_URL}/shows.php?t=${Date.now()}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: show.id, user_status: 'Entered' })
+          });
+          fetchShows();
+        }
+        
+        fetchDeadlines();
+      }
+    } catch (err) {
+      console.error("Error marking submission complete:", err);
     }
   };
 
@@ -1467,6 +1549,27 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                                     <p style={{ fontSize: '0.75em', color: 'var(--muted)', margin: 0, fontStyle: 'italic' }}>
                                       Click on artworks in the "Artworks Overview" section below to link them to this deadline.
                                     </p>
+                                    
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center' }}>
+                                      {dl.status !== 'Submitted' && dl.status !== 'Accepted' && (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleMarkSubmittedDirect(dl); }}
+                                          className={styles.submitButton}
+                                          style={{ padding: '6px 12px', fontSize: '0.75em', margin: 0 }}
+                                        >
+                                          ✓ Mark Submitted
+                                        </button>
+                                      )}
+                                      {dl.status !== 'Accepted' && (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleMarkAccepted(dl); }}
+                                          className={styles.submitButton}
+                                          style={{ padding: '6px 12px', fontSize: '0.75em', background: 'rgba(0, 255, 150, 0.15)', color: '#00ff96', border: '1px solid rgba(0, 255, 150, 0.4)', margin: 0 }}
+                                        >
+                                          🏆 Mark Accepted
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
                               </tr>
@@ -2331,8 +2434,8 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                           style={{ width: '40px', height: '40px' }}
                         />
                         <div className={styles.selectionInfo}>
-                          <span className={styles.selectionTitle} style={{ fontSize: '0.85em' }}>{art.title}</span>
-                          <span className={styles.selectionMeta} style={{ fontSize: '0.7em' }}>{art.status}</span>
+                          <span className={styles.selectionTitle} style={{ fontSize: '0.85em' }}>{art.title || artworks.find(a => a.id === art.id)?.title}</span>
+                          <span className={styles.selectionMeta} style={{ fontSize: '0.7em' }}>{art.status || artworks.find(a => a.id === art.id)?.status}</span>
                         </div>
                         <button 
                           onClick={() => handleToggleArtworkLink(art.id)}
@@ -2373,13 +2476,23 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                 </button>
               )}
               
-              {activeSubmissionDeadline.status !== 'Submitted' && (
+              {activeSubmissionDeadline.status !== 'Submitted' && activeSubmissionDeadline.status !== 'Accepted' && (
                 <button
                   onClick={handleMarkSubmitted}
                   className={styles.submitButton}
                   style={{ background: 'var(--primary)', color: 'white', border: 'none', marginLeft: prospectusData ? '10px' : '0' }}
                 >
                   \u2705 Mark Submitted
+                </button>
+              )}
+
+              {activeSubmissionDeadline.status !== 'Accepted' && (
+                <button
+                  onClick={() => handleMarkAccepted()}
+                  className={styles.submitButton}
+                  style={{ background: 'rgba(0, 255, 150, 0.15)', color: '#00ff96', border: '1px solid rgba(0, 255, 150, 0.4)', marginLeft: '10px' }}
+                >
+                  🏆 Mark Accepted
                 </button>
               )}
               
@@ -2926,8 +3039,7 @@ const getResolvedImageUrl = (path?: string) => {
     cleanPath = cleanPath.substring(1);
   }
   
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  return `http://${hostname}:8080/tools/ArtTrackerDashboard/${cleanPath}`;
+  return `/tools/ArtTrackerDashboard/${cleanPath}`;
 };
 
 const scrollToSection = (id: string) => {
