@@ -88,9 +88,11 @@ export default function JournalPage() {
   // Voice Dictation State
   const [isDictating, setIsDictating] = useState(false);
   const [speechMode, setSpeechMode] = useState<'tap' | 'continuous'>('tap');
+  const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<any>(null);
   const speechModeRef = useRef<'tap' | 'continuous'>('tap');
   const isDictatingRef = useRef(false);
+  const interimTextRef = useRef('');
 
   // Keep refs synced to bypass stale closures
   useEffect(() => {
@@ -100,6 +102,10 @@ export default function JournalPage() {
   useEffect(() => {
     isDictatingRef.current = isDictating;
   }, [isDictating]);
+
+  useEffect(() => {
+    interimTextRef.current = interimText;
+  }, [interimText]);
 
   // Lightbox Modal State
   const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
@@ -162,7 +168,12 @@ export default function JournalPage() {
             }
           }
 
+          if (interimTranscript) {
+            setInterimText(interimTranscript);
+          }
+
           if (finalTranscript) {
+            setInterimText(''); // Clear interim since we got the final result
             const formattedSegment = formatTranscript(finalTranscript);
             setContent(prev => {
               const trimmedPrev = prev.trim();
@@ -177,6 +188,21 @@ export default function JournalPage() {
         };
 
         rec.onend = () => {
+          // If we have remaining interimText (especially useful on mobile browsers like Safari
+          // which don't reliably fire isFinal=true until the session actually ends),
+          // flush it to the main content text box!
+          if (interimTextRef.current) {
+            const formattedSegment = formatTranscript(interimTextRef.current);
+            setContent(prev => {
+              const trimmedPrev = prev.trim();
+              if (!trimmedPrev) return formattedSegment;
+              const endsWithPunctuation = /[.!?]$/.test(trimmedPrev);
+              const connector = endsWithPunctuation ? ' ' : '. ';
+              return trimmedPrev + connector + formattedSegment;
+            });
+            setInterimText('');
+          }
+
           // If in continuous Hot Mic mode, auto-restart the mic session on timeout/silence
           if (isDictatingRef.current && speechModeRef.current === 'continuous') {
             console.log('[Continuous Hot Mic] Speech ended. Auto-restarting loop...');
@@ -213,9 +239,11 @@ export default function JournalPage() {
 
     if (isDictating) {
       setIsDictating(false);
+      setInterimText('');
       recognitionRef.current.stop();
     } else {
       setIsDictating(true);
+      setInterimText('');
       try {
         recognitionRef.current.start();
       } catch (err) {
@@ -454,12 +482,18 @@ export default function JournalPage() {
                   onChange={e => setContent(e.target.value)}
                   placeholder="Speak or type your memories here..."
                   rows={6}
-                  className="neo-pressed rounded-2xl py-4 px-4 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none transition-all w-full resize-none leading-relaxed"
+                  className="neo-pressed rounded-2xl py-4 px-4 pb-12 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none transition-all w-full resize-none leading-relaxed"
                 />
                 {isDictating && (
-                  <p className="text-[11px] text-red-500 font-bold m-0 italic animate-pulse absolute bottom-3 left-4">
-                    {speechMode === 'continuous' ? '🎤 Continuous Hot Mic active... speak freely' : '🎤 Listening on-demand...'}
-                  </p>
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] bg-zinc-100/95 dark:bg-zinc-900/95 py-1.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm z-10 animate-pulse-soft">
+                    <span className="text-red-500 font-black tracking-wider flex items-center gap-1.5 shrink-0">
+                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                      {speechMode === 'continuous' ? 'HOT MIC' : 'TAP SPEAK'}:
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-300 font-mono italic truncate ml-2 flex-1 text-left">
+                      {interimText ? `"${interimText}"` : 'Listening... speak now'}
+                    </span>
+                  </div>
                 )}
               </div>
 
