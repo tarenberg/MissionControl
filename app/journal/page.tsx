@@ -93,6 +93,7 @@ export default function JournalPage() {
   const speechModeRef = useRef<'tap' | 'continuous'>('tap');
   const isDictatingRef = useRef(false);
   const interimTextRef = useRef('');
+  const lastFinalIndexRef = useRef<number>(-1);
 
   // Keep refs synced to bypass stale closures
   useEffect(() => {
@@ -162,7 +163,11 @@ export default function JournalPage() {
 
           for (let i = e.resultIndex; i < e.results.length; ++i) {
             if (e.results[i].isFinal) {
-              finalTranscript += e.results[i][0].transcript;
+              // Only accumulate and process final results we have NOT processed yet
+              if (i > lastFinalIndexRef.current) {
+                finalTranscript += e.results[i][0].transcript;
+                lastFinalIndexRef.current = i; // mark as processed
+              }
             } else {
               interimTranscript += e.results[i][0].transcript;
             }
@@ -174,6 +179,7 @@ export default function JournalPage() {
 
           if (finalTranscript) {
             setInterimText(''); // Clear interim since we got the final result
+            interimTextRef.current = ''; // INSTANTLY clear the ref to prevent onend double-flushing
             const formattedSegment = formatTranscript(finalTranscript);
             setContent(prev => {
               const trimmedPrev = prev.trim();
@@ -201,12 +207,15 @@ export default function JournalPage() {
               return trimmedPrev + connector + formattedSegment;
             });
             setInterimText('');
+            interimTextRef.current = '';
           }
 
           // If in continuous Hot Mic mode, auto-restart the mic session on timeout/silence
           if (isDictatingRef.current && speechModeRef.current === 'continuous') {
             console.log('[Continuous Hot Mic] Speech ended. Auto-restarting loop...');
             try {
+              // Reset the final results index since we are starting a brand new recognition session
+              lastFinalIndexRef.current = -1;
               rec.start();
             } catch (err) {
               console.error('Error restarting continuous mic:', err);
@@ -240,10 +249,13 @@ export default function JournalPage() {
     if (isDictating) {
       setIsDictating(false);
       setInterimText('');
+      interimTextRef.current = '';
       recognitionRef.current.stop();
     } else {
       setIsDictating(true);
       setInterimText('');
+      interimTextRef.current = '';
+      lastFinalIndexRef.current = -1; // Reset finalized index tracker upon fresh activation
       try {
         recognitionRef.current.start();
       } catch (err) {
