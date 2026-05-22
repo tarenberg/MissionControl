@@ -224,8 +224,9 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
           console.warn('GeminiLiveV7: Failed to transmit audio block:', err);
         }
 
-        // Active speech tracking for client-side Orb UI and silence detection
-        if (rms > 0.002) { // 0.002 is a safe and highly responsive speech threshold
+        const isCurrentlySpeaking = rms > 0.002;
+
+        if (isCurrentlySpeaking) {
           if (!userSpeakingRef.current) {
             userSpeakingRef.current = true;
             console.log('GeminiLiveV7: User started speaking 🎙️');
@@ -238,43 +239,45 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
             clearTimeout(silenceTimeoutRef.current);
             silenceTimeoutRef.current = null;
           }
-        }
 
-        // Accumulate audio chunks while speaking
-        if (userSpeakingRef.current) {
           recordedChunksRef.current.push(new Float32Array(inputData));
         } else {
           // If the user was speaking and now fell below threshold, initiate silence timer
-          if (userSpeakingRef.current && !silenceTimeoutRef.current) {
-            silenceTimeoutRef.current = setTimeout(() => {
-              if (userSpeakingRef.current) {
-                userSpeakingRef.current = false;
-                console.log('GeminiLiveV7: User stopped speaking (silence detected). Transitioning to connecting/thinking state.');
-                setInternalState('connecting'); // Shows "Processing..." on screen
+          if (userSpeakingRef.current) {
+            // Keep pushing silent chunks so there is no clipping
+            recordedChunksRef.current.push(new Float32Array(inputData));
 
-                // Export WAV blob and send to parent callback
-                const chunks = recordedChunksRef.current;
-                if (chunks.length > 0) {
-                  let totalLength = 0;
-                  for (const c of chunks) totalLength += c.length;
-                  const merged = new Float32Array(totalLength);
-                  let offset = 0;
-                  for (const c of chunks) {
-                    merged.set(c, offset);
-                    offset += c.length;
-                  }
+            if (!silenceTimeoutRef.current) {
+              silenceTimeoutRef.current = setTimeout(() => {
+                if (userSpeakingRef.current) {
+                  userSpeakingRef.current = false;
+                  console.log('GeminiLiveV7: User stopped speaking (silence detected). Transitioning to connecting/thinking state.');
+                  setInternalState('connecting'); // Shows "Processing..." on screen
 
-                  try {
-                    const wavBlob = encodeWAV(merged, 16000);
-                    console.log('GeminiLiveV7: Exported user speech WAV blob, size:', wavBlob.size);
-                    optionsRef.current.onUserSpeech?.(wavBlob);
-                  } catch (err) {
-                    console.error('GeminiLiveV7: Failed to encode WAV blob:', err);
+                  // Export WAV blob and send to parent callback
+                  const chunks = recordedChunksRef.current;
+                  if (chunks.length > 0) {
+                    let totalLength = 0;
+                    for (const c of chunks) totalLength += c.length;
+                    const merged = new Float32Array(totalLength);
+                    let offset = 0;
+                    for (const c of chunks) {
+                      merged.set(c, offset);
+                      offset += c.length;
+                    }
+
+                    try {
+                      const wavBlob = encodeWAV(merged, 16000);
+                      console.log('GeminiLiveV7: Exported user speech WAV blob, size:', wavBlob.size);
+                      optionsRef.current.onUserSpeech?.(wavBlob);
+                    } catch (err) {
+                      console.error('GeminiLiveV7: Failed to encode WAV blob:', err);
+                    }
                   }
                 }
-              }
-              silenceTimeoutRef.current = null;
-            }, 1000); // 1.0s of continuous silence triggers the thinking state
+                silenceTimeoutRef.current = null;
+              }, 1000); // 1.0s of continuous silence triggers the thinking state
+            }
           }
         }
       };
