@@ -42,6 +42,32 @@ const MOODS = [
   { code: 'inspired', emoji: '🎨', label: 'Inspired' },
 ];
 
+function formatTranscript(text: string): string {
+  if (!text) return '';
+  
+  // Trim whitespace
+  let formatted = text.trim();
+
+  // 1. Capitalize first letter of the overall text and any letter following a punctuation sentence-ender (. ! ?)
+  formatted = formatted.replace(/(^\s*|[.!?]\s+)([a-z])/g, (match, separator, letter) => {
+    return separator + letter.toUpperCase();
+  });
+
+  // 2. Capitalize lone "i", "i'm", "i'll", "i'd", "i've"
+  formatted = formatted.replace(/\bi\b/g, 'I');
+  formatted = formatted.replace(/\bi'm\b/gi, "I'm");
+  formatted = formatted.replace(/\bi'll\b/gi, "I'll");
+  formatted = formatted.replace(/\bi've\b/gi, "I've");
+  formatted = formatted.replace(/\bi'd\b/gi, "I'd");
+  
+  // 3. Automate punctuation: If the transcript segment doesn't already end with a punctuation mark, append a period.
+  if (formatted && !/[.!?]$/.test(formatted)) {
+    formatted += '.';
+  }
+
+  return formatted;
+}
+
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +87,19 @@ export default function JournalPage() {
 
   // Voice Dictation State
   const [isDictating, setIsDictating] = useState(false);
+  const [speechMode, setSpeechMode] = useState<'tap' | 'continuous'>('tap');
   const recognitionRef = useRef<any>(null);
+  const speechModeRef = useRef<'tap' | 'continuous'>('tap');
+  const isDictatingRef = useRef(false);
+
+  // Keep refs synced to bypass stale closures
+  useEffect(() => {
+    speechModeRef.current = speechMode;
+  }, [speechMode]);
+
+  useEffect(() => {
+    isDictatingRef.current = isDictating;
+  }, [isDictating]);
 
   // Lightbox Modal State
   const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
@@ -125,16 +163,40 @@ export default function JournalPage() {
           }
 
           if (finalTranscript) {
-            setContent(prev => prev + (prev ? ' ' : '') + finalTranscript);
+            const formattedSegment = formatTranscript(finalTranscript);
+            setContent(prev => {
+              const trimmedPrev = prev.trim();
+              if (!trimmedPrev) return formattedSegment;
+              
+              // Determine if we need a period and space or just a space
+              const endsWithPunctuation = /[.!?]$/.test(trimmedPrev);
+              const connector = endsWithPunctuation ? ' ' : '. ';
+              return trimmedPrev + connector + formattedSegment;
+            });
           }
         };
 
         rec.onend = () => {
-          setIsDictating(false);
+          // If in continuous Hot Mic mode, auto-restart the mic session on timeout/silence
+          if (isDictatingRef.current && speechModeRef.current === 'continuous') {
+            console.log('[Continuous Hot Mic] Speech ended. Auto-restarting loop...');
+            try {
+              rec.start();
+            } catch (err) {
+              console.error('Error restarting continuous mic:', err);
+              setIsDictating(false);
+            }
+          } else {
+            setIsDictating(false);
+          }
         };
 
         rec.onerror = (e: any) => {
           console.error('Speech Recognition Error:', e);
+          if (e.error === 'no-speech' && speechModeRef.current === 'continuous' && isDictatingRef.current) {
+            // Let the onend handler manage the restart silently
+            return;
+          }
           setIsDictating(false);
         };
 
@@ -150,10 +212,15 @@ export default function JournalPage() {
     }
 
     if (isDictating) {
+      setIsDictating(false);
       recognitionRef.current.stop();
     } else {
       setIsDictating(true);
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error('Error starting speech recognition:', err);
+      }
     }
   };
 
@@ -287,8 +354,8 @@ export default function JournalPage() {
   return (
     <div className="p-4 md:p-12 flex flex-col h-full bg-neo-bg min-h-screen transition-colors duration-300">
       
-      {/* Header Block */}
-      <div className="mb-8 md:mb-12 ml-4">
+      {/* Header Block with mobile-responsive margins to float clear of the sidebar/hamburger menu */}
+      <div className="mb-8 md:mb-12 ml-12 md:ml-16 lg:ml-4">
         <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl md:text-5xl mb-3 drop-shadow-sm uppercase">Personal Journal</h1>
         <div className="flex items-center gap-3">
           <div className="neo-pressed px-6 py-2 rounded-full">
@@ -324,18 +391,63 @@ export default function JournalPage() {
               <div className="flex flex-col gap-2 relative">
                 <div className="flex justify-between items-center">
                   <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">What's on your mind?</label>
-                  <button
-                    type="button"
-                    onClick={toggleDictation}
-                    className={`p-2 rounded-full border-none cursor-pointer transition-all ${
-                      isDictating 
-                        ? 'bg-red-500 text-white animate-pulse' 
-                        : 'neo-button text-blue-500 hover:text-blue-600'
-                    }`}
-                    title={isDictating ? 'Stop dictation' : 'Start voice dictation'}
-                  >
-                    {isDictating ? <MicOff size={16} /> : <Mic size={16} />}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Segmented Mode Selector */}
+                    <div className="neo-pressed p-0.5 rounded-full flex gap-1 bg-zinc-200/50 dark:bg-zinc-800/30">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSpeechMode('tap');
+                          if (isDictating) {
+                            setIsDictating(false);
+                            recognitionRef.current?.stop();
+                          }
+                        }}
+                        className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border-none cursor-pointer transition-all ${
+                          speechMode === 'tap'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                        title="Manual Tap: Click mic, speak sentence, click off"
+                      >
+                        Tap Speak
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSpeechMode('continuous');
+                          if (isDictating) {
+                            setIsDictating(false);
+                            recognitionRef.current?.stop();
+                          }
+                        }}
+                        className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border-none cursor-pointer transition-all ${
+                          speechMode === 'continuous'
+                            ? 'bg-red-600 text-white shadow-sm'
+                            : 'bg-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                        title="Hot Mic: Continuous listening with auto-reconnect"
+                      >
+                        Hot Mic
+                      </button>
+                    </div>
+
+                    {/* Mic Button */}
+                    <button
+                      type="button"
+                      onClick={toggleDictation}
+                      className={`p-2 rounded-full border-none cursor-pointer transition-all ${
+                        isDictating 
+                          ? speechMode === 'continuous'
+                            ? 'bg-red-500 text-white animate-pulse'
+                            : 'bg-blue-600 text-white animate-pulse'
+                          : 'neo-button text-blue-500 hover:text-blue-600'
+                      }`}
+                      title={isDictating ? 'Stop listening' : `Start listening (${speechMode === 'continuous' ? 'Continuous Hot Mic' : 'Tap Speak'})`}
+                    >
+                      {isDictating ? <MicOff size={16} /> : <Mic size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={content}
@@ -346,7 +458,7 @@ export default function JournalPage() {
                 />
                 {isDictating && (
                   <p className="text-[11px] text-red-500 font-bold m-0 italic animate-pulse absolute bottom-3 left-4">
-                    🎤 Listening continuously... speak freely
+                    {speechMode === 'continuous' ? '🎤 Continuous Hot Mic active... speak freely' : '🎤 Listening on-demand...'}
                   </p>
                 )}
               </div>

@@ -602,8 +602,8 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
     >
       {/* Sidebar (Left Column) */}
       <div className={`${showMobileChat ? 'hidden md:flex' : 'flex'} w-80 shrink-0 border-r border-zinc-300/20 dark:border-zinc-800/40 flex flex-col bg-zinc-100/5 dark:bg-zinc-950/20`}>
-        {/* Search & Action Panel */}
-        <div className="p-4 border-b border-zinc-300/20 dark:border-zinc-800/40 flex flex-col gap-3">
+        {/* Search & Action Panel with mobile-responsive left padding to clear hamburger */}
+        <div className="p-4 pl-12 md:pl-16 lg:pl-4 border-b border-zinc-300/20 dark:border-zinc-800/40 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h1 className="text-sm font-black uppercase tracking-wider text-zinc-800 dark:text-zinc-300 flex items-center gap-2">
               <Terminal size={14} className="text-blue-500 animate-pulse-soft" />
