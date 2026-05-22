@@ -36,7 +36,7 @@ interface VATOptions {
 }
 
 export function useVAT(options: VATOptions = {}) {
-  const { threshold = -55, silenceDuration = 1500, onSpeechStart, onSpeechEnd, disabled = false } = options;
+  const { threshold = -45, silenceDuration = 1500, onSpeechStart, onSpeechEnd, disabled = false } = options;
   const { level, db, error, start: startAnalyzer, stop: stopAnalyzer, stream } = useAudioAnalyzer();
   
   const [isSpeaking, setIsSpeaking] = useState(false);

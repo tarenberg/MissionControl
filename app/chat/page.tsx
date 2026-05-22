@@ -440,6 +440,8 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
     isActive: isVATActive, 
     isSpeaking, 
     transcript,
+    error: vatError,
+    db: vatDb,
     toggle: toggleVAT,
   } = useVAT({
     onSpeechStart,
@@ -837,6 +839,25 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
               )}
 
               {/* Input controller */}
+              {vatError && (
+                <div className="mb-3 max-w-4xl mx-auto p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-500 flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <p className="font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    ⚠️ Microphone Access Restricted
+                  </p>
+                  <p className="leading-relaxed opacity-90">
+                    Browsers block microphone access over insecure HTTP. To fix this over Tailscale:
+                  </p>
+                  <ol className="list-decimal pl-4 space-y-0.5 opacity-90">
+                    <li>Go to <code className="font-mono bg-amber-500/20 px-1 py-0.5 rounded">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code> in Chrome/Edge.</li>
+                    <li>Add <code className="font-mono bg-amber-500/20 px-1 py-0.5 rounded">http://100.109.216.115:3000</code> to the text field.</li>
+                    <li>Toggle the setting to <strong>Enabled</strong> and restart your browser.</li>
+                  </ol>
+                  <p className="text-[10px] opacity-75 mt-0.5 italic">
+                    Error details: {vatError}
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-end gap-3 max-w-4xl mx-auto">
                 {/* File picker */}
                 <input 
@@ -867,6 +888,11 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
                 </div>
 
                 {/* Hot Mic continuous Voice Toggle Button (5.c) */}
+                {isHotMic && (
+                  <div className="h-10 px-3 rounded-full neo-pressed flex items-center justify-center text-[10px] font-mono font-bold text-blue-500 border border-blue-500/20 shadow-glow-blue shrink-0 animate-pulse-soft">
+                    🎙️ {Math.round(vatDb)} dB
+                  </div>
+                )}
                 <button
                   onClick={() => toggleVAT()}
                   className={`w-10 h-10 rounded-full neo-button flex items-center justify-center shrink-0 transition-all ${
