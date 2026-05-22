@@ -1,5 +1,33 @@
 # Nightly Log
 
+## 2026-05-21 (Nightly Sprint)
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **Neomorphic Personal Journal Deployed (Tasks 1 - 5)**:
+    - **Local Multipart Media Uploader**: Created `public/uploads/journal` and engineered `app/api/journal/upload/route.ts` to parse images/videos from Tom's phone, verify extensions, and save them on-disk locally (bypassing public cloud buckets completely).
+    - **Fully Responsive Journal UI**: Developed `app/journal/page.tsx` under the Loosely Twisted design system. It features a stunning, dual-shadow layout, high-contrast dynamic typography, tactile Mood Check Pickers, a file drag-and-drop area, and a flowing chronological timeline stream.
+    - **Hands-Free Speech Dictation**: Integrated continuous client-side browser Web Speech API dictation inside the editor, letting Tom dictate journal entries from bed.
+    - **Automatic Weather Capture**: Configured server-side `wttr.in` lookups in the POST CRUD handler to capture weather conditions (e.g. `☀️ 72°F`) for New Haven, CT, caching it directly in SQLite.
+    - **Clean In-Place CRUD**: Engineered inline dynamic edit drawers and cascading unlinks for physical files upon entry deletion to prevent storage leaks. Added soft-navigation entry points in `components/Sidebar.tsx` and `components/ClientLayout.tsx`.
+- **Art Tracker Cascading Transition & Secure Local Reverse Proxy**:
+    - **CORS & Mixed-Content Cure**: Set up a Next.js server-side reverse proxy inside `next.config.ts` mapping `/tools/ArtTrackerDashboard/:path*` to local Apache on `http://localhost:8080`, allowing unencrypted PHP endpoints to serve local assets securely on secure domains (Tailscale).
+    - **Google OAuth Keyring Rescue**: Fixed the broken weekly expense sync by dynamically parsing active OAuth secrets from local `gogcli` credentials files. Ran background pipelines, import-syncing **38 new exhibition and receipt expenses** into MySQL.
+    - **One-Tap Acceptance Pipeline**: Patched `/api/deadlines.php` to save logistics and built a direct "Mark Accepted" action inside `components/ArtTrackerDashboard.tsx`. Tap of a button triggers a cascading SQL transaction: updating show status to `Accepted` in MySQL, while updating all linked painting inventory records from `Committed` to `Accepted`.
+- **VAT Chat Deep Alignment & Stability Fixes**:
+    - **Room Desynchronization Fixed**: Unified target room querying in backend controllers to link both floating popups and `/chat` to the same seeded "Muffin" CUID, stopping split-conversation threads.
+    - **Voice Capture Locked-Mic Solution**: Implemented a client-side Float32 PCM sample buffer and custom browser Int16 WAV compiler inside `hooks/useGeminiLiveV7.ts`. This permits real-time transcription to run cleanly parallel to WebRTC streams. Added `triggerLLM: false` to persist user speech transcripts silently to the database without generating recursive Ollama loops.
+    - **Layout & Contrast Hardening**: Fixed the hidden channels sidebar by lowering responsive breakpoints to 768px, ensuring laptop displays never lose workspace sidebars. Hardcoded high-contrast light-mode styles, and built smooth auto-scrolling ref anchors.
+- **Production Build Integrity**:
+    - Compiled the entire codebase via `npx tsc --noEmit` and confirmed **zero build errors or TypeScript warning failures**.
+    - Successfully staged, committed, and pushed the entire finalized codebase to GitHub on branch `muffin/vat-chat`.
+
+### Lessons Learned:
+- Leveraging local-first proxy rewrites inside Next.js config completely bypasses browser security sandboxing for mixed content without forcing self-signed SSL on legacy development environments.
+- Unlinking associated physical file assets on SQLite cascading deletes keeps the local home server highly optimized and completely avoids orphan leaks.
+
+---
+
 ## 2026-05-20 (Nightly Sprint)
 **Agent:** Muffin 🧁
 

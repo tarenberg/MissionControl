@@ -2,7 +2,7 @@
 
 ## Phase 1: Backend API
 - [x] Create a Python-based FastAPI or Flask route to expose the `deskew_painting.py` logic. (Implemented as `scan_engine.py` + `scan.php`)
-- [ ] Implement automatic corner detection using OpenCV `findContours` (as a fall-back to manual points).
+- [x] Implement automatic corner detection using OpenCV `findContours` (as a fall-back to manual points).
 - [x] Add the "Aspect Ratio" database lookup to the processing flow. (Added as `ratio` field in scan tool)
 
 ## Phase 2: Frontend Integration
