@@ -48,6 +48,20 @@ function formatTranscript(text: string): string {
   // Trim whitespace
   let formatted = text.trim();
 
+  // Heuristic: Remove premature periods/punctuation that are followed by common conjunctions, prepositions, or continuations.
+  // This prevents sentences from being cut off too early by browser speech engines.
+  const commonContinuations = [
+    'and', 'but', 'or', 'so', 'then', 'because', 'although', 'though', 'since', 'unless', 'until',
+    'of', 'to', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'about', 'as', 'into', 'like', 'through', 'after', 'over', 'between', 'out', 'against', 'during', 'without', 'before', 'under', 'around', 'among',
+    'that', 'which', 'who', 'whom', 'whose', 'a', 'an', 'the',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+    'can', 'could', 'should', 'would', 'will', 'shall', 'may', 'might', 'must'
+  ];
+  const continuationsRegex = new RegExp(`([a-z0-9])\\s*[.,?!]\\s+(${commonContinuations.join('|')})\\b`, 'gi');
+  formatted = formatted.replace(continuationsRegex, (match, before, word) => {
+    return before + ' ' + word.toLowerCase();
+  });
+
   // 1. Capitalize first letter of the overall text and any letter following a punctuation sentence-ender (. ! ?)
   formatted = formatted.replace(/(^\s*|[.!?]\s+)([a-z])/g, (match, separator, letter) => {
     return separator + letter.toUpperCase();
@@ -71,10 +85,20 @@ function formatTranscript(text: string): string {
 function joinSegments(segments: string[]): string {
   if (segments.length === 0) return '';
   
-  let result = segments[0].trim();
+  // Clean intermediate segments by removing trailing periods/punctuation
+  const cleanedSegments = segments.map((seg, idx) => {
+    let s = seg.trim();
+    if (idx < segments.length - 1) {
+      // Strip trailing period, comma, or question mark if it's not the last segment
+      s = s.replace(/[.,?!]+$/, '');
+    }
+    return s;
+  });
+
+  let result = cleanedSegments[0];
   
-  for (let i = 1; i < segments.length; i++) {
-    const nextSegment = segments[i].trim();
+  for (let i = 1; i < cleanedSegments.length; i++) {
+    const nextSegment = cleanedSegments[i];
     if (!nextSegment) continue;
     
     const cleanResult = result.toLowerCase().replace(/[^a-z0-9]/g, '');
