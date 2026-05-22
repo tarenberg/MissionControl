@@ -68,6 +68,33 @@ function formatTranscript(text: string): string {
   return formatted;
 }
 
+function joinSegments(segments: string[]): string {
+  if (segments.length === 0) return '';
+  
+  let result = segments[0].trim();
+  
+  for (let i = 1; i < segments.length; i++) {
+    const nextSegment = segments[i].trim();
+    if (!nextSegment) continue;
+    
+    const cleanResult = result.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanNext = nextSegment.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // If the next segment is cumulative (starts with the current result),
+    // it replaces the current result entirely!
+    if (cleanNext.startsWith(cleanResult)) {
+      result = nextSegment;
+    } else {
+      // Otherwise, they are independent segments, so we append them!
+      const endsWithPunctuation = /[.!?]$/.test(result);
+      const connector = endsWithPunctuation ? ' ' : ' ';
+      result = result + connector + nextSegment;
+    }
+  }
+  
+  return result;
+}
+
 export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,28 +190,31 @@ export default function JournalPage() {
         rec.lang = 'en-US';
 
         rec.onresult = (e: any) => {
-          let interimTranscript = '';
-          let finalTranscript = '';
+          const finalizedSegments: string[] = [];
+          const interimSegments: string[] = [];
 
-          // Accumulate the entire finalized text of the current mic session
           for (let i = 0; i < e.results.length; ++i) {
+            const transcript = e.results[i][0].transcript;
             if (e.results[i].isFinal) {
-              finalTranscript += e.results[i][0].transcript;
+              finalizedSegments.push(transcript);
             } else {
-              interimTranscript += e.results[i][0].transcript;
+              interimSegments.push(transcript);
             }
           }
 
-          if (interimTranscript) {
-            setInterimText(interimTranscript);
+          const joinedFinalized = joinSegments(finalizedSegments);
+          const joinedInterim = joinSegments(interimSegments);
+
+          if (joinedInterim) {
+            setInterimText(joinedInterim);
           } else {
             setInterimText('');
           }
 
-          if (finalTranscript) {
+          if (joinedFinalized) {
             setInterimText(''); // Clear interim since we got final
             interimTextRef.current = ''; // INSTANTLY clear ref
-            const formattedSegment = formatTranscript(finalTranscript);
+            const formattedSegment = formatTranscript(joinedFinalized);
             setContent(() => {
               const base = baseContentRef.current;
               if (!base) return formattedSegment;
