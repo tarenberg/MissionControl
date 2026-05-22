@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Camera, 
   Trash2, 
@@ -118,6 +118,38 @@ export default function JournalPage() {
   const [editMood, setEditMood] = useState<string | null>(null);
   const [editLocation, setEditLocation] = useState('');
 
+  // Robust append helper with built-in echo & duplicate phrase protection
+  const appendToContent = useCallback((newSegment: string) => {
+    if (!newSegment) return;
+    const formatted = formatTranscript(newSegment);
+    
+    setContent(prev => {
+      const trimmedPrev = prev.trim();
+      if (!trimmedPrev) return formatted;
+
+      // Clean both for comparison (remove punctuation, spaces, lowercase them)
+      const cleanPrev = trimmedPrev.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanNew = formatted.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      // Echo protection: If this segment is longer than 3 chars and is already at the end of content, skip it!
+      if (cleanNew.length > 3 && cleanPrev.endsWith(cleanNew)) {
+        console.log('[Speech Dictation] Blocked duplicate append (echo protection):', formatted);
+        return prev;
+      }
+
+      // Overlap check: If the content already ends with the new segment, ignore it
+      const lastWords = cleanPrev.slice(-cleanNew.length);
+      if (cleanNew.length > 3 && lastWords === cleanNew) {
+        console.log('[Speech Dictation] Blocked partial duplicate append:', formatted);
+        return prev;
+      }
+
+      const endsWithPunctuation = /[.!?]$/.test(trimmedPrev);
+      const connector = endsWithPunctuation ? ' ' : '. ';
+      return trimmedPrev + connector + formatted;
+    });
+  }, []);
+
   useEffect(() => {
     fetchEntries();
     setupDictation();
@@ -180,16 +212,7 @@ export default function JournalPage() {
           if (finalTranscript) {
             setInterimText(''); // Clear interim since we got the final result
             interimTextRef.current = ''; // INSTANTLY clear the ref to prevent onend double-flushing
-            const formattedSegment = formatTranscript(finalTranscript);
-            setContent(prev => {
-              const trimmedPrev = prev.trim();
-              if (!trimmedPrev) return formattedSegment;
-              
-              // Determine if we need a period and space or just a space
-              const endsWithPunctuation = /[.!?]$/.test(trimmedPrev);
-              const connector = endsWithPunctuation ? ' ' : '. ';
-              return trimmedPrev + connector + formattedSegment;
-            });
+            appendToContent(finalTranscript);
           }
         };
 
@@ -198,14 +221,7 @@ export default function JournalPage() {
           // which don't reliably fire isFinal=true until the session actually ends),
           // flush it to the main content text box!
           if (interimTextRef.current) {
-            const formattedSegment = formatTranscript(interimTextRef.current);
-            setContent(prev => {
-              const trimmedPrev = prev.trim();
-              if (!trimmedPrev) return formattedSegment;
-              const endsWithPunctuation = /[.!?]$/.test(trimmedPrev);
-              const connector = endsWithPunctuation ? ' ' : '. ';
-              return trimmedPrev + connector + formattedSegment;
-            });
+            appendToContent(interimTextRef.current);
             setInterimText('');
             interimTextRef.current = '';
           }
