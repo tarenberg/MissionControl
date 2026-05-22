@@ -444,6 +444,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
   } = useVAT({
     onSpeechStart,
     onSpeechEnd,
+    disabled: isThinking,
   });
 
   // Track if continuous hot mic is active to sync UI indicator

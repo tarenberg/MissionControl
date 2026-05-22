@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
     'twisted.tail39532b.ts.net',
     '10.0.0.1'
   ],
+  async rewrites() {
+    return [
+      {
+        source: '/tools/ArtTrackerDashboard/:path*',
+        destination: 'http://localhost:8080/tools/ArtTrackerDashboard/:path*',
+      },
+    ];
+  },
   async headers() {
     return [
       {

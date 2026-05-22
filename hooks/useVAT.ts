@@ -3,6 +3,30 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAudioAnalyzer } from './useAudioAnalyzer';
 
+function joinSegments(segments: string[]): string {
+  if (segments.length === 0) return '';
+  
+  let result = segments[0].trim();
+  
+  for (let i = 1; i < segments.length; i++) {
+    const nextSegment = segments[i].trim();
+    if (!nextSegment) continue;
+    
+    const cleanResult = result.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanNext = nextSegment.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    if (cleanNext.startsWith(cleanResult)) {
+      result = nextSegment;
+    } else {
+      const endsWithPunctuation = /[.!?]$/.test(result);
+      const connector = endsWithPunctuation ? ' ' : ' ';
+      result = result + connector + nextSegment;
+    }
+  }
+  
+  return result;
+}
+
 interface VATOptions {
   threshold?: number; // dB
   silenceDuration?: number; // ms
@@ -40,8 +64,6 @@ export function useVAT(options: VATOptions = {}) {
   const stopRecording = useCallback((discard = false) => {
     console.log(`VAT: stopRecording called (discard=${discard}). Current state:`, mediaRecorderRef.current?.state);
     
-    // Always clear transcript when stopping recording to ensure the UI resets
-    setTranscript('');
     setIsSpeaking(false);
 
     if (recognitionRef.current) {
@@ -63,9 +85,12 @@ export function useVAT(options: VATOptions = {}) {
         mediaRecorderRef.current.onstop = () => {
           console.log('VAT: Recording stopped and discarded.');
           setIsSpeaking(false);
+          setTranscript('');
         };
       }
       mediaRecorderRef.current.stop();
+    } else {
+      setTranscript('');
     }
   }, []);
 
@@ -93,21 +118,13 @@ export function useVAT(options: VATOptions = {}) {
         recognition.lang = 'en-US';
 
         recognition.onresult = (event: any) => {
-          let interimTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              // We could accumulate final results here, but for now we just show current stream
-            } else {
-              interimTranscript += event.results[i][0].transcript;
-            }
+          const segments: string[] = [];
+          for (let i = 0; i < event.results.length; i++) {
+            segments.push(event.results[i][0].transcript);
           }
           
-          // Combine final parts with current interim
-          let fullTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            fullTranscript += event.results[i][0].transcript;
-          }
-          setTranscript(fullTranscript);
+          const deduplicated = joinSegments(segments);
+          setTranscript(deduplicated);
         };
 
         recognition.onerror = (event: any) => {
@@ -142,10 +159,16 @@ export function useVAT(options: VATOptions = {}) {
         setIsSpeaking(false);
         if (audioChunksRef.current.length === 0) {
           console.error('VAT: No audio chunks captured!');
+          setTranscript('');
           return;
         }
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        if (onSpeechEndRef.current) await onSpeechEndRef.current(audioBlob, transcriptRef.current);
+        const finalText = transcriptRef.current;
+        
+        // Clear transcript after capturing it
+        setTranscript('');
+
+        if (onSpeechEndRef.current) await onSpeechEndRef.current(audioBlob, finalText);
       };
 
       recorder.start(100); // Send chunks every 100ms
@@ -157,8 +180,34 @@ export function useVAT(options: VATOptions = {}) {
     }
   }, [stream, stopRecording]);
 
-  // Monitor DB levels - REMOVED: Switching between waiting/listening was awkward for user.
-  // We now transition to a "Continuous Listening" model where the mic stays on once toggled.
+  // Monitor decibel levels for real-time silence detection (VAD)
+  useEffect(() => {
+    if (!isActive || disabled || !isSpeaking) {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      return;
+    }
+
+    const isUserCurrentlySpeaking = db > threshold;
+
+    if (isUserCurrentlySpeaking) {
+      if (silenceTimerRef.current) {
+        console.log('VAT: Speech detected (db:', Math.round(db), '). Resetting silence timer.');
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    } else {
+      if (!silenceTimerRef.current) {
+        console.log('VAT: Silence detected (db:', Math.round(db), '). Starting silence timer of', silenceDuration, 'ms...');
+        silenceTimerRef.current = setTimeout(() => {
+          console.log('VAT: Silence duration reached! Stopping recording and submitting.');
+          stopRecording();
+        }, silenceDuration);
+      }
+    }
+  }, [db, isActive, disabled, isSpeaking, threshold, silenceDuration, stopRecording]);
   
   const toggle = useCallback(async (discardCurrent = false) => {
     console.log('VAT: Toggle called, current isActive:', isActive, 'discard:', discardCurrent);
