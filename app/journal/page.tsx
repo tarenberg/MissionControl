@@ -647,7 +647,7 @@ export default function JournalPage() {
                 {previews.length > 0 && (
                   <div className="flex gap-3 flex-wrap mt-2 p-3 neo-pressed rounded-2xl overflow-x-auto">
                     {previews.map((prev, idx) => (
-                      <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 group border border-zinc-200 dark:border-zinc-800">
+                      <div key={idx} className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 group border border-zinc-200 dark:border-zinc-800">
                         {prev.type === 'video' ? (
                           <video src={prev.url} className="w-full h-full object-cover" muted />
                         ) : (
@@ -656,9 +656,9 @@ export default function JournalPage() {
                         <button
                           type="button"
                           onClick={() => removeFile(idx)}
-                          className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 text-white p-1 rounded-full border-none cursor-pointer shadow-md transition-all"
+                          className="absolute top-0.5 right-0.5 bg-red-500/80 hover:bg-red-600 text-white p-0.5 rounded-full border-none cursor-pointer shadow-md transition-all"
                         >
-                          <X size={10} />
+                          <X size={8} />
                         </button>
                       </div>
                     ))}
@@ -848,12 +848,12 @@ export default function JournalPage() {
 
                         {/* Attached Photos & Videos Carousel Grid */}
                         {entry.media && entry.media.length > 0 && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                          <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mt-2">
                             {entry.media.map(m => (
                               <div 
                                 key={m.id} 
                                 onClick={() => setActiveMediaUrl(m.url)}
-                                className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer border border-zinc-200 dark:border-zinc-800 hover:opacity-90 shadow-sm transition-all"
+                                className="relative aspect-square rounded-xl overflow-hidden cursor-pointer border border-zinc-200 dark:border-zinc-800 hover:opacity-90 shadow-sm transition-all"
                               >
                                 {m.type === 'video' ? (
                                   <div className="w-full h-full relative">
