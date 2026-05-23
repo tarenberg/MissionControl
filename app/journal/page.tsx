@@ -449,25 +449,25 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="p-4 md:p-12 flex flex-col h-full bg-neo-bg min-h-screen transition-colors duration-300">
+    <div className="p-1 md:p-3 lg:p-4 flex flex-col h-full bg-neo-bg min-h-screen transition-colors duration-300">
       
       {/* Header Block with mobile-responsive margins to float clear of the sidebar/hamburger menu */}
-      <div className="mb-8 md:mb-12 ml-12 md:ml-16 lg:ml-4">
-        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl md:text-5xl mb-3 drop-shadow-sm uppercase">Personal Journal</h1>
+      <div className="mb-5 ml-12 md:ml-16 lg:ml-4">
+        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-3xl md:text-4xl mb-2 drop-shadow-sm uppercase">Personal Journal</h1>
         <div className="flex items-center gap-3">
-          <div className="neo-pressed px-6 py-2 rounded-full">
+          <div className="neo-pressed px-6 py-1.5 rounded-full">
             <p className="text-gray-500 dark:text-gray-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] m-0">Your Private Vault & Memories</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 flex-1 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 items-stretch">
         
         {/* LEFT COLUMN: Entry Editor (4 cols on wide screens) */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="neo-flat rounded-3xl p-6 md:p-8 flex flex-col gap-6">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <FileText className="text-blue-500" size={20} />
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="neo-flat rounded-3xl p-5 flex flex-col gap-5">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <FileText className="text-blue-500" size={18} />
               Capture Your Moment
             </h2>
 
@@ -672,10 +672,10 @@ export default function JournalPage() {
         </div>
 
         {/* RIGHT COLUMN: Chronological Timeline Stream (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-4">
           
           {/* Filter Bar */}
-          <div className="neo-flat rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between gap-4 items-center">
+          <div className="neo-flat rounded-3xl p-4 md:p-5 flex flex-col md:flex-row justify-between gap-4 items-center">
             
             {/* Search Input */}
             <div className="relative w-full md:max-w-xs">
@@ -719,7 +719,7 @@ export default function JournalPage() {
           </div>
 
           {/* Timeline Feed Container */}
-          <div className="flex-1 flex flex-col gap-6 overflow-y-auto max-h-[85vh] pr-2">
+          <div className="flex-1 flex flex-col gap-4 overflow-y-auto max-h-[85vh] pr-2">
             {isLoading ? (
               <div className="neo-flat rounded-3xl p-12 flex flex-col items-center justify-center text-gray-400">
                 <Loader2 size={32} className="animate-spin mb-2" />
@@ -746,7 +746,7 @@ export default function JournalPage() {
                 const moodObj = MOODS.find(m => m.code === entry.mood);
 
                 return (
-                  <div key={entry.id} className="neo-flat rounded-3xl p-6 md:p-8 flex flex-col gap-4 transition-all hover:scale-[1.005]">
+                  <div key={entry.id} className="neo-flat rounded-3xl p-4 md:p-5 flex flex-col gap-4 transition-all hover:scale-[1.005]">
                     
                     {/* Entry Header block */}
                     <div className="flex flex-wrap justify-between items-start gap-3 border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
