@@ -466,11 +466,11 @@ export default function JournalPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 items-stretch">
+      <div className={`grid grid-cols-1 lg:grid-cols-12 ${isEditorCollapsed ? 'gap-2.5 lg:gap-4' : 'gap-4 lg:gap-6'} flex-1 items-stretch transition-all duration-300`}>
         
         {/* LEFT COLUMN: Entry Editor (5 cols on wide screens, collapses to 3) */}
         <div className={`${isEditorCollapsed ? 'lg:col-span-3' : 'lg:col-span-5'} flex flex-col gap-4 transition-all duration-300`}>
-          <div className="neo-flat rounded-3xl p-5 flex flex-col gap-5">
+          <div className={`neo-flat rounded-3xl ${isEditorCollapsed ? 'py-2.5 px-5' : 'p-5'} flex flex-col ${isEditorCollapsed ? 'gap-0' : 'gap-5'} transition-all duration-300`}>
             <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
                 <FileText className="text-blue-500" size={18} />
