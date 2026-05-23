@@ -457,11 +457,11 @@ export default function JournalPage() {
     <div className="p-1 md:p-3 lg:p-4 flex flex-col h-full bg-neo-bg min-h-screen transition-colors duration-300">
       
       {/* Header Block with mobile-responsive margins to float clear of the sidebar/hamburger menu */}
-      <div className="mb-5 ml-12 md:ml-16 lg:ml-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-3xl md:text-4xl drop-shadow-sm uppercase leading-none m-0">Chronicles</h1>
+      <div className="mb-3 ml-12 md:ml-16 lg:ml-4 flex flex-row items-center flex-wrap gap-x-4 gap-y-2">
+        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl md:text-3xl drop-shadow-sm uppercase leading-none m-0">Chronicles</h1>
         <div className="flex items-center">
-          <div className="neo-pressed px-6 py-1.5 rounded-full">
-            <p className="text-gray-500 dark:text-gray-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] m-0">Your Private Vault & Memories</p>
+          <div className="neo-pressed px-4 py-1 rounded-full">
+            <p className="text-gray-500 dark:text-gray-400 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] m-0">Your Private Vault & Memories</p>
           </div>
         </div>
       </div>
