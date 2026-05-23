@@ -453,7 +453,7 @@ export default function JournalPage() {
       
       {/* Header Block with mobile-responsive margins to float clear of the sidebar/hamburger menu */}
       <div className="mb-5 ml-12 md:ml-16 lg:ml-4">
-        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-3xl md:text-4xl mb-2 drop-shadow-sm uppercase">Personal Journal</h1>
+        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-3xl md:text-4xl mb-2 drop-shadow-sm uppercase">Chronicles</h1>
         <div className="flex items-center gap-3">
           <div className="neo-pressed px-6 py-1.5 rounded-full">
             <p className="text-gray-500 dark:text-gray-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] m-0">Your Private Vault & Memories</p>
@@ -665,7 +665,7 @@ export default function JournalPage() {
                     <Loader2 className="animate-spin" size={16} />
                     Uploading & Saving...
                   </>
-                ) : 'Save Journal Entry 🏆'}
+                ) : 'Save Chronicle Entry 🏆'}
               </button>
             </form>
           </div>
