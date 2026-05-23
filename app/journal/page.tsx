@@ -13,7 +13,9 @@ import {
   Calendar, 
   Edit3, 
   Loader2,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface JournalMedia {
@@ -123,6 +125,9 @@ export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Collapse state for editor
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -463,15 +468,26 @@ export default function JournalPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 items-stretch">
         
-        {/* LEFT COLUMN: Entry Editor (4 cols on wide screens) */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
+        {/* LEFT COLUMN: Entry Editor (5 cols on wide screens, collapses to 3) */}
+        <div className={`${isEditorCollapsed ? 'lg:col-span-3' : 'lg:col-span-5'} flex flex-col gap-4 transition-all duration-300`}>
           <div className="neo-flat rounded-3xl p-5 flex flex-col gap-5">
-            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <FileText className="text-blue-500" size={18} />
-              Capture Your Moment
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <FileText className="text-blue-500" size={18} />
+                Capture Your Moment
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEditorCollapsed(!isEditorCollapsed)}
+                className="p-1.5 rounded-xl neo-button text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all border-none cursor-pointer flex items-center justify-center"
+                title={isEditorCollapsed ? "Expand section" : "Collapse section"}
+              >
+                {isEditorCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </button>
             </h2>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {!isEditorCollapsed && (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               {/* Optional Title Input */}
               <div className="flex flex-col gap-2">
                 <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Title (Optional)</label>
@@ -668,11 +684,12 @@ export default function JournalPage() {
                 ) : 'Save Chronicle Entry 🏆'}
               </button>
             </form>
+            )}
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Chronological Timeline Stream (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col gap-4">
+        {/* RIGHT COLUMN: Chronological Timeline Stream (7 cols, expands to 9) */}
+        <div className={`${isEditorCollapsed ? 'lg:col-span-9' : 'lg:col-span-7'} flex flex-col gap-4 transition-all duration-300`}>
           
           {/* Filter Bar */}
           <div className="neo-flat rounded-3xl p-4 md:p-5 flex flex-col md:flex-row justify-between gap-4 items-center">
