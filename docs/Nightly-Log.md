@@ -1,5 +1,29 @@
 # Nightly Log
 
+## 2026-05-22 (Nightly Sprint)
+**Agent:** Muffin 🧁
+
+### Key Activities & Outcomes:
+- **Pathfinder Trend Radar Dashboard Card Deployed**:
+    - **Scrape-to-Dashboard Loop Completed**: Developed a premium, fully-responsive dashboard card (`components/PathfinderRadar.tsx`) to surface regional/national art competitions directly on the command center homepage.
+    - **Urgent Submissions Checklist**: Implemented live countdown and urgency classification indicators (e.g., *DUE TODAY*, *DUE TOMORROW*, *Due in X days*) calculated against our current temporal window (May 22, 2026).
+    - **Instant Action Handlers**: Integrated instant external prospectus launching and one-tap POST dismissal triggers linking directly to `/api/art-deadlines` to dynamically clean up unwanted listings.
+    - **Curator Trend Vectors Panel**: Visualizes market pattern intelligence (such as *Elemental Dynamics*, *New Noir*, and *Materiality & Abstraction*) inside a neomorphic card.
+- **Continuous Voice Input & Hot-Mic Sanity Upgrades**:
+    - **Stutter-Proof Text Joiner**: Refactored the speech stitching engine (`joinSegments`) and regex continuation filter (`formatTranscript`) across both VAT Chat and the Journal. This strips premature browser-inserted periods and capitalizations during short speech pauses, ensuring a seamless prose flow.
+    - **VAD Silence Calibration**: Tuned the silence detection window in `useVAT` to `3000ms` to give Tom comfortable thinking space during continuous dictation.
+- **Personal Journal Sizing Overhaul**:
+    - Erased the duplicate page-level padding wrapping `ClientLayout`'s sidebar constraints.
+    - Reclaimed over **150px of horizontal and vertical screen space**, tightening spacing gaps and margins to maximize comfort and write-density on both desktop and mobile viewports.
+
+### Lessons Learned:
+- Integrating regional market scrapes directly onto the dashboard homepage transforms static scraped JSON files into highly interactive, actionable submission checklists.
+- Custom regex heuristics matching transitional prepositions and conjunctions (such as *and, but, because, for*) is a highly reliable way to repair browser speech-recognition clipping bugs client-side.
+
+### Next Steps:
+- Add visual notification counts to the sidebar chat channels.
+- Expand local Piper voice configs to map unique TTS accents to each agent persona.
+
 ## 2026-05-21 (Nightly Sprint)
 **Agent:** Muffin 🧁
 
