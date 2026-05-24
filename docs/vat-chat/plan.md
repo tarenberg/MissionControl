@@ -1,26 +1,27 @@
-# Plan: VAT Chat Integration
+# Plan: VAT Chat Integration (Current)
 
-## Phase 1: Infrastructure & Data Migration
-1. **Initialize Directory**: Ensure `docs/vat-chat/` exists (Done).
-2. **Database Schema**: Update `prisma/schema.prisma` to include `ChatMessage` and `ChatRoom` models.
-3. **Port Logic**: Extract core messaging components from `SyncMessenger` and `VoiceChat` repos.
-4. **Local WebSocket**: Set up a lightweight WebSocket server (or use Pusher-JS with a local mock) for real-time sync.
+## Phase 1: Core Platform (Completed)
+1. **Rooms + Message Persistence**: SQLite-backed `ChatRoom` and `ChatMessage` APIs (Done).
+2. **UI Foundation**: `/chat` and popup chat interfaces with shared message model (Done).
+3. **Voice Path**: VAT trigger, local STT/TTS route integration (Done).
 
-## Phase 2: VAT & Voice Engine
-1. **VAT Logic**: Implement a basic decibel-monitoring hook in `useVAT.ts` (Done).
-2. **STT Integration**: Connect the voice buffer to a local Whisper endpoint (`localhost:8000/stt`).
-3. **TTS Integration**: Connect AI responses to a local Piper endpoint (`localhost:8000/tts`).
-4. **Local AI Server**: Set up a FastAPI server running `faster-whisper` and `piper-tts`.
-5. **UI Refinement**: Apply "Loosely Twisted" styling to the chat interface (Done).
+## Phase 2: Intelligence + Sync (Completed)
+1. **Shared Inference Engine**: Consolidated text/voice generation in `lib/chatEngine.ts` (Done).
+2. **Context-Aware Prompting**: Recent message window + compressed older-message summary (Done).
+3. **Model Routing**: Local-first Ollama; optional hybrid Gemini fallback in env-configured mode (Done).
+4. **Realtime Updates**: SSE endpoint at `/api/chat/events` and frontend subscriptions (Done).
 
-## Phase 3: Testing & Hardening
-1. **Tailscale Verification**: Test connection between laptop and mobile device on Tailscale.
-2. **Privacy Audit**: Use Network tab to ensure no external AI API calls are made during chat.
-3. **Stability**: Ensure WebSocket connection handles sleep/wake cycles gracefully.
+## Phase 3: Product Hardening (In Progress)
+1. **Attachments**: Added real chat file upload endpoint and assistant handoff (Done).
+2. **Attachment Analysis**: Parse/extract file content server-side (Pending).
+3. **Voice Reliability**: Migrate from browser-dependent speech recognition path toward worklet/streaming STT (Pending).
+4. **Observability**: Add inference routing telemetry and latency/error dashboards (Pending).
 
 ## Target Files
-- `MissionControl/app/chat/page.tsx` (New)
-- `MissionControl/components/Chat/ChatBox.tsx` (New)
-- `MissionControl/components/VoiceInterface.tsx` (Update)
-- `MissionControl/prisma/schema.prisma` (Update)
-- `MissionControl/lib/socket.ts` (New)
+- `app/chat/page.tsx`
+- `components/Chat/ChatPopupV3.tsx`
+- `app/api/chat/messages/route.ts`
+- `app/api/chat/voice/route.ts`
+- `app/api/chat/events/route.ts`
+- `app/api/chat/upload/route.ts`
+- `lib/chatEngine.ts`

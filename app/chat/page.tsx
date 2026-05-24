@@ -97,19 +97,36 @@ export default function VATChatPage() {
     }
   }, []);
 
-  // Sync / poll rooms and messages every 1.5s for Tailscale multi-device real-time sync
+  // Initial room load and low-frequency fallback sync
   useEffect(() => {
     fetchRooms(true);
     const interval = setInterval(() => {
       fetchRooms(false);
-      // Skip message polling while actively waiting for an LLM/voice response (isThinking is true)
-      // to prevent overwriting optimistic user message bubbles before the server returns.
-      if (activeRoomId && !isThinking) {
+      if (activeRoomId) {
         fetchMessages(activeRoomId);
       }
-    }, 1500);
+    }, 15000);
     return () => clearInterval(interval);
-  }, [activeRoomId, fetchMessages, isThinking]);
+  }, [activeRoomId, fetchMessages]);
+
+  // Realtime message updates via SSE
+  useEffect(() => {
+    if (!activeRoomId) return;
+    const source = new EventSource(`/api/chat/events?roomId=${activeRoomId}`);
+
+    const onUpdate = () => {
+      fetchRooms(false);
+      fetchMessages(activeRoomId);
+    };
+
+    source.addEventListener('update', onUpdate);
+    source.onerror = () => source.close();
+
+    return () => {
+      source.removeEventListener('update', onUpdate);
+      source.close();
+    };
+  }, [activeRoomId, fetchMessages]);
 
   // Load messages when active room changes
   useEffect(() => {
@@ -195,8 +212,9 @@ export default function VATChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roomId: activeRoomId,
-          content: 'Conversation history cleared.',
-          role: 'assistant',
+          content: '/reset',
+          role: 'user',
+          mute: true,
         }),
       });
       if (res.ok) {
@@ -215,98 +233,6 @@ export default function VATChatPage() {
 
     setInput('');
     setShowSlashMenu(false);
-
-    // If it's a built-in slash command, process locally
-    if (textToSend.trim() === '/reset') {
-      handleClearHistory();
-      return;
-    }
-
-    if (textToSend.trim() === '/status') {
-      setIsThinking(true);
-      // Insert optimistic user message
-      const optUserMsg: Message = {
-        id: Math.random().toString(),
-        content: textToSend,
-        role: 'user',
-        createdAt: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, optUserMsg]);
-
-      setTimeout(() => {
-        const optAssistantMsg: Message = {
-          id: Math.random().toString(),
-          content: `📊 **System Status**
-- **Gateway**: Nominal (HEARTBEAT_OK)
-- **Local LLM**: Gemma2 (Ollama) Active
-- **STT**: Whisper Local Active
-- **TTS**: Piper Local Active
-- **Time**: ${new Date().toLocaleTimeString()}
-- **Platform**: Tailscale Enabled`,
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, optAssistantMsg]);
-        setIsThinking(false);
-      }, 800);
-      return;
-    }
-
-    if (textToSend.trim() === '/logs') {
-      setIsThinking(true);
-      const optUserMsg: Message = {
-        id: Math.random().toString(),
-        content: textToSend,
-        role: 'user',
-        createdAt: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, optUserMsg]);
-
-      setTimeout(() => {
-        const optAssistantMsg: Message = {
-          id: Math.random().toString(),
-          content: `📋 **System logs (Last 3 entries)**
-\`\`\`bash
-[2026-05-20 20:52:15] [Muffin] File verbatim memory stored in MemPalace (wing: missioncontrol).
-[2026-05-20 20:56:41] [Gateway] Sync heartbeat OK.
-[2026-05-20 21:00:18] [STT] Audio WebM processed successfully in 234ms.
-\`\`\``,
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, optAssistantMsg]);
-        setIsThinking(false);
-      }, 800);
-      return;
-    }
-
-    if (textToSend.trim() === '/help') {
-      setIsThinking(true);
-      const optUserMsg: Message = {
-        id: Math.random().toString(),
-        content: textToSend,
-        role: 'user',
-        createdAt: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, optUserMsg]);
-
-      setTimeout(() => {
-        const optAssistantMsg: Message = {
-          id: Math.random().toString(),
-          content: `🧁 **VAT Chat Manual**
-Welcome to VAT Chat, your local, secure studio messaging control center.
-- **Continuous Voice (Hot Mic)**: Click the microphone toggle button (5.c). When blue, Muffin auto-listens and processes your speech on silence!
-- **Speaker Toggle**: Unmute the Speaker icon at the top right to enable automatic voice TTS playback.
-- **Slash Commands**: Type \`/\` in the text field to discover local shortcuts like \`/status\`, \`/logs\`, or \`/reset\`.`,
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, optAssistantMsg]);
-        setIsThinking(false);
-      }, 800);
-      return;
-    }
-
     // Insert user message optimistically
     const userMsg: Message = {
       id: 'opt-' + Date.now(),
@@ -385,9 +311,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
   };
 
   // --- useVAT continuous Voice Activity Trigger Hook ---
-  const onSpeechStart = useCallback(() => {
-    setIsThinking(true);
-  }, []);
+  const onSpeechStart = useCallback(() => {}, []);
 
   const onSpeechEnd = useCallback(async (blob: Blob, text?: string) => {
     if (blob.size < 1000 || !activeRoomId) {
@@ -490,7 +414,7 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
     }
   };
 
-  const handleUploadFile = (file: File) => {
+  const handleUploadFile = async (file: File) => {
     const optUserMsg: Message = {
       id: Math.random().toString(),
       content: `📁 Attached File: **${file.name}** (${Math.round(file.size / 1024)} KB)`,
@@ -500,16 +424,46 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
     setMessages(prev => [...prev, optUserMsg]);
     setIsThinking(true);
 
-    setTimeout(() => {
-      const optAssistantMsg: Message = {
-        id: Math.random().toString(),
-        content: `I have received and staged the file **${file.name}** for analysis. It has been synced locally over Tailscale.`,
-        role: 'assistant',
-        createdAt: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, optAssistantMsg]);
+    try {
+      if (!activeRoomId) return;
+      const uploadBody = new FormData();
+      uploadBody.append('file', file);
+      const uploadRes = await fetch('/api/chat/upload', {
+        method: 'POST',
+        body: uploadBody,
+      });
+      if (!uploadRes.ok) {
+        throw new Error('File upload failed');
+      }
+      const uploadData = await uploadRes.json();
+      const uploaded = uploadData.file;
+
+      const previewSuffix = uploaded.textPreview
+        ? `\n\nText preview:\n${uploaded.textPreview}`
+        : '';
+      const content = `Attached file: ${uploaded.filename} (${Math.round(uploaded.size / 1024)} KB)\nURL: ${uploaded.url}\nMIME: ${uploaded.mimeType}\nPlease analyze this attachment and provide best next actions.${previewSuffix}`;
+      const res = await fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          roomId: activeRoomId,
+          role: 'user',
+          mute: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.assistantMsg) {
+        setMessages(prev => [...prev.filter(m => m.id !== optUserMsg.id), data.userMsg, data.assistantMsg]);
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== optUserMsg.id));
+      }
+    } catch (err) {
+      console.error('File message handoff failed:', err);
+      setMessages(prev => prev.filter(m => m.id !== optUserMsg.id));
+    } finally {
       setIsThinking(false);
-    }, 1200);
+    }
   };
 
   // Find active room metadata
@@ -960,3 +914,4 @@ Welcome to VAT Chat, your local, secure studio messaging control center.
     </div>
   );
 }
+

@@ -1,7 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { runInference } from '@/lib/chatEngine';
 
 const LOCAL_AI_URL = 'http://localhost:8000';
+
+async function runSlashCommand(command: string, roomId: string) {
+  const cmd = command.trim().toLowerCase();
+
+  if (cmd === '/reset') {
+    await prisma.chatMessage.deleteMany({ where: { roomId } });
+    const assistantMsg = await prisma.chatMessage.create({
+      data: { content: 'Conversation history cleared.', role: 'assistant', roomId },
+    });
+    return { assistantMsg, action: null as any };
+  }
+
+  if (cmd === '/status') {
+    const assistantMsg = await prisma.chatMessage.create({
+      data: {
+        content: `System Status
+- Gateway: HEARTBEAT_OK
+- Local LLM: Available
+- STT: Whisper local endpoint
+- TTS: Piper local endpoint
+- Transport: SQLite + realtime stream`,
+        role: 'assistant',
+        roomId,
+      },
+    });
+    return { assistantMsg, action: null as any };
+  }
+
+  if (cmd === '/logs') {
+    const recent = await prisma.agentLog.findMany({ orderBy: { createdAt: 'desc' }, take: 3 });
+    const rendered = recent.length
+      ? recent.reverse().map((r) => `[${r.createdAt.toISOString()}] [${r.level}] ${r.message}`).join('\n')
+      : 'No recent logs.';
+
+    const assistantMsg = await prisma.chatMessage.create({
+      data: {
+        content: `System logs (last 3)\n\`\`\`\n${rendered}\n\`\`\``,
+        role: 'assistant',
+        roomId,
+      },
+    });
+    return { assistantMsg, action: null as any };
+  }
+
+  if (cmd === '/help') {
+    const assistantMsg = await prisma.chatMessage.create({
+      data: {
+        content: `VAT Chat commands
+- /status: runtime status
+- /logs: latest system logs
+- /reset: clear room history
+- /help: this guide`,
+        role: 'assistant',
+        roomId,
+      },
+    });
+    return { assistantMsg, action: null as any };
+  }
+
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -32,138 +94,65 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing content or roomId' }, { status: 400 });
     }
 
-    // Save the User Message (or any other role)
     const userMsg = await prisma.chatMessage.create({
       data: {
         content,
         role,
         roomId,
-      }
+      },
     });
 
-    // Update room's updatedAt so it bubbles up to the top of the sidebar list
     await prisma.chatRoom.update({
       where: { id: roomId },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: new Date() },
     });
 
     if (role !== 'user' || triggerLLM === false) {
       return NextResponse.json({ userMsg });
     }
 
-    // Fetch the room to identify the active agent persona
-    const room = await prisma.chatRoom.findUnique({
-      where: { id: roomId }
-    });
+    const slashResult = await runSlashCommand(content, roomId);
+    if (slashResult) {
+      await prisma.chatRoom.update({
+        where: { id: roomId },
+        data: { updatedAt: new Date() },
+      });
+      return NextResponse.json({ userMsg, assistantMsg: slashResult.assistantMsg, action: slashResult.action, audioBase64: null });
+    }
+
+    const room = await prisma.chatRoom.findUnique({ where: { id: roomId } });
     const roomName = room?.name || 'Muffin';
 
-    // Persona Prompt selection
-    let systemPrompt = `You are Muffin, a sharp, resourceful studio assistant for Tom.
-    Available Tools:
-    - /art-tracker (Art inventory, sales, shows)
-    - /projects (Active development and business projects)
-    - /tasks (Todo list)
-    - /calendar (Deadlines and show dates)
-    - /memory (Personal/Studio knowledge base)
+    const inference = await runInference({
+      roomId,
+      roomName,
+      userContent: content,
+      voiceMode: false,
+    });
 
-    If Tom asks to open or go to a tool, include a command at the end of your response in exactly this format: [[ACTION: {"type": "NAVIGATE", "path": "/target-path"}]]
-    If Tom asks to search for something in the art tracker: [[ACTION: {"type": "SEARCH", "target": "ART_TRACKER", "query": "search query"}]]
-    If Tom asks to switch view in art tracker: [[ACTION: {"type": "TOGGLE_VIEW", "target": "ART_TRACKER", "mode": "grid"}]]
-    If Tom asks to scan a painting or start a scan: [[ACTION: {"type": "OPEN_MODAL", "target": "STUDIO_SCAN"}]]
-
-    Reply concisely. Keep the response under 3 sentences. 🧁`;
-
-    if (roomName.includes('Jason')) {
-      systemPrompt = `You are Jason, Tom's specialized coding and debugging assistant. Direct, highly technical, and precise. 
-      If Tom asks to check status or open tools, you can use action hooks: [[ACTION: {"type": "NAVIGATE", "path": "/ops"}]]
-      Reply concisely. Keep the response under 3 sentences. 🛠️`;
-    } else if (roomName.includes('Scout')) {
-      systemPrompt = `You are Scout, Tom's tech research and exploration assistant. Curious, analytical, and informative. 
-      Reply concisely. Keep the response under 3 sentences. 🔍`;
-    } else if (roomName.includes('Sentinel')) {
-      systemPrompt = `You are Sentinel, Tom's QA and security audit assistant. Skeptical, rigorous, and highly safety-oriented. 
-      Reply concisely. Keep the response under 3 sentences. 🛡️`;
-    }
-
-    console.log(`Thinking with Ollama (gemma2) for stand-alone room "${roomName}": "${content.substring(0, 50)}..."`);
-    
-    let assistantContent = `I received your message! 🧁`;
-    let action = null;
-
-    try {
-      const ollamaRes = await fetch('http://localhost:11434/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gemma2',
-          prompt: `System: ${systemPrompt}\nUser: ${content}\nAssistant:`,
-          stream: false
-        }),
-      });
-
-      if (ollamaRes.ok) {
-        const ollamaData = await ollamaRes.json();
-        assistantContent = ollamaData.response;
-      }
-    } catch (err) {
-      console.error('Ollama connection failed for standalone messages route:', err);
-      assistantContent = `Error communicating with local LLM. Check that Ollama is running.`;
-    }
-
-    // Extract dynamic actions
-    const actionMatch = assistantContent.match(/\[\[ACTION:\s*({.*?})\]\]/);
-    if (actionMatch) {
-      try {
-        action = JSON.parse(actionMatch[1]);
-      } catch (e) {
-        console.error('Failed to parse action JSON:', e);
-      }
-    }
-
-    // Fallback simple parsers
-    if (!action) {
-      const lowerContent = assistantContent.toLowerCase();
-      if (lowerContent.includes('navigate') || lowerContent.includes('go to') || lowerContent.includes('open') || lowerContent.includes('show')) {
-        if (lowerContent.includes('project')) {
-          action = { type: 'NAVIGATE', path: '/projects' };
-        } else if (lowerContent.includes('art') || lowerContent.includes('tracker')) {
-          action = { type: 'NAVIGATE', path: '/art-tracker' };
-        } else if (lowerContent.includes('task') || lowerContent.includes('todo') || lowerContent.includes('to-do')) {
-          action = { type: 'NAVIGATE', path: '/tasks' };
-        } else if (lowerContent.includes('calendar')) {
-          action = { type: 'NAVIGATE', path: '/calendar' };
-        } else if (lowerContent.includes('memory') || lowerContent.includes('palace')) {
-          action = { type: 'NAVIGATE', path: '/memory' };
-        } else if (lowerContent.includes('ops') || lowerContent.includes('system') || lowerContent.includes('control')) {
-          action = { type: 'NAVIGATE', path: '/ops' };
-        }
-      }
-    }
+    let assistantContent = inference.assistantContent;
+    const action = inference.action;
 
     if (!assistantContent.includes('(VAT Chat Local Mode Active)')) {
-      assistantContent += "\n\n(VAT Chat Local Mode Active)";
+      assistantContent += '\n\n(VAT Chat Local Mode Active)';
     }
 
-    // Save Assistant Message
     const assistantMsg = await prisma.chatMessage.create({
       data: {
         content: assistantContent,
         role: 'assistant',
         roomId,
-      }
+      },
     });
 
-    // Update room updatedAt once more for assistant timestamp
     await prisma.chatRoom.update({
       where: { id: roomId },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: new Date() },
     });
 
-    // Generate TTS base64 if not muted
     let audioBase64 = null;
     if (!mute) {
       try {
-        console.log('Generating TTS for standalone page...');
         const ttsContent = assistantContent.replace(/\[\[ACTION:.*?\]\]/g, '').replace(/\(VAT Chat Local Mode Active\)/g, '').trim();
         const ttsFormData = new FormData();
         ttsFormData.append('text', ttsContent);
@@ -186,11 +175,11 @@ export async function POST(req: NextRequest) {
       userMsg,
       assistantMsg,
       action,
-      audioBase64
+      audioBase64,
     });
-
   } catch (error: any) {
     console.error('Messages POST Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

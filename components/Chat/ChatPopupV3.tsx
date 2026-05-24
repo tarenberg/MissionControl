@@ -435,16 +435,11 @@ export default function ChatPopupV3() {
     fetchMessages();
   }, [isOpen]);
 
-  // Poll messages every 1.5s for Tailscale multi-device sync
+  // Realtime message updates via SSE + low-frequency fallback poll
   useEffect(() => {
     if (!isOpen || !roomId) return;
 
-    const interval = setInterval(async () => {
-      // Don't poll if we're actively talking, recording, or connecting
-      if (orbState === 'listening' || orbState === 'connecting' || orbState === 'speaking') {
-        return;
-      }
-
+    const fetchLatest = async () => {
       try {
         const res = await fetch(`/api/chat/messages?roomId=${roomId}`);
         if (res.ok) {
@@ -454,11 +449,30 @@ export default function ChatPopupV3() {
           }
         }
       } catch (err) {
-        console.error('ChatPopupV3: Polling messages failed:', err);
+        console.error('ChatPopupV3: Message sync failed:', err);
       }
-    }, 1500);
+    };
 
-    return () => clearInterval(interval);
+    const source = new EventSource(`/api/chat/events?roomId=${roomId}`);
+    const onUpdate = () => {
+      fetchLatest();
+    };
+    source.addEventListener('update', onUpdate);
+    source.onerror = () => source.close();
+
+    const interval = setInterval(async () => {
+      // Fallback sync only when not actively in a voice turn
+      if (orbState === 'listening' || orbState === 'connecting' || orbState === 'speaking') {
+        return;
+      }
+      await fetchLatest();
+    }, 15000);
+
+    return () => {
+      source.removeEventListener('update', onUpdate);
+      source.close();
+      clearInterval(interval);
+    };
   }, [isOpen, roomId, orbState]);
 
   const scrollToBottom = useCallback(() => {
