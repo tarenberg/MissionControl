@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '@/lib/prisma';
+import { getPersonaPrompt } from '@/lib/chatPersona';
 
 export interface ChatAction {
   type: string;
@@ -20,47 +21,11 @@ interface BuildContextOptions {
 }
 
 const DEFAULT_MODEL = process.env.VAT_CHAT_OLLAMA_MODEL || 'gemma2';
-const MODE = (process.env.VAT_CHAT_MODE || 'local').toLowerCase(); // local | hybrid
+const MODE = (process.env.VAT_CHAT_MODE || 'hybrid').toLowerCase(); // local | hybrid | cloud
 const GEMINI_MODEL = process.env.VAT_CHAT_GEMINI_MODEL || 'gemini-2.5-flash';
 
-export function getPersonaPrompt(roomName: string, voiceMode = false): string {
-  const brevity = voiceMode
-    ? 'Reply clearly. Keep spoken output compact unless the user asks for detail.'
-    : 'Reply clearly. Be concise by default, but provide detail when needed.';
-
-  if (roomName.includes('Jason')) {
-    return `You are Jason, Tom's specialized coding and debugging assistant. Direct, highly technical, and precise.
-If Tom asks to check status or open tools, you can use action hooks: [[ACTION: {"type": "NAVIGATE", "path": "/ops"}]]
-${brevity}`;
-  }
-
-  if (roomName.includes('Scout')) {
-    return `You are Scout, Tom's tech research and exploration assistant. Curious, analytical, and informative.
-${brevity}`;
-  }
-
-  if (roomName.includes('Sentinel')) {
-    return `You are Sentinel, Tom's QA and security audit assistant. Skeptical, rigorous, and safety-oriented.
-${brevity}`;
-  }
-
-  return `You are Muffin, a sharp, resourceful studio assistant for Tom.
-Available Tools:
-- /art-tracker (Art inventory, sales, shows)
-- /projects (Active development and business projects)
-- /tasks (Todo list)
-- /calendar (Deadlines and show dates)
-- /memory (Personal/Studio knowledge base)
-
-If Tom asks to open or go to a tool, include a command at the end of your response in exactly this format: [[ACTION: {"type": "NAVIGATE", "path": "/target-path"}]]
-If Tom asks to search for something in the art tracker: [[ACTION: {"type": "SEARCH", "target": "ART_TRACKER", "query": "search query"}]]
-If Tom asks to switch view in art tracker: [[ACTION: {"type": "TOGGLE_VIEW", "target": "ART_TRACKER", "mode": "grid"}]]
-If Tom asks to scan a painting or start a scan: [[ACTION: {"type": "OPEN_MODAL", "target": "STUDIO_SCAN"}]]
-${brevity}`;
-}
-
 export async function buildConversationContext(options: BuildContextOptions): Promise<string> {
-  const { roomId, userContent, maxMessages = 16, historyFetch = 48 } = options;
+  const { roomId, userContent, maxMessages = 24, historyFetch = 96 } = options;
   const history = await prisma.chatMessage.findMany({
     where: { roomId },
     orderBy: { createdAt: 'desc' },
@@ -96,16 +61,12 @@ export async function buildConversationContext(options: BuildContextOptions): Pr
   return lines.join('\n');
 }
 
-function wantsDeepReasoning(input: string): boolean {
-  const lower = input.toLowerCase();
-  return (
-    input.length > 280 ||
-    /\b(analyze|compare|proposal|design|architecture|debug|tradeoff|step-by-step|root cause)\b/.test(lower)
-  );
-}
-
 async function inferWithGemini(systemPrompt: string, prompt: string): Promise<string | null> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    '';
   if (!apiKey) return null;
 
   const genAI = new GoogleGenAI({ apiKey });
@@ -172,7 +133,8 @@ export async function runInference(params: {
   let engine: 'ollama' | 'gemini' = 'ollama';
   let assistantContent: string | null = null;
 
-  if (MODE === 'hybrid' && wantsDeepReasoning(userContent)) {
+  // Gemini-first for hybrid/cloud, local-only when explicitly requested.
+  if (MODE !== 'local') {
     try {
       assistantContent = await inferWithGemini(systemPrompt, conversation);
       if (assistantContent) engine = 'gemini';
@@ -181,7 +143,7 @@ export async function runInference(params: {
     }
   }
 
-  if (!assistantContent) {
+  if (!assistantContent && MODE !== 'cloud') {
     try {
       assistantContent = await inferWithOllama(userPrompt);
       engine = 'ollama';
@@ -200,7 +162,7 @@ export async function runInference(params: {
         agentId: `vat-chat:${engine}`,
         level: 'info',
         subsystem: 'vat-chat',
-        message: `room=${roomName} deep=${wantsDeepReasoning(userContent)} chars=${userContent.length}`,
+        message: `room=${roomName} mode=${MODE} engine=${engine} chars=${userContent.length}`,
       },
     });
   } catch {

@@ -6,6 +6,7 @@ import VoiceOrb, { OrbState } from './VoiceOrb';
 import { useVAT } from '@/hooks/useVAT';
 import { useGeminiLiveV7, GeminiLiveState } from '@/hooks/useGeminiLiveV7';
 import { useRouter } from 'next/navigation';
+import { getPersonaPrompt } from '@/lib/chatPersona';
 
 const GEMINI_API_KEY = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
 
@@ -31,6 +32,7 @@ export default function ChatPopupV3() {
   const orbStateRef = useRef<OrbState>('idle');
   useEffect(() => { orbStateRef.current = orbState; }, [orbState]);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomName, setRoomName] = useState<string>('Muffin');
   const roomIdRef = useRef<string | null>(null);
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const [lastAudio, setLastAudio] = useState<string | null>(null);
@@ -66,6 +68,7 @@ export default function ChatPopupV3() {
   // Gemini Live Hook (Full Duplex)
   const { state: liveState, toggle: toggleLive, connected: isLiveConnected, error: geminiError } = useGeminiLiveV7({
     apiKey: GEMINI_API_KEY,
+    systemInstruction: getPersonaPrompt(roomName, true),
     onMessage: (role, content) => {
       // Log for debugging
       console.log(`Gemini ${role}:`, content);
@@ -466,6 +469,7 @@ export default function ChatPopupV3() {
         if (data.room?.id) {
           setMessages(data.messages || []);
           setRoomId(data.room.id);
+          setRoomName(data.room.name || 'Muffin');
           console.log('VAT Chat: Room synchronized:', data.room.id, 'Message count:', (data.messages || []).length);
         }
       } catch (err) {

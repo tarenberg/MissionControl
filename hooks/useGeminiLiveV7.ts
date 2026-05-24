@@ -67,16 +67,11 @@ function writeString(view: DataView, offset: number, string: string) {
   }
 }
 
-const systemInstruction = `You are Muffin, Tom's studio assistant. Be concise.
-Available Actions:
-- [[ACTION: {"type": "NAVIGATE", "path": "/target"}]]
-- [[ACTION: {"type": "CHECK_STUDIO"}]]
-`;
-
 export type GeminiLiveState = 'idle' | 'connecting' | 'listening' | 'speaking';
 
 interface GeminiLiveOptions {
   apiKey: string;
+  systemInstruction?: string;
   onMessage?: (role: 'user' | 'assistant', content: string) => void;
   onAction?: (action: any) => void;
   onStateChange?: (state: GeminiLiveState) => void;
@@ -296,6 +291,7 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
       }
 
       const genAI = new GoogleGenAI({ apiKey: optionsRef.current.apiKey, apiVersion: 'v1alpha' });
+      const liveSystemInstruction = optionsRef.current.systemInstruction || "You are Muffin, Tom's studio assistant. Be concise.";
       
       const callbacks = {
         onopen: () => {
@@ -411,7 +407,7 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
         model: 'models/gemini-2.5-flash-native-audio-latest',
         config: { 
           responseModalities: ['audio' as Modality], 
-          systemInstruction: { parts: [{ text: systemInstruction }] },
+          systemInstruction: { parts: [{ text: liveSystemInstruction }] },
           generationConfig: {
             candidateCount: 1,
             temperature: 0.7,
