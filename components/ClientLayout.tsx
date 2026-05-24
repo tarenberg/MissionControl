@@ -5,7 +5,6 @@ import Sidebar from './Sidebar';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
-const VoiceInterface = dynamic(() => import('./VoiceInterface'), { ssr: false });
 const ChatPopup = dynamic(() => import('./Chat/ChatPopupV3'), { ssr: false });
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {

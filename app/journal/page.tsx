@@ -1,968 +1,183 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Camera, 
-  Trash2, 
-  Mic, 
-  MicOff, 
-  MapPin, 
-  CloudSun, 
-  Search, 
-  X, 
-  Calendar, 
-  Edit3, 
-  Loader2,
-  FileText,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
 
-interface JournalMedia {
-  id: string;
-  url: string;
-  type: string;
-  filename: string;
-}
-
-interface JournalEntry {
+interface JournalEntryLite {
   id: string;
   title: string | null;
   content: string;
   mood: string | null;
   location: string | null;
-  weather: string | null;
   createdAt: string;
-  media: JournalMedia[];
+  media?: { type: string }[];
+  _count?: { media: number };
 }
 
 const MOODS = [
-  { code: 'happy', emoji: '☀️', label: 'Happy' },
-  { code: 'reflective', emoji: '🌌', label: 'Reflective' },
-  { code: 'tired', emoji: '🔋', label: 'Tired' },
-  { code: 'focused', emoji: '🎯', label: 'Focused' },
-  { code: 'inspired', emoji: '🎨', label: 'Inspired' },
-];
-
-function formatTranscript(text: string): string {
-  if (!text) return '';
-  
-  // Trim whitespace
-  let formatted = text.trim();
-
-  // Heuristic: Remove premature periods/punctuation that are followed by common conjunctions, prepositions, or continuations.
-  // This prevents sentences from being cut off too early by browser speech engines.
-  const commonContinuations = [
-    'and', 'but', 'or', 'so', 'then', 'because', 'although', 'though', 'since', 'unless', 'until',
-    'of', 'to', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'about', 'as', 'into', 'like', 'through', 'after', 'over', 'between', 'out', 'against', 'during', 'without', 'before', 'under', 'around', 'among',
-    'that', 'which', 'who', 'whom', 'whose', 'a', 'an', 'the',
-    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
-    'can', 'could', 'should', 'would', 'will', 'shall', 'may', 'might', 'must'
-  ];
-  const continuationsRegex = new RegExp(`([a-z0-9])\\s*[.,?!]\\s+(${commonContinuations.join('|')})\\b`, 'gi');
-  formatted = formatted.replace(continuationsRegex, (match, before, word) => {
-    return before + ' ' + word.toLowerCase();
-  });
-
-  // 1. Capitalize first letter of the overall text and any letter following a punctuation sentence-ender (. ! ?)
-  formatted = formatted.replace(/(^\s*|[.!?]\s+)([a-z])/g, (match, separator, letter) => {
-    return separator + letter.toUpperCase();
-  });
-
-  // 2. Capitalize lone "i", "i'm", "i'll", "i'd", "i've"
-  formatted = formatted.replace(/\bi\b/g, 'I');
-  formatted = formatted.replace(/\bi'm\b/gi, "I'm");
-  formatted = formatted.replace(/\bi'll\b/gi, "I'll");
-  formatted = formatted.replace(/\bi've\b/gi, "I've");
-  formatted = formatted.replace(/\bi'd\b/gi, "I'd");
-  
-  // 3. Automate punctuation: If the transcript segment doesn't already end with a punctuation mark, append a period.
-  if (formatted && !/[.!?]$/.test(formatted)) {
-    formatted += '.';
-  }
-
-  return formatted;
-}
-
-function joinSegments(segments: string[]): string {
-  if (segments.length === 0) return '';
-  
-  // Clean intermediate segments by removing trailing periods/punctuation
-  const cleanedSegments = segments.map((seg, idx) => {
-    let s = seg.trim();
-    if (idx < segments.length - 1) {
-      // Strip trailing period, comma, or question mark if it's not the last segment
-      s = s.replace(/[.,?!]+$/, '');
-    }
-    return s;
-  });
-
-  let result = cleanedSegments[0];
-  
-  for (let i = 1; i < cleanedSegments.length; i++) {
-    const nextSegment = cleanedSegments[i];
-    if (!nextSegment) continue;
-    
-    const cleanResult = result.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cleanNext = nextSegment.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    // If the next segment is cumulative (starts with the current result),
-    // it replaces the current result entirely!
-    if (cleanNext.startsWith(cleanResult)) {
-      result = nextSegment;
-    } else {
-      // Otherwise, they are independent segments, so we append them!
-      const endsWithPunctuation = /[.!?]$/.test(result);
-      const connector = endsWithPunctuation ? ' ' : ' ';
-      result = result + connector + nextSegment;
-    }
-  }
-  
-  return result;
-}
+  { code: "happy", label: "Happy" },
+  { code: "reflective", label: "Reflective" },
+  { code: "tired", label: "Tired" },
+  { code: "focused", label: "Focused" },
+  { code: "inspired", label: "Inspired" },
+] as const;
 
 export default function JournalPage() {
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [entries, setEntries] = useState<JournalEntryLite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Collapse state for editor
-  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [mood, setMood] = useState<string>("");
+  const [location, setLocation] = useState("New Haven, CT");
 
-  // Search & Filter State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMoodFilter, setSelectedMoodFilter] = useState('All');
-
-  // New Entry Form State
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [location, setLocation] = useState('New Haven, CT');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<{ url: string; type: string }[]>([]);
-
-  // Voice Dictation State
-  const [isDictating, setIsDictating] = useState(false);
-  const [speechMode, setSpeechMode] = useState<'tap' | 'continuous'>('tap');
-  const [interimText, setInterimText] = useState('');
-  const recognitionRef = useRef<any>(null);
-  const speechModeRef = useRef<'tap' | 'continuous'>('tap');
-  const isDictatingRef = useRef(false);
-  const interimTextRef = useRef('');
-  const contentRef = useRef('');
-  const baseContentRef = useRef('');
-
-  // Keep refs synced to bypass stale closures
-  useEffect(() => {
-    speechModeRef.current = speechMode;
-  }, [speechMode]);
-
-  useEffect(() => {
-    isDictatingRef.current = isDictating;
-  }, [isDictating]);
-
-  useEffect(() => {
-    interimTextRef.current = interimText;
-  }, [interimText]);
-
-  useEffect(() => {
-    contentRef.current = content;
-  }, [content]);
-
-  // Lightbox Modal State
-  const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
-
-  // Editing Entry State
-  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
-  const [editMood, setEditMood] = useState<string | null>(null);
-  const [editLocation, setEditLocation] = useState('');
-
-  useEffect(() => {
-    fetchEntries();
-    setupDictation();
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-    };
-  }, []);
-
-  const fetchEntries = async () => {
+  const loadEntries = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/journal?search=${encodeURIComponent(searchTerm)}&mood=${selectedMoodFilter}`);
-      const data = await res.json();
-      if (data.success) {
-        setEntries(data.entries);
+      const res = await fetch("/api/journal?lite=1&take=20", { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`Failed to load (${res.status})`);
       }
-    } catch (err) {
-      console.error('Error loading journal entries:', err);
+      const data = await res.json();
+      if (!data?.success || !Array.isArray(data.entries)) {
+        throw new Error("Unexpected response shape");
+      }
+      setEntries(data.entries);
+    } catch (err: any) {
+      setError(err?.message || "Unknown error");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Re-fetch when search or filter change
   useEffect(() => {
-    fetchEntries();
-  }, [searchTerm, selectedMoodFilter]);
+    loadEntries();
+  }, []);
 
-  const setupDictation = () => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const rec = new SpeechRecognition();
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.lang = 'en-US';
-
-        rec.onresult = (e: any) => {
-          const finalizedSegments: string[] = [];
-          const interimSegments: string[] = [];
-
-          for (let i = 0; i < e.results.length; ++i) {
-            const transcript = e.results[i][0].transcript;
-            if (e.results[i].isFinal) {
-              finalizedSegments.push(transcript);
-            } else {
-              interimSegments.push(transcript);
-            }
-          }
-
-          const joinedFinalized = joinSegments(finalizedSegments);
-          const joinedInterim = joinSegments(interimSegments);
-
-          if (joinedInterim) {
-            setInterimText(joinedInterim);
-          } else {
-            setInterimText('');
-          }
-
-          if (joinedFinalized) {
-            setInterimText(''); // Clear interim since we got final
-            interimTextRef.current = ''; // INSTANTLY clear ref
-            const formattedSegment = formatTranscript(joinedFinalized);
-            setContent(() => {
-              const base = baseContentRef.current;
-              if (!base) return formattedSegment;
-              const endsWithPunctuation = /[.!?]$/.test(base);
-              const connector = endsWithPunctuation ? ' ' : '. ';
-              return base + connector + formattedSegment;
-            });
-          }
-        };
-
-        rec.onend = () => {
-          // If we have remaining interimText (especially useful on mobile browsers like Safari
-          // which don't reliably fire isFinal=true until the session actually ends),
-          // flush it to the main content text box!
-          if (interimTextRef.current) {
-            const formattedSegment = formatTranscript(interimTextRef.current);
-            setContent(() => {
-              const base = baseContentRef.current;
-              if (!base) return formattedSegment;
-              const endsWithPunctuation = /[.!?]$/.test(base);
-              const connector = endsWithPunctuation ? ' ' : '. ';
-              return base + connector + formattedSegment;
-            });
-            setInterimText('');
-            interimTextRef.current = '';
-          }
-
-          // Update the base content ref so that the next session (if restarting) starts from the new text
-          baseContentRef.current = contentRef.current;
-
-          // If in continuous Hot Mic mode, auto-restart the mic session on timeout/silence
-          if (isDictatingRef.current && speechModeRef.current === 'continuous') {
-            console.log('[Continuous Hot Mic] Speech ended. Auto-restarting loop...');
-            try {
-              rec.start();
-            } catch (err) {
-              console.error('Error restarting continuous mic:', err);
-              setIsDictating(false);
-            }
-          } else {
-            setIsDictating(false);
-          }
-        };
-
-        rec.onerror = (e: any) => {
-          console.error('Speech Recognition Error:', e);
-          if (e.error === 'no-speech' && speechModeRef.current === 'continuous' && isDictatingRef.current) {
-            // Let the onend handler manage the restart silently
-            return;
-          }
-          setIsDictating(false);
-        };
-
-        recognitionRef.current = rec;
-      }
-    }
-  };
-
-  const toggleDictation = () => {
-    if (!recognitionRef.current) {
-      alert('Speech-to-text dictation is not supported in this browser.');
-      return;
-    }
-
-    if (isDictating) {
-      setIsDictating(false);
-      setInterimText('');
-      interimTextRef.current = '';
-      recognitionRef.current.stop();
-    } else {
-      setIsDictating(true);
-      setInterimText('');
-      interimTextRef.current = '';
-      baseContentRef.current = content.trim(); // Save current content as base for this session!
-      try {
-        recognitionRef.current.start();
-      } catch (err) {
-        console.error('Error starting speech recognition:', err);
-      }
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setSelectedFiles(prev => [...prev, ...filesArray]);
-
-      // Create object URLs for local previews
-      const newPreviews = filesArray.map(file => ({
-        url: URL.createObjectURL(file),
-        type: file.type.startsWith('video/') ? 'video' : 'image'
-      }));
-      setPreviews(prev => [...prev, ...newPreviews]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    // Revoke the object URL to release memory
-    URL.revokeObjectURL(previews[index].url);
-    setPreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
 
-    setIsSubmitting(true);
+    setIsSaving(true);
+    setError(null);
     try {
-      let uploadedMedia: { url: string; type: string; filename: string }[] = [];
-
-      // 1. Upload files first if there are any
-      if (selectedFiles.length > 0) {
-        const formData = new FormData();
-        selectedFiles.forEach(file => {
-          formData.append('files', file);
-        });
-
-        const uploadRes = await fetch('/api/journal/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        const uploadData = await uploadRes.json();
-        if (uploadData.success) {
-          uploadedMedia = uploadData.media;
-        } else {
-          throw new Error(uploadData.error || 'Failed to upload media');
-        }
-      }
-
-      // 2. Submit entry
-      const response = await fetch('/api/journal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim() || null,
           content: content.trim(),
-          mood: selectedMood,
-          location: location.trim(),
-          media: uploadedMedia,
-        })
-      });
-
-      const entryData = await response.json();
-      if (entryData.success) {
-        // Reset form
-        setTitle('');
-        setContent('');
-        setSelectedMood(null);
-        setSelectedFiles([]);
-        setPreviews([]);
-        fetchEntries();
-      } else {
-        alert(entryData.error || 'Failed to create entry.');
-      }
-    } catch (err: any) {
-      console.error('Submission error:', err);
-      alert(err.message || 'Error saving journal entry.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteEntry = async (id: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this memory? This will also remove any associated media files on disk.')) return;
-
-    try {
-      const res = await fetch(`/api/journal/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        fetchEntries();
-      }
-    } catch (err) {
-      console.error('Delete error:', err);
-    }
-  };
-
-  const startEdit = (entry: JournalEntry) => {
-    setEditingEntryId(entry.id);
-    setEditTitle(entry.title || '');
-    setEditContent(entry.content);
-    setEditMood(entry.mood);
-    setEditLocation(entry.location || 'New Haven, CT');
-  };
-
-  const handleSaveEdit = async (id: string) => {
-    if (!editContent.trim()) return;
-    try {
-      const res = await fetch(`/api/journal/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: editTitle.trim(),
-          content: editContent.trim(),
-          mood: editMood,
-          location: editLocation.trim()
+          mood: mood || null,
+          location: location.trim() || "New Haven, CT",
+          media: [],
         }),
       });
-
-      if (res.ok) {
-        setEditingEntryId(null);
-        fetchEntries();
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || `Save failed (${res.status})`);
       }
-    } catch (err) {
-      console.error('Edit error:', err);
+
+      setTitle("");
+      setContent("");
+      setMood("");
+      await loadEntries();
+    } catch (err: any) {
+      setError(err?.message || "Save failed");
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const subtitle = useMemo(() => {
+    if (isLoading) return "Loading entries...";
+    if (error) return "Failed to load entries";
+    return `${entries.length} recent entr${entries.length === 1 ? "y" : "ies"}`;
+  }, [entries.length, error, isLoading]);
+
   return (
-    <div className="p-1 md:p-3 lg:p-4 flex flex-col h-full bg-neo-bg min-h-screen transition-colors duration-300">
-      
-      {/* Header Block with mobile-responsive margins to float clear of the sidebar/hamburger menu */}
-      <div className="mb-3 ml-12 md:ml-16 lg:ml-4 flex flex-row items-center flex-wrap gap-x-4 gap-y-2">
-        <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-2xl md:text-3xl drop-shadow-sm uppercase leading-none m-0">Chronicles</h1>
-        <div className="flex items-center">
-          <div className="neo-pressed px-4 py-1 rounded-full">
-            <p className="text-gray-500 dark:text-gray-400 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] m-0">Your Private Vault & Memories</p>
-          </div>
-        </div>
-      </div>
+    <div className="p-6 min-h-screen bg-neo-bg text-gray-800 dark:text-gray-200">
+      <h1 className="text-2xl font-bold">Chronicles</h1>
+      <p className="mt-3 text-sm">{subtitle}</p>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-12 ${isEditorCollapsed ? 'gap-2.5 lg:gap-4' : 'gap-4 lg:gap-6'} flex-1 items-stretch transition-all duration-300`}>
-        
-        {/* LEFT COLUMN: Entry Editor (5 cols on wide screens, collapses to 3) */}
-        <div className={`${isEditorCollapsed ? 'lg:col-span-3' : 'lg:col-span-5'} flex flex-col gap-4 transition-all duration-300`}>
-          <div className={`neo-flat rounded-3xl ${isEditorCollapsed ? 'py-2.5 px-5' : 'p-5'} flex flex-col ${isEditorCollapsed ? 'gap-0' : 'gap-5'} transition-all duration-300`}>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2">
-                <FileText className="text-blue-500" size={18} />
-                Capture Your Moment
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsEditorCollapsed(!isEditorCollapsed)}
-                className="p-1.5 rounded-xl neo-button text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all border-none cursor-pointer flex items-center justify-center"
-                title={isEditorCollapsed ? "Expand section" : "Collapse section"}
-              >
-                {isEditorCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              </button>
-            </h2>
-
-            {!isEditorCollapsed && (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              {/* Optional Title Input */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Title (Optional)</label>
-                <input 
-                  type="text" 
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="Today's highlights..." 
-                  className="neo-pressed rounded-2xl py-3 px-4 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none transition-all w-full"
-                />
-              </div>
-
-              {/* Text Area (Entry Body) */}
-              <div className="flex flex-col gap-2 relative">
-                <div className="flex justify-between items-center">
-                  <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">What's on your mind?</label>
-                  <div className="flex items-center gap-2">
-                    {/* Segmented Mode Selector */}
-                    <div className="neo-pressed p-0.5 rounded-full flex gap-1 bg-zinc-200/50 dark:bg-zinc-800/30">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSpeechMode('tap');
-                          if (isDictating) {
-                            setIsDictating(false);
-                            recognitionRef.current?.stop();
-                          }
-                        }}
-                        className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border-none cursor-pointer transition-all ${
-                          speechMode === 'tap'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'bg-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                        title="Manual Tap: Click mic, speak sentence, click off"
-                      >
-                        Tap Speak
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSpeechMode('continuous');
-                          if (isDictating) {
-                            setIsDictating(false);
-                            recognitionRef.current?.stop();
-                          }
-                        }}
-                        className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border-none cursor-pointer transition-all ${
-                          speechMode === 'continuous'
-                            ? 'bg-red-600 text-white shadow-sm'
-                            : 'bg-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                        title="Hot Mic: Continuous listening with auto-reconnect"
-                      >
-                        Hot Mic
-                      </button>
-                    </div>
-
-                    {/* Mic Button */}
-                    <button
-                      type="button"
-                      onClick={toggleDictation}
-                      className={`p-2 rounded-full border-none cursor-pointer transition-all ${
-                        isDictating 
-                          ? speechMode === 'continuous'
-                            ? 'bg-red-500 text-white animate-pulse'
-                            : 'bg-blue-600 text-white animate-pulse'
-                          : 'neo-button text-blue-500 hover:text-blue-600'
-                      }`}
-                      title={isDictating ? 'Stop listening' : `Start listening (${speechMode === 'continuous' ? 'Continuous Hot Mic' : 'Tap Speak'})`}
-                    >
-                      {isDictating ? <MicOff size={16} /> : <Mic size={16} />}
-                    </button>
-                  </div>
-                </div>
-                <textarea
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="Speak or type your memories here..."
-                  rows={6}
-                  className="neo-pressed rounded-2xl py-4 px-4 pb-12 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none transition-all w-full resize-none leading-relaxed"
-                />
-                {isDictating && (
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] bg-zinc-100/95 dark:bg-zinc-900/95 py-1.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm z-10 animate-pulse-soft">
-                    <span className="text-red-500 font-black tracking-wider flex items-center gap-1.5 shrink-0">
-                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
-                      {speechMode === 'continuous' ? 'HOT MIC' : 'TAP SPEAK'}:
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-300 font-mono italic truncate ml-2 flex-1 text-left">
-                      {interimText ? `"${interimText}"` : 'Listening... speak now'}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Mood Selector */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Vibe Check</label>
-                <div className="flex flex-wrap gap-2.5">
-                  {MOODS.map(m => {
-                    const isSelected = selectedMood === m.code;
-                    return (
-                      <button
-                        key={m.code}
-                        type="button"
-                        onClick={() => setSelectedMood(isSelected ? null : m.code)}
-                        className={`px-4 py-2 rounded-xl border-none cursor-pointer text-xs font-bold transition-all ${
-                          isSelected 
-                            ? 'neo-pressed text-blue-500 shadow-inner' 
-                            : 'neo-button text-gray-600 dark:text-gray-300'
-                        }`}
-                      >
-                        <span className="mr-1.5">{m.emoji}</span>
-                        {m.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Metadata Inputs (Location) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-1">
-                    <MapPin size={12} />
-                    Location
-                  </label>
-                  <input 
-                    type="text" 
-                    value={location}
-                    onChange={e => setLocation(e.target.value)}
-                    placeholder="New Haven, CT" 
-                    className="neo-pressed rounded-xl py-2.5 px-3.5 text-xs text-gray-800 dark:text-gray-200 focus:outline-none transition-all w-full"
-                  />
-                </div>
-              </div>
-
-              {/* Photo & Video Local Upload Area */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-1">
-                  <Camera size={12} />
-                  Photos & Videos
-                </label>
-                <div className="neo-pressed rounded-2xl p-4 flex flex-col items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-blue-500 cursor-pointer relative min-h-[100px] transition-all">
-                  <input 
-                    type="file" 
-                    accept="image/*,video/*" 
-                    multiple 
-                    onChange={handleFileChange}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                  <Camera size={28} className="text-gray-400 mb-1" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Tap to snap or select files</span>
-                  <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-widest">Images & MP4/MOV</span>
-                </div>
-
-                {/* Upload Previews */}
-                {previews.length > 0 && (
-                  <div className="flex gap-3 flex-wrap mt-2 p-3 neo-pressed rounded-2xl overflow-x-auto">
-                    {previews.map((prev, idx) => (
-                      <div key={idx} className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 group border border-zinc-200 dark:border-zinc-800">
-                        {prev.type === 'video' ? (
-                          <video src={prev.url} className="w-full h-full object-cover" muted />
-                        ) : (
-                          <img src={prev.url} className="w-full h-full object-cover" alt="preview" />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeFile(idx)}
-                          className="absolute top-0.5 right-0.5 bg-red-500/80 hover:bg-red-600 text-white p-0.5 rounded-full border-none cursor-pointer shadow-md transition-all"
-                        >
-                          <X size={8} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <button 
-                type="submit" 
-                disabled={isSubmitting || !content.trim()}
-                className={`neo-button w-full py-4.5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 border-none active:neo-button-active ${
-                  !content.trim() 
-                    ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                    : 'text-blue-500 hover:text-blue-600 font-bold'
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Uploading & Saving...
-                  </>
-                ) : 'Save Chronicle Entry 🏆'}
-              </button>
-            </form>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Chronological Timeline Stream (7 cols, expands to 9) */}
-        <div className={`${isEditorCollapsed ? 'lg:col-span-9' : 'lg:col-span-7'} flex flex-col gap-4 transition-all duration-300`}>
-          
-          {/* Filter Bar */}
-          <div className="neo-flat rounded-3xl p-4 md:p-5 flex flex-col md:flex-row justify-between gap-4 items-center">
-            
-            {/* Search Input */}
-            <div className="relative w-full md:max-w-xs">
-              <Search className="absolute left-3 top-3.5 text-gray-400" size={16} />
-              <input 
-                type="text"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Search keywords..."
-                className="neo-pressed rounded-2xl py-3.5 pl-10 pr-4 text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none transition-all w-full"
-              />
-            </div>
-
-            {/* Filter buttons */}
-            <div className="flex gap-2 flex-wrap items-center">
-              <button
-                onClick={() => setSelectedMoodFilter('All')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all ${
-                  selectedMoodFilter === 'All' 
-                    ? 'neo-pressed text-blue-500' 
-                    : 'neo-button text-gray-600 dark:text-gray-300'
-                }`}
-              >
-                All Vibe
-              </button>
-              {MOODS.map(m => (
-                <button
-                  key={m.code}
-                  onClick={() => setSelectedMoodFilter(m.code)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold border-none cursor-pointer transition-all ${
-                    selectedMoodFilter === m.code 
-                      ? 'neo-pressed text-blue-500' 
-                      : 'neo-button text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  <span className="mr-1">{m.emoji}</span>
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Timeline Feed Container */}
-          <div className="flex-1 flex flex-col gap-4 overflow-y-auto max-h-[85vh] pr-2">
-            {isLoading ? (
-              <div className="neo-flat rounded-3xl p-12 flex flex-col items-center justify-center text-gray-400">
-                <Loader2 size={32} className="animate-spin mb-2" />
-                <span className="text-xs font-black uppercase tracking-widest text-gray-500">Retrieving Timeline...</span>
-              </div>
-            ) : entries.length === 0 ? (
-              <div className="neo-flat rounded-3xl p-12 text-center text-gray-400">
-                <p className="font-bold text-sm">Your diary is empty.</p>
-                <p className="text-xs text-gray-500 mt-1">Capture your first life memory on the left card!</p>
-              </div>
-            ) : (
-              entries.map(entry => {
-                const isEditing = editingEntryId === entry.id;
-                const formattedDate = new Date(entry.createdAt).toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                });
-                const formattedTime = new Date(entry.createdAt).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                });
-                const moodObj = MOODS.find(m => m.code === entry.mood);
-
-                return (
-                  <div key={entry.id} className="neo-flat rounded-3xl p-4 md:p-5 flex flex-col gap-4 transition-all hover:scale-[1.005]">
-                    
-                    {/* Entry Header block */}
-                    <div className="flex flex-wrap justify-between items-start gap-3 border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-blue-500" />
-                          <span className="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wide">
-                            {formattedDate}
-                          </span>
-                          <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {formattedTime}
-                          </span>
-                        </div>
-                        
-                        {/* Location and Weather badges */}
-                        <div className="flex flex-wrap gap-2 items-center mt-1">
-                          {entry.location && (
-                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
-                              <MapPin size={10} className="text-red-400" />
-                              {entry.location}
-                            </span>
-                          )}
-                          {entry.weather && (
-                            <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 neo-pressed px-2 py-0.5 rounded-full">
-                              <CloudSun size={10} />
-                              {entry.weather}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right-aligned Mood Badge & Actions */}
-                      <div className="flex items-center gap-3">
-                        {moodObj && (
-                          <div className="neo-pressed px-3 py-1 rounded-full text-[11px] font-bold text-gray-700 dark:text-gray-200">
-                            <span className="mr-1">{moodObj.emoji}</span>
-                            {moodObj.label}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          {!isEditing ? (
-                            <>
-                              <button 
-                                onClick={() => startEdit(entry)}
-                                className="p-2 neo-button rounded-xl border-none text-zinc-500 hover:text-blue-500 cursor-pointer transition-all"
-                                title="Edit Entry"
-                              >
-                                <Edit3 size={12} />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteEntry(entry.id)}
-                                className="p-2 neo-button rounded-xl border-none text-zinc-500 hover:text-red-500 cursor-pointer transition-all"
-                                title="Delete Entry"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </>
-                          ) : (
-                            <button 
-                              onClick={() => setEditingEntryId(null)}
-                              className="px-2.5 py-1.5 neo-button rounded-xl border-none text-xs text-gray-500 cursor-pointer font-bold"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Entry Contents Block */}
-                    {!isEditing ? (
-                      <div className="flex flex-col gap-4">
-                        {entry.title && (
-                          <h3 className="text-lg font-extrabold text-gray-800 dark:text-gray-200 leading-tight m-0">
-                            {entry.title}
-                          </h3>
-                        )}
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap m-0">
-                          {entry.content}
-                        </p>
-
-                        {/* Attached Photos & Videos Carousel Grid */}
-                        {entry.media && entry.media.length > 0 && (
-                          <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mt-2">
-                            {entry.media.map(m => (
-                              <div 
-                                key={m.id} 
-                                onClick={() => setActiveMediaUrl(m.url)}
-                                className="relative aspect-square rounded-xl overflow-hidden cursor-pointer border border-zinc-200 dark:border-zinc-800 hover:opacity-90 shadow-sm transition-all"
-                              >
-                                {m.type === 'video' ? (
-                                  <div className="w-full h-full relative">
-                                    <video src={m.url} className="w-full h-full object-cover" muted />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                      <div className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center text-zinc-800 shadow-md">
-                                        ▶
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <img src={m.url} className="w-full h-full object-cover" alt="entry asset" />
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      // Inline Editor Row
-                      <div className="flex flex-col gap-4 p-4 neo-pressed rounded-2xl">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Edit Title</label>
-                          <input 
-                            type="text" 
-                            value={editTitle}
-                            onChange={e => setEditTitle(e.target.value)}
-                            className="neo-pressed rounded-xl py-2 px-3 text-xs text-gray-800 dark:text-gray-200 focus:outline-none w-full border-none"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Edit Content</label>
-                          <textarea 
-                            value={editContent}
-                            onChange={e => setEditContent(e.target.value)}
-                            rows={4}
-                            className="neo-pressed rounded-xl py-2.5 px-3 text-xs text-gray-800 dark:text-gray-200 focus:outline-none w-full resize-none border-none leading-relaxed"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Location</label>
-                            <input 
-                              type="text" 
-                              value={editLocation}
-                              onChange={e => setEditLocation(e.target.value)}
-                              className="neo-pressed rounded-xl py-2 px-3 text-xs text-gray-800 dark:text-gray-200 focus:outline-none w-full border-none"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Mood</label>
-                            <select
-                              value={editMood || ''}
-                              onChange={e => setEditMood(e.target.value || null)}
-                              className="neo-pressed rounded-xl py-2 px-3 text-xs text-gray-800 dark:text-gray-200 focus:outline-none w-full border-none bg-transparent"
-                            >
-                              <option value="">No Mood</option>
-                              {MOODS.map(m => (
-                                <option key={m.code} value={m.code}>{m.emoji} {m.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => handleSaveEdit(entry.id)}
-                          className="neo-button py-2.5 rounded-xl text-xs font-black text-blue-500 uppercase tracking-widest border-none mt-1 hover:text-blue-600 cursor-pointer"
-                        >
-                          Save Changes 🏆
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Lightbox / Media Viewer Modal Overlay */}
-      {activeMediaUrl && (
-        <div 
-          className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4"
-          onClick={() => setActiveMediaUrl(null)}
-        >
-          <button 
-            className="absolute top-4 right-4 bg-zinc-800/80 text-white p-3 rounded-full hover:bg-zinc-700 transition-all border-none cursor-pointer"
-            onClick={() => setActiveMediaUrl(null)}
+      <form onSubmit={handleCreate} className="mt-4 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 bg-white/60 dark:bg-zinc-900/30 space-y-3">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title (optional)"
+          className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent p-2 text-sm"
+        />
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Write your entry..."
+          rows={5}
+          className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent p-2 text-sm resize-y"
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <select
+            value={mood}
+            onChange={(e) => setMood(e.target.value)}
+            className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent p-2 text-sm"
           >
-            <X size={20} />
-          </button>
-          <div className="max-w-[90vw] max-h-[90vh] flex items-center justify-center">
-            {activeMediaUrl.toLowerCase().endsWith('.mp4') || activeMediaUrl.toLowerCase().endsWith('.mov') ? (
-              <video 
-                src={activeMediaUrl} 
-                className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl" 
-                controls 
-                autoPlay 
-                onClick={(e) => e.stopPropagation()} 
-              />
-            ) : (
-              <img 
-                src={activeMediaUrl} 
-                className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" 
-                alt="lightbox" 
-                onClick={(e) => e.stopPropagation()} 
-              />
-            )}
-          </div>
+            <option value="">No mood</option>
+            {MOODS.map((m) => (
+              <option key={m.code} value={m.code}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <input
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Location"
+            className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent p-2 text-sm"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={isSaving || !content.trim()}
+          className="rounded-xl bg-blue-600 text-white px-4 py-2 text-sm disabled:opacity-50"
+        >
+          {isSaving ? "Saving..." : "Save Entry"}
+        </button>
+      </form>
+
+      {error && (
+        <div className="mt-4 rounded-xl border border-red-400/50 bg-red-50/60 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
+      {!error && (
+        <div className="mt-4 space-y-3">
+          {entries.map((entry) => (
+            <article key={entry.id} className="rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 bg-white/50 dark:bg-zinc-900/30">
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                {new Date(entry.createdAt).toLocaleString("en-US")}
+                {entry.location ? ` • ${entry.location}` : ""}
+              </div>
+              {entry.title && <h2 className="mt-1 text-base font-semibold">{entry.title}</h2>}
+              <p className="mt-2 text-sm leading-6 whitespace-pre-wrap">
+                {entry.content.length > 400 ? `${entry.content.slice(0, 400)}...` : entry.content}
+              </p>
+              {!!entry._count?.media && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <span>{entry._count.media} attachment{entry._count.media === 1 ? "" : "s"}</span>
+                  {!!entry.media?.some((m) => m.type === "image") && (
+                    <span className="rounded-full border border-zinc-300 dark:border-zinc-600 px-2 py-0.5">image</span>
+                  )}
+                  {!!entry.media?.some((m) => m.type === "video") && (
+                    <span className="rounded-full border border-zinc-300 dark:border-zinc-600 px-2 py-0.5">video</span>
+                  )}
+                </div>
+              )}
+            </article>
+          ))}
+          {!isLoading && entries.length === 0 && (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No entries yet.</p>
+          )}
         </div>
       )}
     </div>

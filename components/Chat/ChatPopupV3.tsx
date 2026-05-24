@@ -143,6 +143,16 @@ export default function ChatPopupV3() {
   const liveSpeechRecognitionRef = useRef<any>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
 
+  const stopLiveSpeechRecognition = useCallback(() => {
+    if (liveSpeechRecognitionRef.current) {
+      try {
+        liveSpeechRecognitionRef.current.stop();
+      } catch {}
+      liveSpeechRecognitionRef.current = null;
+    }
+    setLiveTranscript('');
+  }, []);
+
   useEffect(() => {
     // We only want the background transcription active when Gemini Live is actively connected
     if (!isLiveConnected || !roomId) {
@@ -335,6 +345,22 @@ export default function ChatPopupV3() {
     }
   };
 
+  const closePopup = useCallback(() => {
+    if (isLiveConnected) {
+      console.log('ChatPopupV3: Closing popup, disconnecting Gemini Live.');
+      toggleLive();
+    }
+    if (isVATActive) {
+      console.log('ChatPopupV3: Closing popup, disabling VAT.');
+      toggleVAT(true);
+    }
+    stopRecording(true);
+    stopLiveSpeechRecognition();
+    setOrbState('idle');
+    setIsMinimized(false);
+    setIsOpen(false);
+  }, [isLiveConnected, isVATActive, toggleLive, toggleVAT, stopRecording, stopLiveSpeechRecognition]);
+
   // Draggable State
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -366,13 +392,27 @@ export default function ChatPopupV3() {
         setIsOpen(true);
         setIsMinimized(false);
       } else {
-        setIsOpen(false);
-        if (isLiveConnected) toggleLive();
+        closePopup();
       }
     };
     window.addEventListener('toggle-voice', handleToggle);
     return () => window.removeEventListener('toggle-voice', handleToggle);
-  }, [isOpen, isFullDuplex, isLiveConnected, toggleLive]);
+  }, [isOpen, closePopup]);
+
+  // Defensive teardown: if popup is hidden for any reason, ensure voice stacks are off.
+  useEffect(() => {
+    if (!isOpen) {
+      if (isLiveConnected) {
+        toggleLive();
+      }
+      if (isVATActive) {
+        toggleVAT(true);
+      }
+      stopRecording(true);
+      stopLiveSpeechRecognition();
+      setOrbState('idle');
+    }
+  }, [isOpen, isLiveConnected, isVATActive, toggleLive, toggleVAT, stopRecording, stopLiveSpeechRecognition]);
 
   // Drag Handlers
   const onMouseDown = (e: React.MouseEvent) => {
@@ -759,7 +799,7 @@ export default function ChatPopupV3() {
               <button onClick={() => setIsMinimized(true)} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
                 <Minimize2 size={14} className="text-[#b2bec3]" />
               </button>
-              <button onClick={() => setIsOpen(false)} className="p-2 rounded-xl hover:bg-red-500/20 group transition-colors">
+              <button onClick={closePopup} className="p-2 rounded-xl hover:bg-red-500/20 group transition-colors">
                 <X size={14} className="text-[#b2bec3] group-hover:text-red-400" />
               </button>
             </div>

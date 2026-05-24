@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const mood = searchParams.get('mood') || '';
+    const lite = searchParams.get('lite') === '1';
+    const takeParam = Number.parseInt(searchParams.get('take') || '20', 10);
+    const take = Number.isFinite(takeParam) ? Math.min(Math.max(takeParam, 1), 50) : 20;
 
     const where: any = {};
 
@@ -46,15 +49,43 @@ export async function GET(req: NextRequest) {
       where.mood = mood;
     }
 
-    const entries = await prisma.journalEntry.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        media: true,
-      },
-    });
+    const entries = lite
+      ? await prisma.journalEntry.findMany({
+          where,
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take,
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            mood: true,
+            location: true,
+            createdAt: true,
+            media: {
+              select: {
+                type: true,
+              },
+              take: 10,
+            },
+            _count: {
+              select: {
+                media: true,
+              },
+            },
+          },
+        })
+      : await prisma.journalEntry.findMany({
+          where,
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take,
+          include: {
+            media: true,
+          },
+        });
 
     return NextResponse.json({ success: true, entries });
   } catch (error: any) {
