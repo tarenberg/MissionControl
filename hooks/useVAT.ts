@@ -1,266 +1,219 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAudioAnalyzer } from './useAudioAnalyzer';
+import { useVAD } from './useVAD';
 
+// Helper function to join transcript segments from the SpeechRecognition API
 function joinSegments(segments: string[]): string {
+  // ... (keeping the existing robust joinSegments logic)
   if (segments.length === 0) return '';
-  
-  // Clean intermediate segments by removing trailing periods/punctuation
   const cleanedSegments = segments.map((seg, idx) => {
     let s = seg.trim();
     if (idx < segments.length - 1) {
-      // Strip trailing period, comma, or question mark if it's not the last segment
       s = s.replace(/[.,?!]+$/, '');
     }
     return s;
   });
-
   let result = cleanedSegments[0];
-  
   for (let i = 1; i < cleanedSegments.length; i++) {
     const nextSegment = cleanedSegments[i];
     if (!nextSegment) continue;
-    
     const cleanResult = result.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanNext = nextSegment.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
     if (cleanNext.startsWith(cleanResult)) {
       result = nextSegment;
     } else {
-      const endsWithPunctuation = /[.!?]$/.test(result);
-      const connector = endsWithPunctuation ? ' ' : ' ';
-      result = result + connector + nextSegment;
+      result = result + ' ' + nextSegment;
     }
   }
-  
   return result;
 }
 
+// Helper function to convert the Float32Array from VAD to a WAV blob
+function float32ToWavBlob(audioData: Float32Array, sampleRate = 16000): Blob {
+  const wavHeader = new ArrayBuffer(44);
+  const view = new DataView(wavHeader);
+  const numSamples = audioData.length;
+  const numChannels = 1;
+  const bytesPerSample = 2; // 16-bit PCM
+
+  // RIFF identifier
+  view.setBigUint64(0, BigInt(0x5249464600000000), false);
+  // file length
+  view.setUint32(4, 36 + numSamples * numChannels * bytesPerSample, true);
+  // RIFF type
+  view.setBigUint64(8, BigInt(0x57415645666d7420), false);
+  // format chunk length
+  view.setUint32(16, 16, true);
+  // sample format (1 for PCM)
+  view.setUint16(20, 1, true);
+  // number of channels
+  view.setUint16(22, numChannels, true);
+  // sample rate
+  view.setUint32(24, sampleRate, true);
+  // byte rate (sample rate * block align)
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+  // block align (num channels * bytes per sample)
+  view.setUint16(32, numChannels * bytesPerSample, true);
+  // bits per sample
+  view.setUint16(34, 16, true);
+  // data chunk identifier
+  view.setBigUint64(36, BigInt(0x6461746100000000), false);
+  // data chunk length
+  view.setUint32(40, numSamples * numChannels * bytesPerSample, true);
+
+  // Convert Float32 to 16-bit PCM
+  const pcm = new Int16Array(numSamples);
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, audioData[i]));
+    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+
+  const blob = new Blob([view, pcm], { type: 'audio/wav' });
+  return blob;
+}
+
 interface VATOptions {
-  threshold?: number; // dB
-  silenceDuration?: number; // ms
   onSpeechStart?: () => void;
   onSpeechEnd?: (blob: Blob, transcript?: string) => void;
+  onTranscript?: (text: string) => void;
+  onPreviewAudio?: (blob: Blob) => void;
+  forcePreviewFallback?: boolean;
   disabled?: boolean;
 }
 
 export function useVAT(options: VATOptions = {}) {
-  const { threshold = -45, silenceDuration = 1500, onSpeechStart, onSpeechEnd, disabled = false } = options;
-  const { level, db, error, start: startAnalyzer, stop: stopAnalyzer, stream } = useAudioAnalyzer();
-  
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const { onSpeechStart, onSpeechEnd, onTranscript, disabled = false } = options;
+
   const [isActive, setIsActive] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [speechRecognitionAvailable, setSpeechRecognitionAvailable] = useState(true);
   
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
-
-  const onSpeechStartRef = useRef(onSpeechStart);
   const onSpeechEndRef = useRef(onSpeechEnd);
+  const onTranscriptRef = useRef(onTranscript);
   const transcriptRef = useRef(transcript);
 
-  useEffect(() => { onSpeechStartRef.current = onSpeechStart; }, [onSpeechStart]);
   useEffect(() => { onSpeechEndRef.current = onSpeechEnd; }, [onSpeechEnd]);
+  useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
 
-  const dbRef = useRef(db);
-  const thresholdRef = useRef(threshold);
-  useEffect(() => { dbRef.current = db; }, [db]);
-  useEffect(() => { thresholdRef.current = threshold; }, [threshold]);
+  // VAD Speech Start Handler
+  const handleSpeechStart = useCallback(() => {
+    console.log('VAD detected speech start. Starting recognition...');
+    setTranscript(''); // Clear previous transcript
 
-  const stopRecording = useCallback((discard = false) => {
-    console.log(`VAT: stopRecording called (discard=${discard}). Current state:`, mediaRecorderRef.current?.state);
-    
-    setIsSpeaking(false);
+    // Call the UI's onSpeechStart callback
+    onSpeechStart?.();
 
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {
-        console.error('VAT: Error stopping recognition:', e);
-      }
-    }
+    // Start browser speech recognition for live transcript
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechRecognitionAvailable(true);
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-    
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      if (discard) {
-        // Remove the onstop handler so it doesn't trigger onSpeechEnd
-        mediaRecorderRef.current.onstop = () => {
-          console.log('VAT: Recording stopped and discarded.');
-          setIsSpeaking(false);
-          setTranscript('');
-        };
-      }
-      mediaRecorderRef.current.stop();
+      recognition.onresult = (event: any) => {
+        const segments: string[] = Array.from(event.results).map((result: any) => result[0].transcript);
+        const joined = joinSegments(segments);
+        setTranscript(joined);
+        onTranscriptRef.current?.(joined);
+      };
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setSpeechRecognitionAvailable(false);
+      };
+      recognition.onend = () => console.log('Speech recognition ended.');
+      
+      recognitionRef.current = recognition;
+      recognition.start();
     } else {
-      setTranscript('');
+      setSpeechRecognitionAvailable(false);
     }
+  }, [onSpeechStart]);
+
+  // VAD Speech End Handler
+  const handleSpeechEnd = useCallback((audio: Float32Array) => {
+    console.log('VAD detected speech end. Stopping recognition and processing audio.');
+    
+    // Stop the speech recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
+    // Convert the raw audio data to a WAV blob
+    const audioBlob = float32ToWavBlob(audio);
+    
+    const finalText = transcriptRef.current;
+    
+    // Fire the final onSpeechEnd event for the UI
+    if (onSpeechEndRef.current) {
+      onSpeechEndRef.current(audioBlob, finalText);
+    }
+    
+    // Reset the transcript
+    setTranscript('');
   }, []);
 
-  const startRecording = useCallback(async () => {
-    if (!stream) {
-      console.warn('VAT: No audio stream available to start recording');
-      return;
+  // Initialize the new VAD hook
+  const { 
+    isReady: isVADReady, 
+    isSpeaking, 
+    error: vadError, 
+    start: startVAD, 
+    stop: stopVAD 
+  } = useVAD({
+    onSpeechStart: handleSpeechStart,
+    onSpeechEnd: handleSpeechEnd,
+  });
+
+  const stopVat = useCallback(() => {
+    stopVAD();
+    setIsActive(false);
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
     }
+  }, [stopVAD]);
 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      return;
-    }
-
-    try {
-      console.log('VAT: Recording starting...', { db: dbRef.current, threshold: thresholdRef.current });
-      
-      setTranscript(''); // Clear previous transcript
-
-      // Start Speech Recognition for live feedback
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-
-        recognition.onresult = (event: any) => {
-          const segments: string[] = [];
-          for (let i = 0; i < event.results.length; i++) {
-            segments.push(event.results[i][0].transcript);
-          }
-          
-          const deduplicated = joinSegments(segments);
-          setTranscript(deduplicated);
-        };
-
-        recognition.onerror = (event: any) => {
-          console.error('VAT: Speech recognition error', event.error);
-        };
-
-        recognition.onend = () => {
-          console.log('VAT: Speech recognition ended');
-        };
-
-        recognitionRef.current = recognition;
-        recognition.start();
-      }
-
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
-        ? 'audio/webm' 
-        : 'audio/ogg';
-        
-      const recorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          console.log('VAT: Audio chunk received:', e.data.size);
-          audioChunksRef.current.push(e.data);
-        }
-      };
-
-      recorder.onstop = async () => {
-        console.log('VAT: Recording stopped, chunk count:', audioChunksRef.current.length);
-        setIsSpeaking(false);
-        if (audioChunksRef.current.length === 0) {
-          console.error('VAT: No audio chunks captured!');
-          setTranscript('');
-          return;
-        }
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const finalText = transcriptRef.current;
-        
-        // Clear transcript after capturing it
-        setTranscript('');
-
-        if (onSpeechEndRef.current) await onSpeechEndRef.current(audioBlob, finalText);
-      };
-
-      recorder.start(100); // Send chunks every 100ms
-      setIsSpeaking(true);
-      if (onSpeechStartRef.current) onSpeechStartRef.current();
-
-    } catch (err) {
-      console.error('VAT Recording start failed:', err);
-    }
-  }, [stream, stopRecording]);
-
-  // Monitor decibel levels for real-time silence detection (VAD)
-  useEffect(() => {
-    if (!isActive || disabled || !isSpeaking) {
-      if (silenceTimerRef.current) {
-        clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = null;
-      }
-      return;
-    }
-
-    const isUserCurrentlySpeaking = db > threshold;
-
-    if (isUserCurrentlySpeaking) {
-      if (silenceTimerRef.current) {
-        console.log('VAT: Speech detected (db:', Math.round(db), '). Resetting silence timer.');
-        clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = null;
-      }
-    } else {
-      if (!silenceTimerRef.current) {
-        console.log('VAT: Silence detected (db:', Math.round(db), '). Starting silence timer of', silenceDuration, 'ms...');
-        silenceTimerRef.current = setTimeout(() => {
-          console.log('VAT: Silence duration reached! Stopping recording and submitting.');
-          stopRecording();
-        }, silenceDuration);
-      }
-    }
-  }, [db, isActive, disabled, isSpeaking, threshold, silenceDuration, stopRecording]);
-  
-  const toggle = useCallback(async (discardCurrent = false) => {
-    console.log('VAT: Toggle called, current isActive:', isActive, 'discard:', discardCurrent);
+  // Main toggle function for the UI to call
+  const toggle = useCallback(async (discard?: boolean) => {
     if (isActive) {
-      stopAnalyzer();
-      stopRecording(discardCurrent);
-      setIsActive(false);
+      console.log('VAT: Toggling OFF');
+      stopVat();
     } else {
-      console.log('VAT: Starting analyzer...');
-      await startAnalyzer();
+      console.log('VAT: Toggling ON');
+      await startVAD();
       setIsActive(true);
     }
-  }, [isActive, startAnalyzer, stopAnalyzer, stopRecording]);
+  }, [isActive, startVAD, stopVat]);
 
-  // If disabled becomes true, stop active recording
+  // Effect to handle the disabled prop
   useEffect(() => {
-    if (disabled && isSpeaking) {
-      console.log('VAT: Disabled, stopping active recording.');
-      stopRecording(true); // discard current recording
+    if (disabled && isActive) {
+      console.log('VAT: Disabled, stopping active session.');
+      stopVat();
     }
-  }, [disabled, isSpeaking, stopRecording]);
-
-  // Automatically start recording when analyzer starts and stream is available
-  useEffect(() => {
-    // Only auto-start VAT recording if Gemini Live is NOT connected
-    // This prevents VAT from competing for the stream and closing it.
-    const isGeminiLiveConnected = (window as any).isGeminiLiveConnected;
-    if (isActive && stream && !isSpeaking && !isGeminiLiveConnected && !disabled) {
-      console.log('VAT: Stream available and active, auto-starting recording.');
-      startRecording();
-    }
-  }, [isActive, stream, isSpeaking, startRecording, disabled]);
+  }, [disabled, isActive, stopVat]);
 
   return {
     isActive,
     isSpeaking,
     transcript,
-    level,
-    db,
-    error,
+    speechRecognitionAvailable,
+    error: vadError,
     toggle,
-    threshold,
-    startRecording,
-    stopRecording
+    // Deprecated values, kept for compatibility
+    level: 0,
+    db: -90,
+    threshold: 0,
+    // Keep start/stop recording as no-ops for compatibility
+    startRecording: () => console.warn('startRecording is now handled automatically by VAD.'),
+    stopRecording: (discard?: boolean) => {
+      console.log(`stopRecording called (discard=${discard}). Stopping VAD.`);
+      stopVat();
+    },
   };
 }
