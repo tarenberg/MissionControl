@@ -1,26 +1,5 @@
 [
   {
-    "title": "Art Call -M2 – MIAMI Swim Week- ART HEARTS FASHION",
-    "location": "SSG, FL",
-    "due_date": "2026-05-21",
-    "link": "https://theartguide.com/callforartist/art-hearts-miami-swim-week-fontainbleu/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "America 250: A Creative Reflection",
-    "location": "Arts Center East, CT",
-    "due_date": "2026-05-22",
-    "link": "https://theartguide.com/callforartist/america-250-a-creative-reflection/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Power of Water Open Show, Call for Entries",
-    "location": "Louisa Arts Center, VA",
-    "due_date": "2026-05-23",
-    "link": "https://theartguide.com/callforartist/power-of-water-open-show-call-for-entries/",
-    "source": "The Art Guide"
-  },
-  {
     "title": "Call for Artists- 18th Annual 50|50 Show",
     "location": "Sanchez Art Center, CA",
     "due_date": "2026-05-26",
@@ -49,13 +28,6 @@
     "source": "The Art Guide"
   },
   {
-    "title": "Contemporary Art Gallery Online, Portrait / Figurative Competition",
-    "location": "Contemporary Art Gallery Online, MD",
-    "due_date": "2026-05-31",
-    "link": "https://theartguide.com/callforartist/contemporary-art-gallery-online-portrait-figurative-competition/",
-    "source": "The Art Guide"
-  },
-  {
     "title": "2026 International Artists Grand Prize Competition",
     "location": "The Taiwan International Contemporary Artist Association, TW",
     "due_date": "2026-05-31",
@@ -77,10 +49,17 @@
     "source": "The Art Guide"
   },
   {
-    "title": "Art in the Park Sharon 2026",
-    "location": "Outdoor Juried Art Show, MA",
+    "title": "Contemporary Art Gallery Online, Portrait / Figurative Competition",
+    "location": "Contemporary Art Gallery Online, MD",
+    "due_date": "2026-05-31",
+    "link": "https://theartguide.com/callforartist/contemporary-art-gallery-online-portrait-figurative-competition/",
+    "source": "The Art Guide"
+  },
+  {
+    "title": "Artist in Residence Program",
+    "location": "Rex Hill, OR",
     "due_date": "2026-06-01",
-    "link": "https://theartguide.com/callforartist/art-in-the-park-sharon-2026/",
+    "link": "https://theartguide.com/callforartist/artist-in-residence-program-2/",
     "source": "The Art Guide"
   },
   {
@@ -91,10 +70,10 @@
     "source": "The Art Guide"
   },
   {
-    "title": "Artist in Residence Program",
-    "location": "Rex Hill, OR",
+    "title": "Art in the Park Sharon 2026",
+    "location": "Outdoor Juried Art Show, MA",
     "due_date": "2026-06-01",
-    "link": "https://theartguide.com/callforartist/artist-in-residence-program-2/",
+    "link": "https://theartguide.com/callforartist/art-in-the-park-sharon-2026/",
     "source": "The Art Guide"
   },
   {
@@ -133,39 +112,39 @@
     "source": "The Art Guide"
   },
   {
-    "title": "YICCA 2026 - International Contest of Contemporary Art",
-    "location": "",
-    "due_date": "2026-05-21",
-    "link": "https://yicca.org/view/announcement",
-    "source": "ArtShow"
+    "title": "ASSV Juried Art Show",
+    "location": "Sand Lake Center for the Arts, NY",
+    "due_date": "2026-06-12",
+    "link": "https://theartguide.com/callforartist/assv-juried-art-show/",
+    "source": "The Art Guide"
   },
   {
-    "title": "6th Annual Woven: A Juneteenth Juried Art Exhibition 2026",
-    "location": "Spartanburg, SC",
-    "due_date": "2026-05-22",
-    "link": "https://www.artistsguildspartanburg.org/woven",
-    "source": "ArtShow"
+    "title": "Still Life",
+    "location": "Gallery 40, NY",
+    "due_date": "2026-06-12",
+    "link": "https://theartguide.com/callforartist/still-life-2/",
+    "source": "The Art Guide"
   },
   {
-    "title": "18th Annual Nude: Works Exploring the Uncovered Human Form",
-    "location": "",
-    "due_date": "2026-05-24",
-    "link": "http://www.manifestgallery.org/nude",
-    "source": "ArtShow"
+    "title": "Viridian Artists Summer Juried Exhibition",
+    "location": "Viridian Artists, NY",
+    "due_date": "2026-06-12",
+    "link": "https://theartguide.com/callforartist/viridian-artists-summer-juried-exhibition/",
+    "source": "The Art Guide"
   },
   {
-    "title": "Pastel: A Call for Works Made Of or About Pastel",
-    "location": "",
-    "due_date": "2026-05-24",
-    "link": "http://www.manifestgallery.org/pastel",
-    "source": "ArtShow"
+    "title": "Open Call for Photographers: Narrative",
+    "location": "Chico Art Center, CA",
+    "due_date": "2026-06-14",
+    "link": "https://theartguide.com/callforartist/open-call-for-photographers-narrative/",
+    "source": "The Art Guide"
   },
   {
-    "title": "Velvet: A Call for Works About, Of, or By the Color Black",
-    "location": "",
-    "due_date": "2026-05-24",
-    "link": "https://www.manifestgallery.org/season22/velvet/",
-    "source": "ArtShow"
+    "title": "99th Members Annual Exhibition",
+    "location": "South County Art Association, RI",
+    "due_date": "2026-06-14",
+    "link": "https://theartguide.com/callforartist/99th-members-annual-exhibition/",
+    "source": "The Art Guide"
   },
   {
     "title": "16th Annual \"Landscapes\" Online Art Competition",
@@ -389,6 +368,13 @@
     "location": "",
     "due_date": "2026-07-20",
     "link": "https://www.youngmasters.teravarna.com/little-picassos-international-juried-art-competition",
+    "source": "ArtShow"
+  },
+  {
+    "title": "Nomad Art Prize",
+    "location": "",
+    "due_date": "2026-07-30",
+    "link": "https://nomadartprize.com/call-for-entries",
     "source": "ArtShow"
   },
   {

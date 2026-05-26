@@ -1,219 +1,238 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useVAD } from './useVAD';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Helper function to join transcript segments from the SpeechRecognition API
 function joinSegments(segments: string[]): string {
-  // ... (keeping the existing robust joinSegments logic)
   if (segments.length === 0) return '';
-  const cleanedSegments = segments.map((seg, idx) => {
-    let s = seg.trim();
-    if (idx < segments.length - 1) {
-      s = s.replace(/[.,?!]+$/, '');
-    }
-    return s;
-  });
-  let result = cleanedSegments[0];
-  for (let i = 1; i < cleanedSegments.length; i++) {
-    const nextSegment = cleanedSegments[i];
-    if (!nextSegment) continue;
-    const cleanResult = result.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cleanNext = nextSegment.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (cleanNext.startsWith(cleanResult)) {
-      result = nextSegment;
-    } else {
-      result = result + ' ' + nextSegment;
-    }
-  }
-  return result;
-}
-
-// Helper function to convert the Float32Array from VAD to a WAV blob
-function float32ToWavBlob(audioData: Float32Array, sampleRate = 16000): Blob {
-  const wavHeader = new ArrayBuffer(44);
-  const view = new DataView(wavHeader);
-  const numSamples = audioData.length;
-  const numChannels = 1;
-  const bytesPerSample = 2; // 16-bit PCM
-
-  // RIFF identifier
-  view.setBigUint64(0, BigInt(0x5249464600000000), false);
-  // file length
-  view.setUint32(4, 36 + numSamples * numChannels * bytesPerSample, true);
-  // RIFF type
-  view.setBigUint64(8, BigInt(0x57415645666d7420), false);
-  // format chunk length
-  view.setUint32(16, 16, true);
-  // sample format (1 for PCM)
-  view.setUint16(20, 1, true);
-  // number of channels
-  view.setUint16(22, numChannels, true);
-  // sample rate
-  view.setUint32(24, sampleRate, true);
-  // byte rate (sample rate * block align)
-  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
-  // block align (num channels * bytes per sample)
-  view.setUint16(32, numChannels * bytesPerSample, true);
-  // bits per sample
-  view.setUint16(34, 16, true);
-  // data chunk identifier
-  view.setBigUint64(36, BigInt(0x6461746100000000), false);
-  // data chunk length
-  view.setUint32(40, numSamples * numChannels * bytesPerSample, true);
-
-  // Convert Float32 to 16-bit PCM
-  const pcm = new Int16Array(numSamples);
-  for (let i = 0; i < numSamples; i++) {
-    const s = Math.max(-1, Math.min(1, audioData[i]));
-    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
-
-  const blob = new Blob([view, pcm], { type: 'audio/wav' });
-  return blob;
+  return segments.map((s) => s.trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 }
 
 interface VATOptions {
   onSpeechStart?: () => void;
   onSpeechEnd?: (blob: Blob, transcript?: string) => void;
   onTranscript?: (text: string) => void;
-  onPreviewAudio?: (blob: Blob) => void;
+  onPreviewAudio?: (blob: Blob) => Promise<void> | void;
   forcePreviewFallback?: boolean;
+  previewIntervalMs?: number;
   disabled?: boolean;
 }
 
 export function useVAT(options: VATOptions = {}) {
-  const { onSpeechStart, onSpeechEnd, onTranscript, disabled = false } = options;
+  const {
+    onSpeechStart,
+    onSpeechEnd,
+    onTranscript,
+    onPreviewAudio,
+    forcePreviewFallback = false,
+    previewIntervalMs = 1400,
+    disabled = false,
+  } = options;
 
   const [isActive, setIsActive] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [speechRecognitionAvailable, setSpeechRecognitionAvailable] = useState(true);
-  
+  const [error, setError] = useState<string | null>(null);
+
+  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
   const recognitionRef = useRef<any>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const previewChunksRef = useRef<Blob[]>([]);
+  const previewTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const previewInFlightRef = useRef(false);
+  const transcriptRef = useRef('');
   const onSpeechEndRef = useRef(onSpeechEnd);
   const onTranscriptRef = useRef(onTranscript);
-  const transcriptRef = useRef(transcript);
+  const onPreviewAudioRef = useRef(onPreviewAudio);
 
   useEffect(() => { onSpeechEndRef.current = onSpeechEnd; }, [onSpeechEnd]);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
+  useEffect(() => { onPreviewAudioRef.current = onPreviewAudio; }, [onPreviewAudio]);
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
 
-  // VAD Speech Start Handler
-  const handleSpeechStart = useCallback(() => {
-    console.log('VAD detected speech start. Starting recognition...');
-    setTranscript(''); // Clear previous transcript
-
-    // Call the UI's onSpeechStart callback
-    onSpeechStart?.();
-
-    // Start browser speech recognition for live transcript
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setSpeechRecognitionAvailable(true);
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        const segments: string[] = Array.from(event.results).map((result: any) => result[0].transcript);
-        const joined = joinSegments(segments);
-        setTranscript(joined);
-        onTranscriptRef.current?.(joined);
-      };
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setSpeechRecognitionAvailable(false);
-      };
-      recognition.onend = () => console.log('Speech recognition ended.');
-      
-      recognitionRef.current = recognition;
-      recognition.start();
-    } else {
-      setSpeechRecognitionAvailable(false);
+  const stopPreviewTimer = useCallback(() => {
+    if (previewTimerRef.current) {
+      clearInterval(previewTimerRef.current);
+      previewTimerRef.current = null;
     }
-  }, [onSpeechStart]);
-
-  // VAD Speech End Handler
-  const handleSpeechEnd = useCallback((audio: Float32Array) => {
-    console.log('VAD detected speech end. Stopping recognition and processing audio.');
-    
-    // Stop the speech recognition
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    
-    // Convert the raw audio data to a WAV blob
-    const audioBlob = float32ToWavBlob(audio);
-    
-    const finalText = transcriptRef.current;
-    
-    // Fire the final onSpeechEnd event for the UI
-    if (onSpeechEndRef.current) {
-      onSpeechEndRef.current(audioBlob, finalText);
-    }
-    
-    // Reset the transcript
-    setTranscript('');
+    previewInFlightRef.current = false;
   }, []);
 
-  // Initialize the new VAD hook
-  const { 
-    isReady: isVADReady, 
-    isSpeaking, 
-    error: vadError, 
-    start: startVAD, 
-    stop: stopVAD 
-  } = useVAD({
-    onSpeechStart: handleSpeechStart,
-    onSpeechEnd: handleSpeechEnd,
-  });
-
-  const stopVat = useCallback(() => {
-    stopVAD();
-    setIsActive(false);
+  const stopRecognition = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+      recognitionRef.current = null;
     }
-  }, [stopVAD]);
+  }, []);
 
-  // Main toggle function for the UI to call
-  const toggle = useCallback(async (discard?: boolean) => {
-    if (isActive) {
-      console.log('VAT: Toggling OFF');
-      stopVat();
+  const stopStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  const stopRecording = useCallback((discard = false) => {
+    stopPreviewTimer();
+    stopRecognition();
+
+    const recorder = recorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      // Flip UI state off immediately so the mic can always be turned off,
+      // even if the browser delays/loses the onstop callback.
+      setIsSpeaking(false);
+      setIsActive(false);
+
+      let finalized = false;
+      const finalize = async () => {
+        if (finalized) return;
+        finalized = true;
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const finalTranscript = transcriptRef.current;
+        chunksRef.current = [];
+        previewChunksRef.current = [];
+        stopStream();
+        if (!discard && blob.size > 0) {
+          await onSpeechEndRef.current?.(blob, finalTranscript);
+        }
+        setTranscript('');
+      };
+      recorder.onstop = () => {
+        void finalize();
+      };
+      try {
+        recorder.requestData();
+      } catch {}
+      recorder.stop();
+      // Fallback: some mobile/browser contexts can miss onstop.
+      setTimeout(() => {
+        void finalize();
+      }, 1200);
     } else {
-      console.log('VAT: Toggling ON');
-      await startVAD();
-      setIsActive(true);
+      setIsSpeaking(false);
+      setIsActive(false);
+      chunksRef.current = [];
+      previewChunksRef.current = [];
+      stopStream();
+      setTranscript('');
     }
-  }, [isActive, startVAD, stopVat]);
+  }, [stopPreviewTimer, stopRecognition, stopStream]);
 
-  // Effect to handle the disabled prop
+  const startRecording = useCallback(async () => {
+    try {
+      const getUserMedia = navigator?.mediaDevices?.getUserMedia;
+      if (!getUserMedia) {
+        throw new Error('Microphone API unavailable in this context.');
+      }
+
+      const stream = await getUserMedia.call(navigator.mediaDevices, { audio: true });
+      streamRef.current = stream;
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      previewChunksRef.current = [];
+      setTranscript('');
+      transcriptRef.current = '';
+      setError(null);
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size <= 0) return;
+        chunksRef.current.push(e.data);
+        previewChunksRef.current.push(e.data);
+        if (previewChunksRef.current.length > 40) {
+          previewChunksRef.current = previewChunksRef.current.slice(-40);
+        }
+      };
+
+      recorder.start(250);
+      setIsActive(true);
+      setIsSpeaking(true);
+      onSpeechStart?.();
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        setSpeechRecognitionAvailable(true);
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event: any) => {
+          const segments: string[] = [];
+          for (let i = 0; i < event.results.length; i++) {
+            segments.push(event.results[i][0].transcript);
+          }
+          const text = joinSegments(segments);
+          setTranscript(text);
+          onTranscriptRef.current?.(text);
+        };
+        recognition.onerror = () => {
+          setSpeechRecognitionAvailable(false);
+        };
+        recognitionRef.current = recognition;
+        recognition.start();
+      } else {
+        setSpeechRecognitionAvailable(false);
+      }
+
+      if (onPreviewAudioRef.current && (forcePreviewFallback || !SpeechRecognition)) {
+        previewTimerRef.current = setInterval(() => {
+          if (previewInFlightRef.current) return;
+          if (previewChunksRef.current.length === 0) return;
+          previewInFlightRef.current = true;
+          // Keep preview payload small to avoid STT backlog/hangs on slower devices.
+          const recentChunks = previewChunksRef.current.slice(-12);
+          const previewBlob = new Blob(recentChunks, { type: 'audio/webm' });
+          Promise.resolve(onPreviewAudioRef.current?.(previewBlob))
+            .catch(() => {})
+            .finally(() => {
+              previewInFlightRef.current = false;
+            });
+        }, previewIntervalMs);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to start voice capture');
+      setIsActive(false);
+      setIsSpeaking(false);
+      stopStream();
+    }
+  }, [forcePreviewFallback, onSpeechStart, previewIntervalMs, stopStream]);
+
+  const toggle = useCallback(async (discardCurrent?: boolean) => {
+    if (isActive) {
+      stopRecording(!!discardCurrent);
+    } else {
+      await startRecording();
+    }
+  }, [isActive, startRecording, stopRecording]);
+
   useEffect(() => {
     if (disabled && isActive) {
-      console.log('VAT: Disabled, stopping active session.');
-      stopVat();
+      stopRecording(true);
     }
-  }, [disabled, isActive, stopVat]);
+  }, [disabled, isActive, stopRecording]);
+
+  useEffect(() => {
+    return () => {
+      stopRecording(true);
+    };
+  }, [stopRecording]);
 
   return {
     isActive,
     isSpeaking,
     transcript,
     speechRecognitionAvailable,
-    error: vadError,
+    error,
     toggle,
-    // Deprecated values, kept for compatibility
     level: 0,
     db: -90,
     threshold: 0,
-    // Keep start/stop recording as no-ops for compatibility
-    startRecording: () => console.warn('startRecording is now handled automatically by VAD.'),
-    stopRecording: (discard?: boolean) => {
-      console.log(`stopRecording called (discard=${discard}). Stopping VAD.`);
-      stopVat();
-    },
+    startRecording,
+    stopRecording,
   };
 }

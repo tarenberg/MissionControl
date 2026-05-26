@@ -88,15 +88,26 @@ const Gauge: React.FC<GaugeProps> = ({ label, percentage, usage, icon }) => {
 export default function SystemMonitor() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/system-status');
+        const response = await fetch('/api/system-status', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`system-status ${response.status}`);
+        }
         const data = await response.json();
         setStats(data);
+        setFetchError(null);
       } catch (error) {
-        console.error('Failed to fetch system stats:', error);
+        setFetchError('System metrics temporarily unavailable');
+        setStats((prev) => prev ?? {
+            memory: { total: 0, used: 0, free: 0, percentage: '0.00' },
+            disk: { total: 0, used: 0, free: 0, percentage: '0.00' },
+            cpu: { usage: '0.00' },
+            gpu: { name: 'N/A', total: 0, used: 0, free: 0 },
+          });
       }
     };
 
@@ -140,6 +151,9 @@ export default function SystemMonitor() {
         </div>
 
         <div className="flex items-center gap-6">
+          {fetchError && (
+            <div className="text-[9px] font-bold uppercase tracking-wide text-amber-500">{fetchError}</div>
+          )}
           <div className="flex items-center gap-2 neo-pressed px-3 py-1 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]"></span>
             <span className="text-[9px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-widest">Live</span>

@@ -36,38 +36,56 @@ function getCpuUsage() {
 getCpuUsage();
 
 export async function GET() {
-  const start = Date.now();
-  const totalMemory = os.totalmem();
-  const freeMemory = os.freemem();
-  const usedMemory = totalMemory - freeMemory;
-  
-  const cpuUsage = getCpuUsage();
+  try {
+    const start = Date.now();
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
+    const usedMemory = totalMemory - freeMemory;
+    
+    const cpuUsage = getCpuUsage();
 
-  // Parallelize Disk and GPU info
-  const [diskInfo, gpuInfo] = await Promise.all([
-    getDiskInfo(),
-    getGpuInfo()
-  ]);
+    // Parallelize Disk and GPU info
+    const [diskInfo, gpuInfo] = await Promise.all([
+      getDiskInfo(),
+      getGpuInfo()
+    ]);
 
-  const duration = Date.now() - start;
-  if (duration > 500) {
-    console.warn(`[system-status] Latency spike detected: ${duration}ms`);
+    const duration = Date.now() - start;
+    if (duration > 500) {
+      console.warn(`[system-status] Latency spike detected: ${duration}ms`);
+    }
+
+    return NextResponse.json({
+      memory: {
+        total: totalMemory,
+        free: freeMemory,
+        used: usedMemory,
+        percentage: ((usedMemory / totalMemory) * 100).toFixed(2)
+      },
+      cpu: {
+        usage: (cpuUsage * 100).toFixed(2)
+      },
+      gpu: gpuInfo,
+      disk: diskInfo,
+      latency: duration,
+      degraded: false
+    }, {
+      headers: { 'Cache-Control': 'no-store' }
+    });
+  } catch (error) {
+    console.error('[system-status] GET failed:', error);
+    return NextResponse.json({
+      memory: { total: 0, free: 0, used: 0, percentage: '0.00' },
+      cpu: { usage: '0.00' },
+      gpu: { name: 'N/A', total: 0, free: 0, used: 0 },
+      disk: { total: 0, used: 0, free: 0, percentage: '0.00' },
+      latency: 0,
+      degraded: true
+    }, {
+      status: 200,
+      headers: { 'Cache-Control': 'no-store' }
+    });
   }
-
-  return NextResponse.json({
-    memory: {
-      total: totalMemory,
-      free: freeMemory,
-      used: usedMemory,
-      percentage: ((usedMemory / totalMemory) * 100).toFixed(2)
-    },
-    cpu: {
-      usage: (cpuUsage * 100).toFixed(2)
-    },
-    gpu: gpuInfo,
-    disk: diskInfo,
-    latency: duration
-  });
 }
 
 async function getDiskInfo() {

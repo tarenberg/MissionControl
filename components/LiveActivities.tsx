@@ -2,8 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-// Removed direct import of getActivityLog from @/lib/opsControlData
-import { ActivityLogEntry } from '../app/api/live-activities/route'; // Import the type from the new API route
+
+interface ActivityLogEntry {
+  id: string;
+  timestamp: Date;
+  jobName: string;
+  type: 'cron' | 'heartbeat' | 'internal' | 'manual' | 'external';
+  result: 'success' | 'failure' | 'alert' | 'info';
+  message: string;
+}
 
 const LiveActivities: React.FC = () => {
   const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
@@ -11,8 +18,16 @@ const LiveActivities: React.FC = () => {
 
   useEffect(() => {
     const fetchActivities = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       try {
-        const response = await fetch('/api/live-activities');
+        const response = await fetch('/api/live-activities', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`live-activities ${response.status}`);
+        }
         const data = await response.json();
         
         if (Array.isArray(data)) {
@@ -26,7 +41,9 @@ const LiveActivities: React.FC = () => {
           setActivities([]);
         }
       } catch (error) {
-        console.error('Failed to fetch live activities:', error);
+        setActivities((prev) => prev ?? []);
+      } finally {
+        clearTimeout(timeout);
       }
     };
 

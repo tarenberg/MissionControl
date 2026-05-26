@@ -22,12 +22,15 @@ interface Message {
   createdAt: Date;
 }
 
+type VoiceMode = 'full_duplex' | 'press_to_submit';
+
 export default function ChatPopupV3() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('full_duplex');
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const orbStateRef = useRef<OrbState>('idle');
   useEffect(() => { orbStateRef.current = orbState; }, [orbState]);
@@ -39,6 +42,9 @@ export default function ChatPopupV3() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const executedMsgIdsRef = useRef<Set<string>>(new Set());
+  const draftTranscriptRef = useRef('');
+  const submitAfterStopRef = useRef(false);
+  const stoppingForSubmitRef = useRef(false);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -254,28 +260,158 @@ export default function ChatPopupV3() {
     };
   }, [isLiveConnected, roomId]);
 
-  const onSpeechStart = useCallback(() => setOrbState('listening'), []);
+  const submitTextMessage = useCallback(async (content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed || !roomId) return;
+
+    setInput('');
+    setOrbState('connecting');
+
+    const tempId = Math.random().toString(36).substring(7);
+    const userMsg: Message = { id: tempId, content: trimmed, role: 'user', createdAt: new Date() };
+    setMessages((prev) => [...prev, userMsg]);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: trimmed, role: 'user', roomId }),
+      });
+
+      if (!res.ok) throw new Error('Failed to send message');
+
+      const data = await res.json();
+      setOrbState('idle');
+
+      if (data.assistantMsg) {
+        setMessages((prev) => [...prev, data.assistantMsg]);
+        setOrbState('speaking');
+        if (data.action) {
+          executeAction(data.action);
+        }
+        setTimeout(() => setOrbState('idle'), 2000);
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setOrbState('idle');
+    }
+  }, [roomId]);
+
+  const transcribePreviewAudio = useCallback(async (blob: Blob): Promise<string> => {
+    if (!blob || blob.size < 512) return '';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const formData = new FormData();
+      formData.append('audio', blob, 'preview.webm');
+      const res = await fetch('/api/chat/stt-preview', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+      if (!res.ok) return '';
+      const data = await res.json();
+      return (data?.text || '').trim();
+    } catch {
+      return '';
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, []);
+
+  const onSpeechStart = useCallback(() => {
+    draftTranscriptRef.current = '';
+    setOrbState('listening');
+  }, []);
   const onSpeechEnd = useCallback(async (blob: Blob, text?: string) => {
     console.log('VAT: Speech ended event triggered, blob size:', blob.size, 'transcript:', text);
-    if (blob.size < 1000) {
+    if (blob.size < 256) {
       console.warn('VAT: Blob too small, ignoring');
+      submitAfterStopRef.current = false;
+      stoppingForSubmitRef.current = false;
       setOrbState('idle');
       return;
     }
+
+    if (voiceMode === 'press_to_submit') {
+      stoppingForSubmitRef.current = false;
+      setOrbState('connecting');
+      const finalText = text?.trim() || draftTranscriptRef.current.trim() || await transcribePreviewAudio(blob);
+      if (finalText) {
+        draftTranscriptRef.current = finalText;
+        setInput(finalText);
+      }
+      if (submitAfterStopRef.current) {
+        submitAfterStopRef.current = false;
+        if (finalText) {
+          await submitTextMessage(finalText);
+          return;
+        }
+        // Final fallback: if local preview transcript is empty, send the audio turn
+        // through the voice endpoint so the message is still appended.
+        await handleVoiceInput(blob);
+        return;
+      }
+
+      submitAfterStopRef.current = false;
+      setOrbState('idle');
+      return;
+    }
+
     // Only proceed with local VAT processing if Gemini Live is NOT connected
     if (!isLiveConnected) {
       setOrbState('connecting');
-      setInput(''); // Clear input immediately when speech is captured
-      
-      // Optimistically post user's message in the chat window immediately!
       const userText = text?.trim() || 'Voice message';
       const tempId = 'temp-msg-' + Math.random().toString(36).substring(7);
       const tempUserMsg: Message = { id: tempId, content: userText, role: 'user', createdAt: new Date() };
       setMessages((prev) => [...prev, tempUserMsg]);
-
       await handleVoiceInput(blob, tempUserMsg);
     }
-  }, [roomId, isLiveConnected]);
+  }, [isLiveConnected, submitTextMessage, transcribePreviewAudio, voiceMode]);
+
+  const previewErrorLoggedRef = useRef(false);
+
+  const handlePreviewAudio = useCallback(async (blob: Blob) => {
+    if (voiceMode !== 'press_to_submit' || !blob || blob.size < 512) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', blob, 'preview.webm');
+
+      const res = await fetch('/api/chat/stt-preview', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Preview STT failed: ${res.status} ${errText}`);
+      }
+
+      const data = await res.json();
+      const previewText = (data?.text || '').trim();
+      if (previewText) {
+        draftTranscriptRef.current = previewText;
+        setInput(previewText);
+      }
+
+      previewErrorLoggedRef.current = false;
+    } catch (err) {
+      if (!previewErrorLoggedRef.current) {
+        console.warn('VAT preview transcript unavailable in this browser context.', err);
+        previewErrorLoggedRef.current = true;
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, [voiceMode]);
 
   // VAT Hook
   const { 
@@ -291,7 +427,14 @@ export default function ChatPopupV3() {
   } = useVAT({
     onSpeechStart,
     onSpeechEnd,
-    disabled: orbState !== 'idle'
+    onTranscript: (text) => {
+      if (voiceMode !== 'press_to_submit') return;
+      draftTranscriptRef.current = text || '';
+      setInput(text || '');
+    },
+    onPreviewAudio: handlePreviewAudio,
+    forcePreviewFallback: true,
+    disabled: !isOpen || voiceMode !== 'press_to_submit'
   });
 
   useEffect(() => {
@@ -310,31 +453,49 @@ export default function ChatPopupV3() {
     }
   }, [geminiError]);
 
-  const isFullDuplex = true; // Feature flag
-
   useEffect(() => {
-    if (isFullDuplex) {
+    if (voiceMode === 'full_duplex') {
       console.log('ChatPopupV3: Full-Duplex Enabled. Key:', GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 5) + '...' : 'NONE');
     }
-  }, [isFullDuplex]);
+  }, [voiceMode]);
 
   const error = vatError || liveError;
 
   const toggleVoiceMode = () => {
-    if (isFullDuplex) {
+    if (voiceMode === 'full_duplex') {
       toggleLive();
     } else {
+      // Deterministic off path for press-to-submit.
+      if (isVATActive || orbState === 'listening') {
+        submitAfterStopRef.current = false;
+        stoppingForSubmitRef.current = false;
+        stopRecording(true);
+        setOrbState('idle');
+        return;
+      }
       toggleVAT();
     }
   };
 
+  const switchVoiceMode = (nextMode: VoiceMode) => {
+    if (voiceMode === nextMode) return;
+    submitAfterStopRef.current = false;
+    stoppingForSubmitRef.current = false;
+    if (isLiveConnected) toggleLive();
+    if (isVATActive) toggleVAT(true);
+    stopRecording(true);
+    setOrbState('idle');
+    setVoiceMode(nextMode);
+  };
+
   // Update input with live transcript when speaking
   useEffect(() => {
-    // Only sync transcript if we are actually in VAT mode, speaking, and in listening state
-    if (isVATActive && isSpeaking && transcript && orbState === 'listening') {
-      setInput(transcript);
-    }
-  }, [isSpeaking, transcript, isVATActive, orbState]);
+    // Keep textarea in sync with interim transcript during press-to-submit mode.
+    if (voiceMode !== 'press_to_submit') return;
+    if (!isVATActive || !isSpeaking || orbState !== 'listening') return;
+    if (!transcript) return;
+    setInput(transcript);
+  }, [isSpeaking, transcript, isVATActive, orbState, voiceMode]);
 
   const handleInputChange = (val: string) => {
     setInput(val);
@@ -349,6 +510,8 @@ export default function ChatPopupV3() {
   };
 
   const closePopup = useCallback(() => {
+    submitAfterStopRef.current = false;
+    stoppingForSubmitRef.current = false;
     if (isLiveConnected) {
       console.log('ChatPopupV3: Closing popup, disconnecting Gemini Live.');
       toggleLive();
@@ -379,14 +542,17 @@ export default function ChatPopupV3() {
 
   // Sync orbState with VAT isSpeaking
   useEffect(() => {
-    if (isVATActive && !isFullDuplex) {
+    if (stoppingForSubmitRef.current) return;
+    if (isVATActive && voiceMode === 'press_to_submit') {
       if (isSpeaking) {
         setOrbState('listening');
       } else if (orbState === 'listening') {
         setOrbState('connecting');
       }
+    } else if (!isVATActive && voiceMode === 'press_to_submit' && orbState === 'connecting') {
+      setOrbState('idle');
     }
-  }, [isSpeaking, isVATActive, isFullDuplex, orbState]);
+  }, [isSpeaking, isVATActive, voiceMode, orbState]);
 
   // Toggle open/close on event
   useEffect(() => {
@@ -665,52 +831,22 @@ export default function ChatPopupV3() {
   const handleSend = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault();
 
-    // If VAT is active, always treat Send as "Finish Speaking"
-    if (isVATActive) {
+    // In press-to-submit mode, Send while listening should stop, transcribe, then auto-submit.
+    if (voiceMode === 'press_to_submit' && (orbState === 'listening' || orbState === 'connecting' || isVATActive)) {
+      submitAfterStopRef.current = true;
+      stoppingForSubmitRef.current = true;
       console.log('ChatPopupV3: Send button clicked with VAT active. Stopping recording.');
       stopRecording();
-      setInput(''); // Clear input immediately
       return;
     }
 
-    const hasText = input.trim().length > 0;
-    if (!hasText || !roomId) return;
-
-    const content = input;
-    setInput('');
-    setOrbState('connecting');
-
-    const tempId = Math.random().toString(36).substring(7);
-    const userMsg: Message = { id: tempId, content, role: 'user', createdAt: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, role: 'user', roomId }),
-      });
-
-      if (!res.ok) throw new Error('Failed to send message');
-      
-      const data = await res.json();
-      setOrbState('idle');
-
-      if (data.assistantMsg) {
-        setMessages((prev) => [...prev, data.assistantMsg]);
-        setOrbState('speaking');
-        
-        // Execute Action if present
-        if (data.action) {
-          executeAction(data.action);
-        }
-
-        setTimeout(() => setOrbState('idle'), 2000);
-      }
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setOrbState('idle');
+    if (isVATActive) {
+      console.log('ChatPopupV3: Send clicked while VAT active outside press mode. Stopping recording.');
+      stopRecording();
+      return;
     }
+
+    await submitTextMessage(input);
   };
 
   const executeAction = (action: any) => {
@@ -749,7 +885,7 @@ export default function ChatPopupV3() {
   };
 
   const handleMainOrbClick = () => {
-    if (isFullDuplex) {
+    if (voiceMode === 'full_duplex') {
       toggleLive();
     } else {
       if (orbState === 'listening') stopRecording();
@@ -853,7 +989,11 @@ export default function ChatPopupV3() {
                 type="button" 
                 onClick={toggleVoiceMode}
                 className={`p-2 mb-0.5 rounded-xl transition-all ${isLiveConnected || isVATActive ? 'bg-[#ff7675] text-white shadow-lg' : 'text-[#b2bec3] hover:text-[#a29bfe]'}`}
-                title={isLiveConnected ? "Disconnect Voice" : "Enable Full-Duplex Voice"}
+                title={
+                  voiceMode === 'full_duplex'
+                    ? (isLiveConnected ? 'Disconnect Voice' : 'Enable Full-Duplex Voice')
+                    : (isVATActive ? 'Stop Press to Submit' : 'Enable Press to Submit')
+                }
               >
                 {isLiveConnected || isVATActive ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
@@ -869,7 +1009,11 @@ export default function ChatPopupV3() {
                 }}
                 onKeyDown={handleKeyDown}
                 onChange={(e) => handleInputChange(e.target.value)}
-                placeholder={isLiveConnected ? "Full-Duplex Active: Speak to Muffin" : (isVATActive ? (isSpeaking ? "Muffin is listening..." : "Starting mic...") : "Type a message...")} 
+                placeholder={
+                  voiceMode === 'full_duplex'
+                    ? (isLiveConnected ? "Full-Duplex Active: Speak to Muffin" : "Type a message...")
+                    : (isVATActive ? (isSpeaking ? "Listening... press Send when done" : "Press mic, speak, then Send") : "Type a message...")
+                } 
                 className="flex-1 bg-transparent border-none outline-none text-xs placeholder:text-[#636e72] text-[#ffffff] resize-none py-2 max-h-[120px] custom-scrollbar"
               />
               <button 
@@ -879,6 +1023,30 @@ export default function ChatPopupV3() {
                 <Send size={18} />
               </button>
             </form>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => switchVoiceMode('full_duplex')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                  voiceMode === 'full_duplex'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white/5 text-[#b2bec3] hover:bg-white/10'
+                }`}
+              >
+                Full Duplex
+              </button>
+              <button
+                type="button"
+                onClick={() => switchVoiceMode('press_to_submit')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                  voiceMode === 'press_to_submit'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white/5 text-[#b2bec3] hover:bg-white/10'
+                }`}
+              >
+                Press to Submit
+              </button>
+            </div>
             <div className="flex flex-col items-center justify-center mt-4 flex-shrink-0">
                {error ? (
                  <div className="text-[10px] text-red-400 font-bold mb-2 animate-bounce max-w-[200px] text-center">
@@ -898,7 +1066,7 @@ export default function ChatPopupV3() {
                <button 
                  type="button" 
                  onClick={handleMainOrbClick} 
-                 disabled={!isFullDuplex && orbState !== 'listening' && !lastAudio} 
+                 disabled={voiceMode === 'press_to_submit' && orbState !== 'listening' && !lastAudio} 
                  className={`hover:scale-110 transition-transform p-2 ${orbState === 'listening' ? 'animate-pulse text-green-400' : 'disabled:opacity-30'}`}
                >
                   <VoiceOrb state={orbState} audioLevel={level} size={50} />

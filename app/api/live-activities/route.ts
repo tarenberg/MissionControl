@@ -155,12 +155,22 @@ function getActivityLogServer(): ActivityLogEntry[] {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const activities = getActivityLogServer();
-  const serializableActivities = activities.map((activity) => ({
-    ...activity,
-    timestamp: activity.timestamp instanceof Date
-      ? activity.timestamp.toISOString()
-      : activity.timestamp,
-  }));
-  return NextResponse.json(serializableActivities);
+  try {
+    const activities = getActivityLogServer();
+    const serializableActivities = activities.map((activity) => ({
+      ...activity,
+      timestamp: activity.timestamp instanceof Date
+        ? activity.timestamp.toISOString()
+        : activity.timestamp,
+    }));
+    return NextResponse.json(serializableActivities, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  } catch (error) {
+    console.error('[live-activities] GET failed:', error);
+    return NextResponse.json([], {
+      status: 200,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
 }
