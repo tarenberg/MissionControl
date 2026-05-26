@@ -46,14 +46,6 @@ export default function ChatPopupV3() {
   const submitAfterStopRef = useRef(false);
   const stoppingForSubmitRef = useRef(false);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-    }
-  }, [input]);
-
   const playLastAudio = () => {
     // If we're idle, try to force-start recording as a fallback
     if (orbState === 'idle' && isVATActive) {
@@ -298,7 +290,7 @@ export default function ChatPopupV3() {
   }, [roomId]);
 
   const transcribePreviewAudio = useCallback(async (blob: Blob): Promise<string> => {
-    if (!blob || blob.size < 512) return '';
+    if (!blob || blob.size < 64) return '';
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -326,7 +318,7 @@ export default function ChatPopupV3() {
   }, []);
   const onSpeechEnd = useCallback(async (blob: Blob, text?: string) => {
     console.log('VAT: Speech ended event triggered, blob size:', blob.size, 'transcript:', text);
-    if (blob.size < 256) {
+    if (blob.size < 64) {
       console.warn('VAT: Blob too small, ignoring');
       submitAfterStopRef.current = false;
       stoppingForSubmitRef.current = false;
@@ -373,7 +365,7 @@ export default function ChatPopupV3() {
   const previewErrorLoggedRef = useRef(false);
 
   const handlePreviewAudio = useCallback(async (blob: Blob) => {
-    if (voiceMode !== 'press_to_submit' || !blob || blob.size < 512) {
+    if (voiceMode !== 'press_to_submit' || !blob || blob.size < 64) {
       return;
     }
 
@@ -878,7 +870,7 @@ export default function ChatPopupV3() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSend();
     }
@@ -999,7 +991,7 @@ export default function ChatPopupV3() {
               </button>
               <textarea 
                 ref={textareaRef}
-                rows={1}
+                rows={3}
                 value={input} 
                 onFocus={() => {
                   if (isVATActive) {
@@ -1014,7 +1006,7 @@ export default function ChatPopupV3() {
                     ? (isLiveConnected ? "Full-Duplex Active: Speak to Muffin" : "Type a message...")
                     : (isVATActive ? (isSpeaking ? "Listening... press Send when done" : "Press mic, speak, then Send") : "Type a message...")
                 } 
-                className="flex-1 bg-transparent border-none outline-none text-xs placeholder:text-[#636e72] text-[#ffffff] resize-none py-2 max-h-[120px] custom-scrollbar"
+                className="flex-1 bg-transparent border-none outline-none text-xs leading-relaxed placeholder:text-[#636e72] text-[#ffffff] resize-none py-2 min-h-[72px] max-h-[140px] overflow-y-auto custom-scrollbar"
               />
               <button 
                 type="submit" 
