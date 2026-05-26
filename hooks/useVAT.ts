@@ -182,11 +182,12 @@ export function useVAT(options: VATOptions = {}) {
       if (onPreviewAudioRef.current && (forcePreviewFallback || !SpeechRecognition)) {
         previewTimerRef.current = setInterval(() => {
           if (previewInFlightRef.current) return;
-          if (previewChunksRef.current.length === 0) return;
+          if (chunksRef.current.length === 0) return;
           previewInFlightRef.current = true;
-          // Keep preview payload small to avoid STT backlog/hangs on slower devices.
-          const recentChunks = previewChunksRef.current.slice(-12);
-          const previewBlob = new Blob(recentChunks, { type: 'audio/webm' });
+          // Use the complete chunks accumulated so far from the beginning of recording.
+          // This ensures the WebM/Ogg container header (always at index 0) is included,
+          // which is required for PyAV/FFmpeg to decode the file on the backend without throwing an InvalidDataError.
+          const previewBlob = new Blob(chunksRef.current, { type: mimeType });
           Promise.resolve(onPreviewAudioRef.current?.(previewBlob))
             .catch(() => {})
             .finally(() => {
