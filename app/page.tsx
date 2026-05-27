@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SystemMonitor from '../components/SystemMonitor';
+import ServicesMonitor from '../components/ServicesMonitor';
 import StudioMonitor from '../components/StudioMonitor';
 import OpsLogMonitor from '../components/OpsLogMonitor';
 import LiveActivities from '../components/LiveActivities';
@@ -125,6 +126,7 @@ export default function HomePage() {
           <PathfinderRadar />
           <OpsPulse />
           <SystemMonitor />
+          <ServicesMonitor />
           <StudioMonitor />
           <OpsLogMonitor />
           <LiveActivities />

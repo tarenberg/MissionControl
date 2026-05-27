@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Mic, MicOff, X, User, Bot, Volume2, VolumeX, Minimize2, GripHorizontal } from 'lucide-react';
+import { Send, Mic, MicOff, X, User, Bot, Volume2, VolumeX, Minimize2, GripHorizontal, PencilLine } from 'lucide-react';
 import VoiceOrb, { OrbState } from './VoiceOrb';
 import { useVAT } from '@/hooks/useVAT';
 import { useGeminiLiveV7, GeminiLiveState } from '@/hooks/useGeminiLiveV7';
@@ -28,6 +28,10 @@ export default function ChatPopupV3() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isDictationMode, setIsDictationMode] = useState(false);
+
+  const lastFocusedRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const lastPreviewLengthRef = useRef<number>(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('full_duplex');
@@ -45,6 +49,63 @@ export default function ChatPopupV3() {
   const draftTranscriptRef = useRef('');
   const submitAfterStopRef = useRef(false);
   const stoppingForSubmitRef = useRef(false);
+
+  // Focus listener to track the last focused input or textarea across the page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleFocusIn = () => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        // Ignore the VAT Chat popup's own input box so we don't treat it as external dictation
+        if (textareaRef.current && active === textareaRef.current) {
+          return;
+        }
+        lastFocusedRef.current = active as HTMLInputElement | HTMLTextAreaElement;
+        console.log('Dictation: Focused input updated:', active.id || active.className);
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    return () => document.removeEventListener('focusin', handleFocusIn);
+  }, []);
+
+  const injectDictatedText = useCallback((newText: string, isPreview = false) => {
+    const target = lastFocusedRef.current;
+    if (!target) {
+      console.warn('Dictation: No active textbox/textarea currently focused on page.');
+      return;
+    }
+
+    const start = target.selectionStart ?? target.value.length;
+    const end = target.selectionEnd ?? target.value.length;
+    const originalVal = target.value;
+
+    if (isPreview) {
+      const oldLen = lastPreviewLengthRef.current;
+      const cleanVal = originalVal.substring(0, start - oldLen) + originalVal.substring(end);
+      
+      const updatedStart = Math.max(0, start - oldLen);
+      target.value = cleanVal.substring(0, updatedStart) + newText + cleanVal.substring(updatedStart);
+      lastPreviewLengthRef.current = newText.length;
+      
+      target.selectionStart = target.selectionEnd = updatedStart + newText.length;
+    } else {
+      const oldLen = lastPreviewLengthRef.current;
+      const cleanVal = originalVal.substring(0, start - oldLen) + originalVal.substring(end);
+      
+      const textToCommit = newText + ' ';
+      const updatedStart = Math.max(0, start - oldLen);
+      target.value = cleanVal.substring(0, updatedStart) + textToCommit + cleanVal.substring(updatedStart);
+      lastPreviewLengthRef.current = 0; // Reset preview length
+      
+      target.selectionStart = target.selectionEnd = updatedStart + textToCommit.length;
+    }
+
+    // Force React forms to capture the DOM change
+    const event = new Event('input', { bubbles: true });
+    target.dispatchEvent(event);
+  }, []);
 
   const playLastAudio = () => {
     // If we're idle, try to force-start recording as a fallback
@@ -314,6 +375,7 @@ export default function ChatPopupV3() {
 
   const onSpeechStart = useCallback(() => {
     draftTranscriptRef.current = '';
+    lastPreviewLengthRef.current = 0; // Reset preview tracker
     setOrbState('listening');
   }, []);
   const onSpeechEnd = useCallback(async (blob: Blob, text?: string) => {
@@ -331,11 +393,19 @@ export default function ChatPopupV3() {
       setOrbState('connecting');
       const finalText = text?.trim() || draftTranscriptRef.current.trim() || await transcribePreviewAudio(blob);
       if (finalText) {
-        draftTranscriptRef.current = finalText;
-        setInput(finalText);
+        if (isDictationMode) {
+          injectDictatedText(finalText, false);
+        } else {
+          draftTranscriptRef.current = finalText;
+          setInput(finalText);
+        }
       }
       if (submitAfterStopRef.current) {
         submitAfterStopRef.current = false;
+        if (isDictationMode) {
+          setOrbState('idle');
+          return;
+        }
         if (finalText) {
           await submitTextMessage(finalText);
           return;
@@ -360,7 +430,7 @@ export default function ChatPopupV3() {
       setMessages((prev) => [...prev, tempUserMsg]);
       await handleVoiceInput(blob, tempUserMsg);
     }
-  }, [isLiveConnected, submitTextMessage, transcribePreviewAudio, voiceMode]);
+  }, [isLiveConnected, submitTextMessage, transcribePreviewAudio, voiceMode, isDictationMode, injectDictatedText]);
 
   const previewErrorLoggedRef = useRef(false);
 
@@ -390,8 +460,12 @@ export default function ChatPopupV3() {
       const data = await res.json();
       const previewText = (data?.text || '').trim();
       if (previewText) {
-        draftTranscriptRef.current = previewText;
-        setInput(previewText);
+        if (isDictationMode) {
+          injectDictatedText(previewText, true);
+        } else {
+          draftTranscriptRef.current = previewText;
+          setInput(previewText);
+        }
       }
 
       previewErrorLoggedRef.current = false;
@@ -403,7 +477,7 @@ export default function ChatPopupV3() {
     } finally {
       clearTimeout(timeout);
     }
-  }, [voiceMode]);
+  }, [voiceMode, isDictationMode, injectDictatedText]);
 
   // VAT Hook
   const { 
@@ -421,8 +495,12 @@ export default function ChatPopupV3() {
     onSpeechEnd,
     onTranscript: (text) => {
       if (voiceMode !== 'press_to_submit') return;
-      draftTranscriptRef.current = text || '';
-      setInput(text || '');
+      if (isDictationMode) {
+        injectDictatedText(text || '', true);
+      } else {
+        draftTranscriptRef.current = text || '';
+        setInput(text || '');
+      }
     },
     onPreviewAudio: handlePreviewAudio,
     forcePreviewFallback: true,
@@ -516,6 +594,7 @@ export default function ChatPopupV3() {
     stopLiveSpeechRecognition();
     setOrbState('idle');
     setIsMinimized(false);
+    setIsDictationMode(false);
     setIsOpen(false);
   }, [isLiveConnected, isVATActive, toggleLive, toggleVAT, stopRecording, stopLiveSpeechRecognition]);
 
@@ -909,9 +988,76 @@ export default function ChatPopupV3() {
         className={`flex items-center justify-between px-6 py-4 cursor-grab active:cursor-grabbing select-none ${isMinimized ? 'h-full justify-center p-0' : 'bg-white/10 rounded-t-[40px]'}`}
       >
         {isMinimized ? (
-          <button onClick={() => setIsMinimized(false)} className="w-full h-full flex items-center justify-center">
-            <VoiceOrb state={orbState} audioLevel={level} size={40} />
-          </button>
+          <div className="relative w-full h-full flex items-center justify-center group/orb">
+            {/* Hover actions */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center space-x-1 opacity-0 group-hover/orb:opacity-100 transition-opacity duration-200 bg-[#1e2124]/90 border border-white/15 px-2 py-1 rounded-full shadow-lg z-50">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setIsMinimized(false);
+                  setIsDictationMode(false);
+                }}
+                className="p-1.5 rounded-full text-[#b2bec3] hover:text-[#a29bfe] hover:bg-white/10 transition-colors"
+                title="Restore Full Chat"
+              >
+                <Minimize2 size={11} className="rotate-180" />
+              </button>
+              <div className="w-px h-3 bg-white/10"></div>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setIsDictationMode(!isDictationMode);
+                }}
+                className={`p-1.5 rounded-full transition-colors text-[9px] font-bold px-1.5 ${isDictationMode ? 'text-green-400' : 'text-[#b2bec3] hover:text-[#a29bfe]'}`}
+                title={isDictationMode ? "Disable Dictation Mode" : "Enable Dictation Mode"}
+              >
+                Dict
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={closePopup}
+                className="p-1.5 rounded-full text-red-400 hover:bg-red-500/20 transition-colors"
+                title="Close"
+              >
+                <X size={11} />
+              </button>
+            </div>
+
+            {/* Main pulsing orb button */}
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (voiceMode === 'press_to_submit') {
+                  if (orbState === 'listening') {
+                    stopRecording();
+                  } else {
+                    startRecording();
+                  }
+                } else {
+                  handleMainOrbClick();
+                }
+              }}
+              className="w-full h-full flex flex-col items-center justify-center focus:outline-none"
+            >
+              <div className="relative">
+                <VoiceOrb state={orbState} audioLevel={level} size={42} />
+                {isDictationMode && (
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#ff7675] border-2 border-[#1e2124] flex items-center justify-center">
+                    <PencilLine size={8} className="text-white" />
+                  </div>
+                )}
+              </div>
+              {isDictationMode && orbState === 'listening' && (
+                <span className="absolute bottom-1.5 text-[7px] font-black uppercase text-green-400 animate-pulse tracking-tight select-none pointer-events-none">
+                  DICT
+                </span>
+              )}
+            </button>
+          </div>
         ) : (
           <>
             <div className="flex items-center space-x-3">
@@ -928,6 +1074,28 @@ export default function ChatPopupV3() {
               </div>
             </div>
             <div className="flex items-center space-x-1">
+              {/* Dictation Mode Toggle Button */}
+              <button 
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (isDictationMode) {
+                    setIsDictationMode(false);
+                    setIsMinimized(false);
+                  } else {
+                    setIsDictationMode(true);
+                    setIsMinimized(true);
+                    switchVoiceMode('press_to_submit');
+                    if (!isVATActive) {
+                      toggleVAT();
+                    }
+                  }
+                }} 
+                className={`p-2 rounded-xl transition-colors ${isDictationMode ? 'bg-[#ff7675] text-white shadow-lg' : 'hover:bg-white/10 text-[#b2bec3] hover:text-[#a29bfe]'}`}
+                title={isDictationMode ? 'Disable Dictation Mode' : 'Enable Dictation Mode'}
+              >
+                <PencilLine size={14} />
+              </button>
               <button onClick={() => setIsMinimized(true)} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
                 <Minimize2 size={14} className="text-[#b2bec3]" />
               </button>
