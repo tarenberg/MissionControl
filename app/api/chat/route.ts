@@ -31,7 +31,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { content, role, roomId, triggerLLM = true } = await req.json();
+    const { content, role, roomId, triggerLLM = true, voice = false } = await req.json();
 
     if (!content || !role || !roomId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         roomId,
         roomName,
         userContent: content,
-        voiceMode: false,
+        voiceMode: voice,
       });
 
       const assistantMsg = await prisma.chatMessage.create({
@@ -73,7 +73,34 @@ export async function POST(req: Request) {
         data: { updatedAt: new Date() },
       });
 
-      return NextResponse.json({ userMsg: message, assistantMsg, action: inference.action });
+      let audioBase64 = null;
+      if (voice) {
+        const LOCAL_AI_URL = 'http://localhost:8000';
+        const ttsContent = inference.assistantContent.replace(/\[\[ACTION:.*?\]\]/g, '').replace(/\(VAT Chat Local Mode Active\)/, '').trim();
+        const ttsFormData = new FormData();
+        ttsFormData.append('text', ttsContent);
+
+        try {
+          const ttsRes = await fetch(`${LOCAL_AI_URL}/tts`, {
+            method: 'POST',
+            body: ttsFormData,
+          });
+
+          if (ttsRes.ok) {
+            const audioBuffer = await ttsRes.arrayBuffer();
+            audioBase64 = `data:audio/wav;base64,${Buffer.from(audioBuffer).toString('base64')}`;
+          }
+        } catch (ttsErr) {
+          console.error('TTS generation failed on text route:', ttsErr);
+        }
+      }
+
+      return NextResponse.json({ 
+        userMsg: message, 
+        assistantMsg, 
+        action: inference.action,
+        audioBase64
+      });
     }
 
     return NextResponse.json(message);

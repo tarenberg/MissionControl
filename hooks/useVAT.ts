@@ -33,6 +33,8 @@ export function useVAT(options: VATOptions = {}) {
   const [transcript, setTranscript] = useState('');
   const [speechRecognitionAvailable, setSpeechRecognitionAvailable] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [level, setLevel] = useState(0);
+  const [db, setDb] = useState(-90);
 
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -46,6 +48,10 @@ export function useVAT(options: VATOptions = {}) {
   const onTranscriptRef = useRef(onTranscript);
   const onPreviewAudioRef = useRef(onPreviewAudio);
 
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
   useEffect(() => { onSpeechEndRef.current = onSpeechEnd; }, [onSpeechEnd]);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onPreviewAudioRef.current = onPreviewAudio; }, [onPreviewAudio]);
@@ -57,6 +63,22 @@ export function useVAT(options: VATOptions = {}) {
       previewTimerRef.current = null;
     }
     previewInFlightRef.current = false;
+  }, []);
+
+  const stopAnalyzer = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      try {
+        audioCtxRef.current.close();
+      } catch {}
+      audioCtxRef.current = null;
+    }
+    analyserRef.current = null;
+    setLevel(0);
+    setDb(-90);
   }, []);
 
   const stopRecognition = useCallback(() => {
@@ -78,6 +100,7 @@ export function useVAT(options: VATOptions = {}) {
   const stopRecording = useCallback((discard = false) => {
     stopPreviewTimer();
     stopRecognition();
+    stopAnalyzer();
 
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
@@ -130,6 +153,42 @@ export function useVAT(options: VATOptions = {}) {
 
       const stream = await getUserMedia.call(navigator.mediaDevices, { audio: true });
       streamRef.current = stream;
+
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const audioCtx = new AudioContextClass();
+        audioCtxRef.current = audioCtx;
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyserRef.current = analyser;
+        source.connect(analyser);
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const updateLevel = () => {
+          if (analyserRef.current && stream.active) {
+            analyserRef.current.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+              sum += dataArray[i];
+            }
+            const average = sum / bufferLength;
+            const normalizedLevel = average / 255;
+            setLevel(normalizedLevel);
+
+            // Convert to dB (-90 to 0)
+            const calculatedDb = average > 0 ? 20 * Math.log10(average / 255) : -90;
+            setDb(calculatedDb);
+
+            animationFrameRef.current = requestAnimationFrame(updateLevel);
+          }
+        };
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      } catch (analyserErr) {
+        console.warn('Live audio analyzer failed to start:', analyserErr);
+      }
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
       const recorder = new MediaRecorder(stream, { mimeType });
@@ -230,8 +289,8 @@ export function useVAT(options: VATOptions = {}) {
     speechRecognitionAvailable,
     error,
     toggle,
-    level: 0,
-    db: -90,
+    level,
+    db,
     threshold: 0,
     startRecording,
     stopRecording,

@@ -63,6 +63,125 @@ function ChatPopupV3Inner() {
 
   const { playingId, isPlaying, play: playGlobalAudio } = useGlobalAudio();
   const lastAssistantMsgIdRef = useRef<string | null>(null);
+  const audioSrcCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Auto-cache any audioSrc added to messages
+  useEffect(() => {
+    messages.forEach((m) => {
+      if (m.audioSrc) {
+        audioSrcCacheRef.current.set(m.id, m.audioSrc);
+      }
+    });
+  }, [messages]);
+
+  const executeAction = useCallback((action: any) => {
+    if (!action || !action.type) return;
+    console.log('ChatPopupV3: Executing action:', action);
+    
+    switch (action.type) {
+      case 'NAVIGATE':
+        if (action.path) {
+          router.push(action.path);
+        }
+        break;
+      case 'CHECK_STUDIO':
+        fetch('/api/studio/environment')
+          .then(res => res.json())
+          .then(data => {
+            if (data.environment && data.environment.length > 0) {
+              const env = data.environment[0];
+              const summary = `Studio is at ${env.temperature}°C with ${env.humidity}% humidity.`;
+              window.dispatchEvent(new CustomEvent('studio-status-update', { detail: summary }));
+              console.log('ChatPopupV3: Studio status:', summary);
+            }
+          })
+          .catch(err => console.error('Failed to check studio:', err));
+        break;
+      default:
+        console.warn('Unknown action type:', action.type);
+    }
+  }, [router]);
+
+  const handleVoiceInput = useCallback(async (blob: Blob, tempUserMsg?: Message) => {
+    if (!roomId) {
+      console.warn('VAT: No roomId available, cannot send voice input');
+      setOrbState('idle');
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('audio', blob);
+    formData.append('roomId', roomId);
+
+    try {
+      console.log('VAT: Sending audio to API...');
+      const res = await fetch('/api/chat/voice', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Voice API failed: ${res.status} ${errText}`);
+      }
+      
+      const data = await res.json();
+      console.log('VAT: Received API response:', data);
+      
+      if (data.error) {
+        console.warn('VAT API returned error:', data.error);
+        if (tempUserMsg) {
+          // If the API errored out, remove the optimistic message
+          setMessages((prev) => prev.filter(m => m.id !== tempUserMsg.id));
+        }
+        setOrbState('idle');
+        return;
+      }
+      
+      if (tempUserMsg) {
+        // Seamlessly update the optimistic message with the high-quality server/Whisper transcript,
+        // then append the assistant's reply.
+        setMessages((prev) => {
+          const updated = prev.map((m) => m.id === tempUserMsg.id ? { ...m, content: data.userMsg.content } : m);
+          const assistantMsgWithAudio = data.assistantMsg ? { ...data.assistantMsg, audioSrc: data.audioBase64 } : null;
+          return assistantMsgWithAudio ? [...updated, assistantMsgWithAudio] : updated;
+        });
+      } else {
+        // Fallback if no optimistic message was provided
+        const userMsgWithAudio = data.userMsg ? { ...data.userMsg, audioSrc: typeof window !== 'undefined' ? URL.createObjectURL(blob) : undefined } : null;
+        const assistantMsgWithAudio = data.assistantMsg ? { ...data.assistantMsg, audioSrc: data.audioBase64 } : null;
+        setMessages((prev) => {
+          const next = [...prev];
+          if (userMsgWithAudio) next.push(userMsgWithAudio);
+          if (assistantMsgWithAudio) next.push(assistantMsgWithAudio);
+          return next;
+        });
+      }
+      
+      setOrbState('speaking');
+
+      // Execute Action if present
+      if (data.action) {
+        executeAction(data.action);
+      }
+      
+      // Handle audio playback
+      if (data.audioBase64 && data.assistantMsg) {
+        setLastAudio(data.audioBase64);
+        console.log('VAT: Playing response audio through GlobalAudio...');
+        lastAssistantMsgIdRef.current = data.assistantMsg.id;
+        playGlobalAudio(data.assistantMsg.id, data.audioBase64);
+      } else {
+        // No audio, just show text for a bit then restart
+        setTimeout(() => {
+          setOrbState('idle');
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('Error handling voice input:', err);
+      setOrbState('idle');
+    }
+  }, [roomId, executeAction, playGlobalAudio]);
 
   // Sync VoiceOrb state with GlobalAudio playback
   useEffect(() => {
@@ -352,7 +471,7 @@ function ChatPopupV3Inner() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: trimmed, role: 'user', roomId }),
+        body: JSON.stringify({ content: trimmed, role: 'user', roomId, voice: true }),
       });
 
       if (!res.ok) throw new Error('Failed to send message');
@@ -361,18 +480,31 @@ function ChatPopupV3Inner() {
       setOrbState('idle');
 
       if (data.assistantMsg) {
-        setMessages((prev) => [...prev, data.assistantMsg]);
-        setOrbState('speaking');
+        const assistantMsgWithAudio = {
+          ...data.assistantMsg,
+          audioSrc: data.audioBase64 || undefined
+        };
+        setMessages((prev) => [...prev, assistantMsgWithAudio]);
+
+        if (data.audioBase64) {
+          setLastAudio(data.audioBase64);
+          setOrbState('speaking');
+          lastAssistantMsgIdRef.current = data.assistantMsg.id;
+          playGlobalAudio(data.assistantMsg.id, data.audioBase64);
+        } else {
+          setOrbState('speaking');
+          setTimeout(() => setOrbState('idle'), 2000);
+        }
+
         if (data.action) {
           executeAction(data.action);
         }
-        setTimeout(() => setOrbState('idle'), 2000);
       }
     } catch (err) {
       console.error('Error sending message:', err);
       setOrbState('idle');
     }
-  }, [roomId]);
+  }, [roomId, playGlobalAudio]);
 
   const transcribePreviewAudio = useCallback(async (blob: Blob): Promise<string> => {
     if (!blob || blob.size < 64) return '';
@@ -431,7 +563,11 @@ function ChatPopupV3Inner() {
           return;
         }
         if (finalText) {
-          await submitTextMessage(finalText);
+          const tempId = 'temp-msg-' + Math.random().toString(36).substring(7);
+          const localAudioUrl = typeof window !== 'undefined' ? URL.createObjectURL(blob) : undefined;
+          const tempUserMsg: Message = { id: tempId, content: finalText, role: 'user', createdAt: new Date(), audioSrc: localAudioUrl };
+          setMessages((prev) => [...prev, tempUserMsg]);
+          await handleVoiceInput(blob, tempUserMsg);
           return;
         }
         // Final fallback: if local preview transcript is empty, send the audio turn
@@ -455,7 +591,7 @@ function ChatPopupV3Inner() {
       setMessages((prev) => [...prev, tempUserMsg]);
       await handleVoiceInput(blob, tempUserMsg);
     }
-  }, [isLiveConnected, submitTextMessage, transcribePreviewAudio, voiceMode, isDictationMode, injectDictatedText]);
+  }, [isLiveConnected, submitTextMessage, transcribePreviewAudio, voiceMode, isDictationMode, injectDictatedText, handleVoiceInput]);
 
   const previewErrorLoggedRef = useRef(false);
 
@@ -729,10 +865,14 @@ function ChatPopupV3Inner() {
         const res = await fetch('/api/chat');
         const data = await res.json();
         if (data.room?.id) {
-          setMessages(data.messages || []);
+          const merged = (data.messages || []).map((m: Message) => {
+            const cached = audioSrcCacheRef.current.get(m.id);
+            return cached ? { ...m, audioSrc: cached } : m;
+          });
+          setMessages(merged);
           setRoomId(data.room.id);
           setRoomName(data.room.name || 'Muffin');
-          console.log('VAT Chat: Room synchronized:', data.room.id, 'Message count:', (data.messages || []).length);
+          console.log('VAT Chat: Room synchronized:', data.room.id, 'Message count:', merged.length);
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
@@ -751,7 +891,11 @@ function ChatPopupV3Inner() {
         if (res.ok) {
           const data = await res.json();
           if (data.messages) {
-            setMessages(data.messages);
+            const merged = data.messages.map((m: Message) => {
+              const cached = audioSrcCacheRef.current.get(m.id);
+              return cached ? { ...m, audioSrc: cached } : m;
+            });
+            setMessages(merged);
           }
         }
       } catch (err) {
@@ -840,87 +984,6 @@ function ChatPopupV3Inner() {
     }
   }, [messages]);
 
-  const handleVoiceInput = async (blob: Blob, tempUserMsg?: Message) => {
-    if (!roomId) {
-      console.warn('VAT: No roomId available, cannot send voice input');
-      setOrbState('idle');
-      return;
-    }
-    
-    const formData = new FormData();
-    formData.append('audio', blob);
-    formData.append('roomId', roomId);
-
-    try {
-      console.log('VAT: Sending audio to API...');
-      const res = await fetch('/api/chat/voice', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Voice API failed: ${res.status} ${errText}`);
-      }
-      
-      const data = await res.json();
-      console.log('VAT: Received API response:', data);
-      
-      if (data.error) {
-        console.warn('VAT API returned error:', data.error);
-        if (tempUserMsg) {
-          // If the API errored out, remove the optimistic message
-          setMessages((prev) => prev.filter(m => m.id !== tempUserMsg.id));
-        }
-        setOrbState('idle');
-        return;
-      }
-      
-      if (tempUserMsg) {
-        // Seamlessly update the optimistic message with the high-quality server/Whisper transcript,
-        // then append the assistant's reply.
-        setMessages((prev) => {
-          const updated = prev.map((m) => m.id === tempUserMsg.id ? { ...m, content: data.userMsg.content } : m);
-          const assistantMsgWithAudio = data.assistantMsg ? { ...data.assistantMsg, audioSrc: data.audioBase64 } : null;
-          return assistantMsgWithAudio ? [...updated, assistantMsgWithAudio] : updated;
-        });
-      } else {
-        // Fallback if no optimistic message was provided
-        const userMsgWithAudio = data.userMsg ? { ...data.userMsg, audioSrc: typeof window !== 'undefined' ? URL.createObjectURL(blob) : undefined } : null;
-        const assistantMsgWithAudio = data.assistantMsg ? { ...data.assistantMsg, audioSrc: data.audioBase64 } : null;
-        setMessages((prev) => {
-          const next = [...prev];
-          if (userMsgWithAudio) next.push(userMsgWithAudio);
-          if (assistantMsgWithAudio) next.push(assistantMsgWithAudio);
-          return next;
-        });
-      }
-      
-      setOrbState('speaking');
-
-      // Execute Action if present
-      if (data.action) {
-        executeAction(data.action);
-      }
-      
-      // Handle audio playback
-      if (data.audioBase64 && data.assistantMsg) {
-        setLastAudio(data.audioBase64);
-        console.log('VAT: Playing response audio through GlobalAudio...');
-        lastAssistantMsgIdRef.current = data.assistantMsg.id;
-        playGlobalAudio(data.assistantMsg.id, data.audioBase64);
-      } else {
-        // No audio, just show text for a bit then restart
-        setTimeout(() => {
-          setOrbState('idle');
-        }, 3000);
-      }
-    } catch (err) {
-      console.error('Error handling voice input:', err);
-      setOrbState('idle');
-    }
-  };
-
   const handleSend = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault();
 
@@ -940,34 +1003,6 @@ function ChatPopupV3Inner() {
     }
 
     await submitTextMessage(input);
-  };
-
-  const executeAction = (action: any) => {
-    if (!action || !action.type) return;
-    console.log('ChatPopupV3: Executing action:', action);
-    
-    switch (action.type) {
-      case 'NAVIGATE':
-        if (action.path) {
-          router.push(action.path);
-        }
-        break;
-      case 'CHECK_STUDIO':
-        fetch('/api/studio/environment')
-          .then(res => res.json())
-          .then(data => {
-            if (data.environment && data.environment.length > 0) {
-              const env = data.environment[0];
-              const summary = `Studio is at ${env.temperature}°C with ${env.humidity}% humidity.`;
-              window.dispatchEvent(new CustomEvent('studio-status-update', { detail: summary }));
-              console.log('ChatPopupV3: Studio status:', summary);
-            }
-          })
-          .catch(err => console.error('Failed to check studio:', err));
-        break;
-      default:
-        console.warn('Unknown action type:', action.type);
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
