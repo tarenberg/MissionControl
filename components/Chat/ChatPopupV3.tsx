@@ -7,6 +7,8 @@ import { useVAT } from '@/hooks/useVAT';
 import { useGeminiLiveV7, GeminiLiveState } from '@/hooks/useGeminiLiveV7';
 import { useRouter } from 'next/navigation';
 import { getPersonaPrompt } from '@/lib/chatPersona';
+import { GlobalAudioProvider, useGlobalAudio } from './GlobalAudioProvider';
+import { AudioWaveform } from './AudioWaveform';
 
 const GEMINI_API_KEY = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
 
@@ -20,11 +22,20 @@ interface Message {
   content: string;
   role: 'user' | 'assistant';
   createdAt: Date;
+  audioSrc?: string;
 }
 
 type VoiceMode = 'full_duplex' | 'press_to_submit';
 
 export default function ChatPopupV3() {
+  return (
+    <GlobalAudioProvider>
+      <ChatPopupV3Inner />
+    </GlobalAudioProvider>
+  );
+}
+
+function ChatPopupV3Inner() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -49,6 +60,20 @@ export default function ChatPopupV3() {
   const draftTranscriptRef = useRef('');
   const submitAfterStopRef = useRef(false);
   const stoppingForSubmitRef = useRef(false);
+
+  const { playingId, isPlaying, play: playGlobalAudio } = useGlobalAudio();
+  const lastAssistantMsgIdRef = useRef<string | null>(null);
+
+  // Sync VoiceOrb state with GlobalAudio playback
+  useEffect(() => {
+    if (orbState === 'speaking' && lastAssistantMsgIdRef.current) {
+      const isActivePlaying = playingId === lastAssistantMsgIdRef.current && isPlaying;
+      if (!isActivePlaying) {
+        setOrbState('idle');
+        lastAssistantMsgIdRef.current = null;
+      }
+    }
+  }, [playingId, isPlaying, orbState]);
 
   // Focus listener to track the last focused input or textarea across the page
   useEffect(() => {
@@ -117,8 +142,7 @@ export default function ChatPopupV3() {
     }
 
     if (lastAudio) {
-      const audio = new Audio(lastAudio);
-      audio.play().catch(e => console.error('Manual playback failed:', e));
+      playGlobalAudio('last-audio', lastAudio);
     }
   };
 
@@ -426,7 +450,8 @@ export default function ChatPopupV3() {
       setOrbState('connecting');
       const userText = text?.trim() || 'Voice message';
       const tempId = 'temp-msg-' + Math.random().toString(36).substring(7);
-      const tempUserMsg: Message = { id: tempId, content: userText, role: 'user', createdAt: new Date() };
+      const localAudioUrl = typeof window !== 'undefined' ? URL.createObjectURL(blob) : undefined;
+      const tempUserMsg: Message = { id: tempId, content: userText, role: 'user', createdAt: new Date(), audioSrc: localAudioUrl };
       setMessages((prev) => [...prev, tempUserMsg]);
       await handleVoiceInput(blob, tempUserMsg);
     }
@@ -856,11 +881,19 @@ export default function ChatPopupV3() {
         // then append the assistant's reply.
         setMessages((prev) => {
           const updated = prev.map((m) => m.id === tempUserMsg.id ? { ...m, content: data.userMsg.content } : m);
-          return [...updated, data.assistantMsg];
+          const assistantMsgWithAudio = data.assistantMsg ? { ...data.assistantMsg, audioSrc: data.audioBase64 } : null;
+          return assistantMsgWithAudio ? [...updated, assistantMsgWithAudio] : updated;
         });
       } else {
         // Fallback if no optimistic message was provided
-        setMessages((prev) => [...prev, data.userMsg, data.assistantMsg]);
+        const userMsgWithAudio = data.userMsg ? { ...data.userMsg, audioSrc: typeof window !== 'undefined' ? URL.createObjectURL(blob) : undefined } : null;
+        const assistantMsgWithAudio = data.assistantMsg ? { ...data.assistantMsg, audioSrc: data.audioBase64 } : null;
+        setMessages((prev) => {
+          const next = [...prev];
+          if (userMsgWithAudio) next.push(userMsgWithAudio);
+          if (assistantMsgWithAudio) next.push(assistantMsgWithAudio);
+          return next;
+        });
       }
       
       setOrbState('speaking');
@@ -871,22 +904,11 @@ export default function ChatPopupV3() {
       }
       
       // Handle audio playback
-      if (data.audioBase64) {
+      if (data.audioBase64 && data.assistantMsg) {
         setLastAudio(data.audioBase64);
-        console.log('VAT: Playing response audio...');
-        const audio = new Audio(data.audioBase64);
-        
-        audio.onended = () => {
-          console.log('VAT: Audio playback finished.');
-          setOrbState('idle');
-        };
-
-        audio.play().catch(e => {
-          console.error('Audio playback failed (browser may have blocked autoplay):', e);
-          setTimeout(() => {
-            setOrbState('idle');
-          }, 3000);
-        });
+        console.log('VAT: Playing response audio through GlobalAudio...');
+        lastAssistantMsgIdRef.current = data.assistantMsg.id;
+        playGlobalAudio(data.assistantMsg.id, data.audioBase64);
       } else {
         // No audio, just show text for a bit then restart
         setTimeout(() => {
@@ -1044,7 +1066,11 @@ export default function ChatPopupV3() {
               className="w-full h-full flex flex-col items-center justify-center focus:outline-none"
             >
               <div className="relative">
-                <VoiceOrb state={orbState} audioLevel={level} size={42} />
+                <VoiceOrb 
+                  state={orbState === 'idle' && isPlaying ? 'speaking' : orbState} 
+                  audioLevel={orbState === 'idle' && isPlaying ? 0.25 : level} 
+                  size={42} 
+                />
                 {isDictationMode && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#ff7675] border-2 border-[#1e2124] flex items-center justify-center">
                     <PencilLine size={8} className="text-white" />
@@ -1124,7 +1150,12 @@ export default function ChatPopupV3() {
                     {msg.role === 'user' ? <User size={10} /> : <Bot size={10} className="text-[#a29bfe]" />}
                   </div>
                   <div className={`px-4 py-2 rounded-2xl text-[13px] leading-relaxed shadow-xl border border-white/5 ${msg.role === 'user' ? 'bg-[#2d3436]/80 text-white rounded-br-none border-zinc-700/50' : 'bg-[#1e2124]/80 text-zinc-200 rounded-bl-none border-l-[#a29bfe] border-l-2'}`}>
-                    {msg.content}
+                    <div>{msg.content}</div>
+                    {msg.audioSrc && (
+                      <div className="mt-2 text-zinc-800 dark:text-zinc-200">
+                        <AudioWaveform messageId={msg.id} audioSrc={msg.audioSrc} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1229,7 +1260,11 @@ export default function ChatPopupV3() {
                  disabled={voiceMode === 'press_to_submit' && orbState !== 'listening' && !lastAudio} 
                  className={`hover:scale-110 transition-transform p-2 ${orbState === 'listening' ? 'animate-pulse text-green-400' : 'disabled:opacity-30'}`}
                >
-                  <VoiceOrb state={orbState} audioLevel={level} size={50} />
+                  <VoiceOrb 
+                    state={orbState === 'idle' && isPlaying ? 'speaking' : orbState} 
+                    audioLevel={orbState === 'idle' && isPlaying ? 0.25 : level} 
+                    size={50} 
+                  />
                </button>
             </div>
           </div>
