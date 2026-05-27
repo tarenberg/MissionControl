@@ -116,6 +116,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: 'Next.js compilation server self-restart sequence scheduled.' });
     }
 
+    if (service === 'openclaw_gateway') {
+      console.log('[system-services] Triggering background restart of OpenClaw Gateway...');
+
+      // Run 'openclaw gateway restart' to restart the daemon cleanly
+      const psCommand = `
+        Start-Process openclaw -ArgumentList "gateway restart" -WindowStyle Hidden
+      `.replace(/\n/g, ' ').trim();
+
+      const child = spawn('powershell', ['-Command', psCommand], {
+        detached: true,
+        stdio: 'ignore'
+      });
+      child.unref();
+
+      return NextResponse.json({ success: true, message: 'OpenClaw Gateway restart sequence initiated.' });
+    }
+
     return NextResponse.json({ error: 'Invalid service specified.' }, { status: 400 });
   } catch (error: any) {
     console.error('[system-services] POST failed:', error);
