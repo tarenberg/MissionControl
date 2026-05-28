@@ -1,3 +1,32 @@
+## 2026-05-27: Telegram-Class Audio Upgrades Deployed
+
+### Task 1: Client-Side audioSrc Memory Cache & SSE Sync Fix
+- **Goal:** Prevent real-time Server-Sent Events (SSE) updates from wiping out active message base64/blob audio URLs.
+- **Progress:**
+  - **Identified Root Cause**: The real-time SSE channel synchronizes state in $<50\text{ms}$. Upon message creation, it triggers a client sync. Because the SQLite/Prisma tables do not include an `audioSrc` column, database rows returned without audio URLs and instantly overrode the client's optimistic React message states—wiping out waveforms before they could render.
+  - **Implemented Fix**: Designed a secure React `useRef` cache (`audioSrcCacheRef`) inside `ChatPopupV3.tsx`. It automatically registers and stores local/blob audio coordinates on creation, and dynamically merges them back during subsequent SSE sync streams or initial loading.
+
+### Task 2: Live Microphone Decibel & Amplitude Analyser Deployed
+- **Goal:** Replace static voice orb behavior with real-time, fluid amplitude visualizations.
+- **Progress:**
+  - **AnalyserNode Integration**: Wired a native Web Audio API `AnalyserNode` directly into the microphone capture thread within `useVAT.ts`.
+  - **Sound Dynamics**: Computes real-time frequency-bin data to map decibels (`db` from `-90` to `0`) and normalized average amplitudes (`level` from `0` to `1`) on an animation frame loop. The main Voice Orb now physically breathes, pulses, and scales dynamically as you speak!
+
+### Task 3: Automatic TTS Waveforms on Typed Messages
+- **Goal:** Render downsampled scrubbers and audio waveforms even for standard typed submissions.
+- **Progress:**
+  - **TTS Server Binding**: Configured standard text submission inside `ChatPopupV3.tsx` to supply the `voice` parameter and linked the backend route (`app/api/chat/route.ts`) to hit the local FastAPI Piper TTS server on port 8000.
+  - **Optimistic Scrubbing**: Standard typed messages now return and play base64-synthesized audio, instantly rendering downsampled amplitude scrubbers inside the message timeline.
+
+### Task 4: VAD Silence Auto-Submit & Max Recording Guardrails
+- **Goal:** Prevent Whisper hallucinations (repeating phrases) over silent recording tails and save background resources.
+- **Progress:**
+  - **Silence VAD Timer**: Programmed a 4.5-second silence detection timer using real-time decibel analysis (`db < -52` dB). If you stop speaking, the mic automatically stops and triggers a clean, hands-free submission.
+  - **60s Max Limit**: Equipped recording cycles with an absolute 60-second cutoff cap to protect network bandwidth and system RAM.
+- **Build Status:** **VERIFIED 100% CLEAN** (`npx tsc --noEmit` resolved with exit code 0). Fully merged into `master` and pushed to GitHub `origin/master`.
+
+---
+
 ## 2026-05-26: Global Dictation & Services Health Monitor Deployed
 
 ### Task 1: VAT Chat STT Preview Display Fix & Merge to Master
