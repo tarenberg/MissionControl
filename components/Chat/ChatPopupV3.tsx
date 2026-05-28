@@ -668,6 +668,72 @@ function ChatPopupV3Inner() {
     disabled: !isOpen || voiceMode !== 'press_to_submit'
   });
 
+  // Silence auto-stop: in press_to_submit mode, if the user is silent for more than 4.5 seconds,
+  // automatically stop recording and commit the transcript.
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingStartTimeRef = useRef<number>(0);
+  const maxDurationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (voiceMode !== 'press_to_submit' || orbState !== 'listening') {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      if (maxDurationTimerRef.current) {
+        clearTimeout(maxDurationTimerRef.current);
+        maxDurationTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Set a maximum recording limit of 60 seconds (guard rails)
+    if (!maxDurationTimerRef.current) {
+      recordingStartTimeRef.current = Date.now();
+      maxDurationTimerRef.current = setTimeout(() => {
+        console.log('VAT: Maximum recording duration (60s) reached. Auto-submitting...');
+        submitAfterStopRef.current = true;
+        stoppingForSubmitRef.current = true;
+        stopRecording();
+        maxDurationTimerRef.current = null;
+      }, 60000);
+    }
+
+    // A db level below -52dB is generally silence/ambient room noise
+    // We add a short 1.5-second delay at the very beginning of the recording before checking silence,
+    // to give the user time to start speaking.
+    const isUserSilent = db < -52;
+    const timeRecording = Date.now() - recordingStartTimeRef.current;
+
+    if (isUserSilent && timeRecording > 1500) {
+      if (!silenceTimerRef.current) {
+        console.log('VAT: Silence detected. Starting 4.5-second auto-stop timer...');
+        silenceTimerRef.current = setTimeout(() => {
+          console.log('VAT: Silence limit reached. Auto-stopping and submitting...');
+          submitAfterStopRef.current = true;
+          stoppingForSubmitRef.current = true;
+          stopRecording();
+          silenceTimerRef.current = null;
+        }, 4500);
+      }
+    } else {
+      if (silenceTimerRef.current) {
+        console.log('VAT: Voice activity detected. Resetting silence timer.');
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+      if (maxDurationTimerRef.current) {
+        clearTimeout(maxDurationTimerRef.current);
+      }
+    };
+  }, [db, voiceMode, orbState, stopRecording]);
+
   useEffect(() => {
     if (geminiError) {
       console.error('Gemini Error in Popup:', geminiError);
