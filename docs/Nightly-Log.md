@@ -1,3 +1,29 @@
+## 2026-05-28: Mobile Responsiveness & Playback Radar Cues Deployed
+
+### Task 1: Overhaul Horizontal Touch Scrolling & Swipe Gestures
+- **Goal:** Unblock horizontal scrolling for the Tasks Board, Scheduled Jobs Calendar, and Art Tracker tables on mobile touch screens.
+- **Progress:**
+  - **Inertial Momentum Binding**: Enabled native touch scrolling momentum (`-webkit-overflow-scrolling: touch !important`) globally on all overflow scroll elements in `app/globals.css`.
+  - **Horizontal Scrollbar Dimensions**: Sized horizontal scrollbar heights to `8px` in `globals.css` to fix touch track conflicts.
+  - **Flexbox Squeeze Prevention**: Set `flex-shrink-0` on Kanban columns (`app/tasks/page.tsx`) and the calendar grid (`app/calendar/page.tsx`), preventing browsers from squeezing layout blocks below their minimum widths (e.g. `280px` / `800px`) and forcing proper horizontal scrolling.
+  - **Grid Layout Bounding**: Applied strict horizontal bounds (`w-full max-w-full min-w-0`) to the primary main layout (`components/ClientLayout.tsx`) and parent containers, ensuring the overall canvas doesn't stretch past screen boundaries.
+
+### Task 2: High-Fidelity Playback Radar Rings & Visual Cues on VoiceOrb
+- **Goal:** Provide gorgeous, interactive visual feedback when global audio is playing, especially when minimized.
+- **Progress:**
+  - **Double Radar Ring Animation**: Embedded double, staggered pulsing radar rings (`animate-[ping_2s_infinite]` and `animate-[ping_3.5s_infinite]`) around the `VoiceOrb` when global audio is playing.
+  - **Vibrant Audio State Colors**: Refactored `VoiceOrb.tsx` to automatically shift particle colors and wave ring segments from soft purple (`#a29bfe`) to a vibrant, glowing neomorphic cyan (`#00cec9`) whenever global playback is active.
+  - **Pulsing Playback Gradient**: Transitioned the main orb face to a dynamic pulse gradient mapping from cyan through soft purple when playing audio tracks.
+
+### Task 3: Art Tracker Compactness & Screen Height Optimization
+- **Goal:** Minimize header vertical footprint to maximize screen real estate for list items and calendars.
+- **Progress:**
+  - **Compact Header Heights**: Slashed `.dashboardHeader` vertical padding to a compact `4px 15px` on desktop and `6px 12px` on mobile, instantly lifting active content modules.
+  - **Confirm Entry Modal Hardening**: Patched the `.modalContent` popup inside `components/ArtTrackerDashboard.tsx` with a responsive `maxWidth: '95vw'` and `maxHeight: '90vh'` to guarantee complete vertical scrollability and visibility on smaller screens.
+- **Build Status:** **VERIFIED 100% CLEAN** (`npx tsc --noEmit` resolved with exit code 0). Staged as a dedicated, fully-tested pull request on the branch `muffin/mobile-responsiveness-and-playback-cues`.
+
+---
+
 ## 2026-05-27: Telegram-Class Audio Upgrades Deployed
 
 ### Task 1: Client-Side audioSrc Memory Cache & SSE Sync Fix
