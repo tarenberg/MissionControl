@@ -2553,7 +2553,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
       {enteringShow && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContent} style={{ width: '600px' }}>
+          <div className={styles.modalContent} style={{ width: '600px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Rocket size={24} /> Confirm Entry: {enteringShow.title}
             </h2>

@@ -24,7 +24,7 @@
 
 .dashboardHeader {
   @apply neo-flat;
-  padding: 8px 20px;
+  padding: 4px 15px;
   border-radius: 12px;
   display: flex;
   justify-content: space-between;
@@ -507,8 +507,8 @@
 @media (max-width: 768px) {
   .dashboardHeader {
     flex-direction: column;
-    gap: 15px;
-    padding: 15px;
+    gap: 8px;
+    padding: 6px 12px;
     text-align: center;
   }
 
@@ -768,6 +768,7 @@
   @apply neo-pressed;
   border-radius: 16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 20px;
   width: 100%;
 }
@@ -1060,6 +1061,7 @@
 .roiTableContainer {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .roiTable {
@@ -1239,8 +1241,11 @@
   background: rgba(0, 0, 0, 0.15);
   border-radius: 16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(255, 255, 255, 0.05);
   height: 500px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .calendarGrid {

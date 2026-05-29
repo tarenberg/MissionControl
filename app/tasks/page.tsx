@@ -227,8 +227,8 @@ export default function TasksPage() {
   const columns = ['Backlog', 'In Progress', 'Waiting', 'Blocked', 'Done'];
 
   return (
-    <div className="h-full flex flex-col -mt-4 bg-neo-bg p-8 transition-colors duration-300 overflow-hidden">
-      <div className="flex justify-between items-center mb-8 flex-shrink-0">
+    <div className="h-full flex flex-col -mt-4 bg-neo-bg p-4 sm:p-8 transition-colors duration-300 overflow-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 flex-shrink-0">
         <div>
           <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl mb-2 drop-shadow-sm uppercase">Tasks</h1>
           <div className="flex items-center gap-3">
@@ -240,17 +240,17 @@ export default function TasksPage() {
         
         <button
           onClick={handleAddClick}
-          className="neo-button no-3d text-blue-600 dark:text-blue-400 px-8 py-4 rounded-[28px] font-black uppercase tracking-widest shadow-neo-button active:neo-button-active flex items-center gap-3 group transition-all"
+          className="neo-button no-3d text-blue-600 dark:text-blue-400 px-6 sm:px-8 py-3.5 sm:py-4 rounded-[28px] font-black uppercase tracking-widest shadow-neo-button active:neo-button-active flex items-center gap-3 group transition-all w-full sm:w-auto justify-center"
         >
           <svg className="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
           Add New Task
         </button>
       </div>
 
-      <div className="flex items-center gap-6 mb-10 flex-shrink-0 bg-white/10 dark:bg-black/5 backdrop-blur-md p-6 rounded-[32px] border border-white/20 dark:border-white/5 sticky top-0 z-30">
-        <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-6 mb-10 flex-shrink-0 bg-white/10 dark:bg-black/5 backdrop-blur-md p-6 rounded-[32px] border border-white/20 dark:border-white/5 sticky top-0 z-30">
+        <div className="flex flex-col gap-1.5 flex-1">
           <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Quick Jump</span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {columns.map((status, index) => (
               <button
                 key={`jump-${status}`}
@@ -264,9 +264,9 @@ export default function TasksPage() {
           </div>
         </div>
         
-        <div className="h-10 w-[1px] bg-gray-300/50 dark:bg-gray-700/50"></div>
+        <div className="hidden md:block h-10 w-[1px] bg-gray-300/50 dark:bg-gray-700/50"></div>
         
-        <div className="flex flex-col gap-1.5 flex-1 max-w-[300px]">
+        <div className="flex flex-col gap-1.5 flex-1 w-full md:max-w-[300px]">
           <label htmlFor="filter-project" className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Filter by Project</label>
           <select
             id="filter-project"
@@ -283,13 +283,13 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 pb-10">
+      <div className="flex-1 min-h-0 w-full max-w-full pb-10">
         <div 
           ref={scrollRef}
           className="flex gap-8 h-full w-full overflow-x-auto custom-scrollbar pb-4 relative"
         >
           {columns.map(status => (
-            <div key={status} className="flex-1 min-w-[280px] flex flex-col neo-flat rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat overflow-hidden">
+            <div key={status} className="flex-1 flex-shrink-0 min-w-[280px] flex flex-col neo-flat rounded-[40px] border border-white/50 dark:border-white/5 shadow-neo-flat overflow-hidden">
               <div className="p-6 flex justify-between items-center bg-white/20 dark:bg-black/10 backdrop-blur-md border-b border-gray-300/30 dark:border-gray-700/30">
                 <h2 className="flex items-center gap-3 text-gray-800 dark:text-gray-200 font-black uppercase tracking-widest text-[11px]">
                   <span className={`w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)] ${

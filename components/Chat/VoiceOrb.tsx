@@ -6,11 +6,12 @@ interface Props {
   state: OrbState;
   audioLevel?: number; // 0-1
   size?: number;
+  isGlobalPlaying?: boolean;
 }
 
 const PARTICLE_COUNT = 12;
 
-const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 200 }) => {
+const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 200, isGlobalPlaying = false }) => {
   const scale = state === 'speaking' ? 1 + audioLevel * 0.2 : 1;
   const SIZE = size;
 
@@ -48,7 +49,9 @@ const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 200 }) => {
                 className="absolute w-[3px] rounded-full transition-all duration-75 origin-center"
                 style={{
                   height: h,
-                  background: `rgba(162, 155, 254, ${0.4 + audioLevel * 0.5})`,
+                  background: isGlobalPlaying
+                    ? `rgba(0, 206, 201, ${0.5 + audioLevel * 0.5})`
+                    : `rgba(162, 155, 254, ${0.4 + audioLevel * 0.5})`,
                   left: '50%',
                   top: '50%',
                   transform: `rotate(${deg}deg) translate(0, -${SIZE / 2 + 5 + audioLevel * 5}px)`,
@@ -57,6 +60,20 @@ const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 200 }) => {
             );
           })}
         </div>
+      )}
+
+      {/* Global Playback Radar Rings */}
+      {isGlobalPlaying && (
+        <>
+          <div 
+            className="absolute rounded-full border border-[#00cec9]/20 animate-[ping_2s_infinite] pointer-events-none" 
+            style={{ width: SIZE + 15, height: SIZE + 15 }}
+          />
+          <div 
+            className="absolute rounded-full border border-[#a29bfe]/10 animate-[ping_3.5s_infinite] pointer-events-none" 
+            style={{ width: SIZE + 30, height: SIZE + 30 }}
+          />
+        </>
       )}
 
       {/* Rings */}
@@ -82,7 +99,9 @@ const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 200 }) => {
               style={{
                 width: p.size,
                 height: p.size,
-                background: `rgba(162, 155, 254, ${p.opacity * (0.5 + audioLevel * 0.5)})`,
+                background: isGlobalPlaying
+                  ? `rgba(0, 206, 201, ${p.opacity * (0.6 + audioLevel * 0.4)})`
+                  : `rgba(162, 155, 254, ${p.opacity * (0.5 + audioLevel * 0.5)})`,
                 left: (SIZE + 40) / 2 + x - (p.size / 2),
                 top: (SIZE + 40) / 2 + y - (p.size / 2),
               }}
@@ -96,6 +115,7 @@ const VoiceOrb: React.FC<Props> = ({ state, audioLevel = 0, size = 200 }) => {
           state === 'idle' ? 'bg-gradient-to-br from-[#2d3436] to-[#1e2124] animate-pulse' :
           state === 'connecting' ? 'bg-gradient-to-r from-[#6c5ce7] via-[#a29bfe] to-[#6c5ce7] animate-spin' :
           state === 'listening' ? 'bg-gradient-to-br from-[#0984e3] to-[#00cec9]' :
+          isGlobalPlaying ? 'bg-gradient-to-br from-[#00cec9] via-[#a29bfe] to-[#6c5ce7] animate-pulse' :
           'bg-gradient-to-br from-[#6c5ce7] via-[#a29bfe] to-[#4834d4]'
         }`}
         style={{ 

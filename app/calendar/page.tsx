@@ -328,8 +328,8 @@ export default function CalendarPage() {
   const hours = allHours.filter(h => grid[h].some(col => col.length > 0));
 
   return (
-    <div className="h-full flex flex-col -mt-4 bg-neo-bg p-8 transition-colors duration-300">
-      <div className="flex justify-between items-center mb-12 flex-shrink-0">
+    <div className="h-full flex flex-col -mt-4 bg-neo-bg p-4 sm:p-8 transition-colors duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12 flex-shrink-0">
         <div>
           <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl mb-2 drop-shadow-sm uppercase">Scheduled Jobs</h1>
           <div className="flex items-center gap-3">
@@ -372,8 +372,9 @@ export default function CalendarPage() {
       )}
 
       {/* Calendar grid */}
-      <div className="flex-1 min-h-0 mb-8 neo-flat rounded-[40px] border border-white/50 dark:border-white/5 overflow-hidden flex flex-col shadow-neo-flat">
-        <div className="flex bg-white/20 dark:bg-black/10 backdrop-blur-md border-b border-gray-300/30 dark:border-gray-700/30 sticky top-0 z-20">
+      <div className="flex-1 min-h-0 w-full max-w-full mb-8 neo-flat rounded-[40px] border border-white/50 dark:border-white/5 overflow-x-auto custom-scrollbar flex flex-col shadow-neo-flat">
+        <div className="min-w-[800px] lg:min-w-full flex-shrink-0 flex-1 flex flex-col">
+          <div className="flex bg-white/20 dark:bg-black/10 backdrop-blur-md border-b border-gray-300/30 dark:border-gray-700/30 sticky top-0 z-20">
           <div className="w-20 flex-shrink-0 border-r border-gray-300/30 dark:border-gray-700/30"></div>
           {dayNames.map((day, i) => (
             <div
@@ -446,6 +447,7 @@ Status: ${cj.job.state.lastRunStatus}`}
             ))}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Unscheduled jobs section */}

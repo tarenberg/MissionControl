@@ -1171,6 +1171,7 @@ function ChatPopupV3Inner() {
                   state={orbState === 'idle' && isPlaying ? 'speaking' : orbState} 
                   audioLevel={orbState === 'idle' && isPlaying ? 0.25 : level} 
                   size={42} 
+                  isGlobalPlaying={isPlaying}
                 />
                 {isDictationMode && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#ff7675] border-2 border-[#1e2124] flex items-center justify-center">
@@ -1365,6 +1366,7 @@ function ChatPopupV3Inner() {
                     state={orbState === 'idle' && isPlaying ? 'speaking' : orbState} 
                     audioLevel={orbState === 'idle' && isPlaying ? 0.25 : level} 
                     size={50} 
+                    isGlobalPlaying={isPlaying}
                   />
                </button>
             </div>
