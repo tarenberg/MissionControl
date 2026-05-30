@@ -1,3 +1,28 @@
+## 2026-05-30: Painting Exhibition & Show History Tracking Deployed
+
+### Task 1: Database Schema Migration & Expansion
+- **Goal:** Add support for tracking specific show awards without breaking the existing web-sync script (`sync_website_art.py`) or database structures.
+- **Progress:**
+  - **Award Column Addition:** Executed direct Python-MySQL migration script to alter the local `looselyt_artwork` database.
+  - **Prism Schema Sync:** Added the nullable `award` VARCHAR(255) column to the `deadline_submissions` table, maintaining full compatibility with historical records.
+
+### Task 2: Multi-Project Backend API Modifications
+- **Goal:** Enable the API to expose grouped show histories and handle individual submission updates.
+- **Progress:**
+  - **Artworks API Expansion:** Edited `artworks.php` to perform advanced SQL JOIN queries, retrieving nesting arrays of all deadlines linked to each painting. Location, entry fee, show dates, submission status, and award text are packaged and returned dynamically in the standard GET response.
+  - **Submission Actions API:** Hardened `deadlines.php` POST route to support the `update_submission` action, allowing granular updates of status (Pending, Accepted, Rejected) and awards.
+
+### Task 3: Tabbed Artwork Details & Show History Timeline UI
+- **Goal:** Create a clean, intuitive neomorphic interface within the Artwork modal to track and edit exhibition entries over time.
+- **Progress:**
+  - **Re-architected Modal:** Split the "Edit Artwork" modal into a gorgeous state-driven tabbed container ("Details" and "Exhibition History") styled with custom neomorphic CSS.
+  - **Chronological Timeline:** Built a chronological, icon-coded timeline rendering all show submissions. Added real-time `<select>` status drop-downs (Pending/Accepted/Rejected) and standard on-blur text inputs for awards.
+  - **Primary Status Auto-Sync Confirmation:** Programmed a secure `window.confirm` popup trigger. If a user sets a show entry status to "Accepted", the application prompts them first before automatically updating the painting's primary tracker availability status (e.g. from "In Studio" to "Accepted").
+
+- **Build Status:** **VERIFIED 100% CLEAN** (`npx tsc --noEmit` resolved with exit code 0). Staged on branch `muffin/art-tracker-exhibition-history` and open as Pull Request #2 on GitHub.
+
+---
+
 ## 2026-05-28: Mobile Responsiveness & Playback Radar Cues Deployed
 
 ### Task 1: Overhaul Horizontal Touch Scrolling & Swipe Gestures
