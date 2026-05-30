@@ -316,26 +316,56 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
       if (isInSpan) {
         const showColor = getShowColor(dl.title);
-        const artNames = dl.submittedArtworks && dl.submittedArtworks.length > 0
-          ? dl.submittedArtworks.map(art => art.title)
-          : [`[ENTRY] ${dl.title}`];
 
-        artNames.forEach(name => {
-          entries.push({
-            artName: name,
-            showTitle: dl.title,
-            status: dl.submittedArtworks?.find(a => a.title === name)?.status || 'Pending',
-            fullDeadline: dl,
-            color: showColor,
-            isPlaceholder: !dl.submittedArtworks?.length,
-            eventType: isDeadline ? 'deadline' :
-                       isShip ? 'ship' :
-                       isReceipt ? 'receipt' :
-                       isStart ? 'start' :
-                       isEnd ? 'end' :
-                       isReturn ? 'return' : 'span'
+        if (dl.submittedArtworks && dl.submittedArtworks.length > 0) {
+          dl.submittedArtworks.forEach(art => {
+            const status = art.status || 'Pending';
+            
+            if (status === 'Accepted') {
+              // Accepted artwork: show full logistics span and specific events
+              entries.push({
+                artName: art.title,
+                showTitle: dl.title,
+                status: status,
+                fullDeadline: dl,
+                color: showColor,
+                isPlaceholder: false,
+                eventType: isDeadline ? 'deadline' :
+                           isShip ? 'ship' :
+                           isReceipt ? 'receipt' :
+                           isStart ? 'start' :
+                           isEnd ? 'end' :
+                           isReturn ? 'return' : 'span'
+              });
+            } else {
+              // Submitted but not accepted: ONLY show the submission deadline
+              if (isDeadline) {
+                entries.push({
+                  artName: art.title,
+                  showTitle: dl.title,
+                  status: status,
+                  fullDeadline: dl,
+                  color: showColor,
+                  isPlaceholder: false,
+                  eventType: 'deadline'
+                });
+              }
+            }
           });
-        });
+        } else {
+          // Placeholder show (no artworks submitted yet) - only show the deadline
+          if (isDeadline) {
+            entries.push({
+              artName: `[ENTRY] ${dl.title}`,
+              showTitle: dl.title,
+              status: 'Pending',
+              fullDeadline: dl,
+              color: showColor,
+              isPlaceholder: true,
+              eventType: 'deadline'
+            });
+          }
+        }
       }
     });
 
