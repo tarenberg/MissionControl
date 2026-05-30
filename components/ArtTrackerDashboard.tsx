@@ -29,7 +29,9 @@ import {
   Rocket,
   Download,
   Copy,
-  Camera
+  Camera,
+  Award,
+  Trophy
 } from 'lucide-react';
 import styles from './ArtTrackerDashboard.module.css';
 
@@ -51,8 +53,22 @@ interface Artwork {
   location: string; // Maps to 'description' in DB
   price?: number;
   imageUrl?: string;
+  exhibitions: Exhibition[];
   _available?: number;
   _originalPriceString?: string;
+}
+
+interface Exhibition {
+  deadlineId: number;
+  showTitle: string;
+  location: string;
+  dueDate: string;
+  showStart: string;
+  showEnd: string;
+  returnDate: string;
+  fee: string;
+  status: 'Pending' | 'Accepted' | 'Rejected';
+  award: string | null;
 }
 
 interface Cost {
@@ -79,7 +95,7 @@ interface Deadline {
   location?: string;
   fee?: string;
   status?: string;
-  submittedArtworks?: {id: number, title: string, status: 'Pending' | 'Accepted' | 'Rejected', imageUrl: string}[];
+  submittedArtworks?: {id: number, title: string, status?: string, imageUrl: string}[];
 }
 
 interface Show {
@@ -382,6 +398,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
   // Modal State - Artworks
   const [isArtModalOpen, setIsArtModalOpen] = useState(false);
+  const [artModalTab, setArtModalTab] = useState<'info' | 'history'>('info');
   const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
   const [isArtworkSelectionPanelOpen, setIsArtworkSelectionPanelOpen] = useState(false);
   const [activeSubmissionDeadline, setActiveSubmissionDeadline] = useState<Deadline | null>(null);
@@ -732,6 +749,64 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
     }
   };
 
+  const handleUpdateExhibitionStatus = async (deadlineId: number, status: 'Pending' | 'Accepted' | 'Rejected', award: string | null) => {
+    if (!editingArtworkId) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/deadlines.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_submission',
+          deadlineId,
+          artworkId: editingArtworkId,
+          status,
+          award
+        })
+      });
+
+      if (res.ok) {
+        // Update local artwork in the main list
+        const updatedExhibitions = (newArtwork.exhibitions || []).map(ex => 
+          ex.deadlineId === deadlineId ? { ...ex, status, award } : ex
+        );
+        const updatedArt = { ...newArtwork, exhibitions: updatedExhibitions };
+        setNewArtwork(updatedArt);
+        setArtworks(prev => prev.map(art => art.id === editingArtworkId ? { ...art, ...updatedArt } as Artwork : art));
+
+        // Prompt if status is "Accepted"
+        if (status === 'Accepted') {
+          const autoUpdate = window.confirm(`"${newArtwork.title}" has been Accepted into the show!\n\nWould you like to automatically update its primary status to "Accepted" in the tracker?`);
+          if (autoUpdate) {
+            // Update artwork's main status to 'Accepted'
+            const savedArt = { ...updatedArt, status: 'Accepted' as any };
+            setNewArtwork(savedArt);
+            setArtworks(prev => prev.map(art => art.id === editingArtworkId ? { ...art, ...savedArt } as Artwork : art));
+            
+            // Call API to save artwork changes
+            await fetch(`${API_BASE_URL}/artworks.php`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: editingArtworkId,
+                title: savedArt.title,
+                medium: savedArt.medium,
+                dimensions: savedArt.dimensions,
+                price: savedArt.price,
+                imageUrl: savedArt.imageUrl,
+                status: 'Accepted',
+                location: savedArt.location
+              })
+            });
+          }
+        }
+      } else {
+        console.error('Failed to update exhibition status');
+      }
+    } catch (err) {
+      console.error('Error updating exhibition status:', err);
+    }
+  };
+
   const handleMarkSubmitted = async () => {
     if (!activeSubmissionDeadline) return;
     
@@ -1018,6 +1093,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
   const openEditArtwork = (art: Artwork) => {
     setNewArtwork(art);
     setEditingArtworkId(art.id);
+    setArtModalTab('info');
     setIsArtModalOpen(true);
   };
 
@@ -2051,7 +2127,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
               >
                 <Camera size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Studio Scan
               </button>
-              <button className={styles.actionButton} style={{ flex: 1, padding: '10px', fontSize: '1em' }} onClick={() => { setEditingArtworkId(null); setNewArtwork({ title: '', medium: '', status: 'In Studio', price: 0, location: '', dimensions: '', imageUrl: '' }); setIsArtModalOpen(true); }} title="Add a new artwork to your inventory">
+              <button className={styles.actionButton} style={{ flex: 1, padding: '10px', fontSize: '1em' }} onClick={() => { setEditingArtworkId(null); setNewArtwork({ title: '', medium: '', status: 'In Studio', price: 0, location: '', dimensions: '', imageUrl: '', exhibitions: [] }); setArtModalTab('info'); setIsArtModalOpen(true); }} title="Add a new artwork to your inventory">
                 + Add Artwork
               </button>
             </div>
@@ -2130,43 +2206,142 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
       {/* MODALS */}
       {isArtModalOpen && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+          <div className={styles.modalContent} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <h2>{editingArtworkId ? 'Edit Artwork' : 'Add New Artwork'}</h2>
-            <form onSubmit={handleSaveArtwork} className={styles.modalForm}>
-              <div className={styles.formGroup}>
-                <label htmlFor="art-title">Title</label>
-                <input id="art-title" name="art-title" type="text" value={newArtwork.title} onChange={e => setNewArtwork({...newArtwork, title: e.target.value})} required title="Enter the title of the artwork" />
+            
+            {editingArtworkId && (
+              <div className={styles.tabContainer}>
+                <button
+                  type="button"
+                  className={`${styles.tabButton} ${artModalTab === 'info' ? styles.tabButtonActive : ''}`}
+                  onClick={() => setArtModalTab('info')}
+                >
+                  Details
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.tabButton} ${artModalTab === 'history' ? styles.tabButtonActive : ''}`}
+                  onClick={() => setArtModalTab('history')}
+                >
+                  Exhibition History
+                </button>
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="art-medium">Medium</label>
-                <input id="art-medium" name="art-medium" type="text" value={newArtwork.medium} onChange={e => setNewArtwork({...newArtwork, medium: e.target.value})} required title="Enter the materials used (e.g. Oil on Canvas)" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            )}
+
+            {(!editingArtworkId || artModalTab === 'info') ? (
+              <form onSubmit={handleSaveArtwork} className={styles.modalForm}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="art-price">Price ($)</label>
-                  <input id="art-price" name="art-price" type="number" value={newArtwork.price} onChange={e => setNewArtwork({...newArtwork, price: Number(e.target.value)})} required title="Enter the retail price in USD" />
+                  <label htmlFor="art-title">Title</label>
+                  <input id="art-title" name="art-title" type="text" value={newArtwork.title} onChange={e => setNewArtwork({...newArtwork, title: e.target.value})} required title="Enter the title of the artwork" />
                 </div>
                 <div className={styles.formGroup}>
-                  <label htmlFor="art-status">Status</label>
-                  <select id="art-status" name="art-status" value={newArtwork.status} onChange={e => setNewArtwork({...newArtwork, status: e.target.value as any})} title="Select the current availability of the work">
-                    <option value="In Studio">In Studio</option>
-                    <option value="Exhibited">Exhibited</option>
-                    <option value="Sold">Sold</option>
-                    <option value="Archived">Archived</option>
-                    <option value="Committed">Committed</option>
-                    <option value="Accepted">Accepted</option>
-                  </select>
+                  <label htmlFor="art-medium">Medium</label>
+                  <input id="art-medium" name="art-medium" type="text" value={newArtwork.medium} onChange={e => setNewArtwork({...newArtwork, medium: e.target.value})} required title="Enter the materials used (e.g. Oil on Canvas)" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="art-price">Price ($)</label>
+                    <input id="art-price" name="art-price" type="number" value={newArtwork.price} onChange={e => setNewArtwork({...newArtwork, price: Number(e.target.value)})} required title="Enter the retail price in USD" />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="art-status">Status</label>
+                    <select id="art-status" name="art-status" value={newArtwork.status} onChange={e => setNewArtwork({...newArtwork, status: e.target.value as any})} title="Select the current availability of the work">
+                      <option value="In Studio">In Studio</option>
+                      <option value="Exhibited">Exhibited</option>
+                      <option value="Sold">Sold</option>
+                      <option value="Archived">Archived</option>
+                      <option value="Committed">Committed</option>
+                      <option value="Accepted">Accepted</option>
+                    </select>
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="art-image">Image URL / Path</label>
+                  <input id="art-image" name="art-image" type="text" value={newArtwork.imageUrl} onChange={e => setNewArtwork({...newArtwork, imageUrl: e.target.value})} placeholder="e.g. /images/work1.jpg" title="Enter the path to the artwork's image file" />
+                </div>
+                <div className={styles.modalActions}>
+                  <button type="submit" className={styles.submitButton}>Save Artwork</button>
+                  <button type="button" onClick={() => setIsArtModalOpen(false)} className={styles.cancelButton}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {!newArtwork.exhibitions || newArtwork.exhibitions.length === 0 ? (
+                  <div style={{ padding: '30px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.95em' }}>
+                    No exhibition entries for this artwork yet. Submit this artwork to a show via the Deadlines section to see it here!
+                  </div>
+                ) : (
+                  <div className={styles.timelineContainer}>
+                    {newArtwork.exhibitions.map((ex) => (
+                      <div key={ex.deadlineId} className={styles.timelineItem}>
+                        <div className={styles.timelineIcon}>
+                          {ex.status === 'Accepted' ? (
+                            <Trophy style={{ color: '#22c55e' }} />
+                          ) : (
+                            <Calendar />
+                          )}
+                        </div>
+                        <div className={styles.timelineContent}>
+                          <div className={styles.timelineHeader}>
+                            <span className={styles.timelineTitle}>{ex.showTitle}</span>
+                            <select
+                              value={ex.status || 'Pending'}
+                              onChange={(e) => {
+                                const newStatus = e.target.value as 'Pending' | 'Accepted' | 'Rejected';
+                                handleUpdateExhibitionStatus(ex.deadlineId, newStatus, ex.award);
+                              }}
+                              className={`${styles.timelinePill} ${
+                                ex.status === 'Accepted' ? styles.timelinePillAccepted :
+                                ex.status === 'Rejected' ? styles.timelinePillRejected :
+                                styles.timelinePillPending
+                              }`}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Accepted">Accepted</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                          </div>
+                          
+                          <div className={styles.timelineMeta}>
+                            {ex.location && <span>📍 {ex.location}</span>}
+                            {ex.dueDate && <span>📅 Due: {ex.dueDate}</span>}
+                            {ex.fee && Number(ex.fee) > 0 && <span>💰 Fee: ${ex.fee}</span>}
+                            {(ex.showStart || ex.showEnd) && (
+                              <span>
+                                🏛️ Show: {ex.showStart || 'N/A'} {ex.showEnd ? `to ${ex.showEnd}` : ''}
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                            <Award size={16} style={{ color: 'var(--muted)' }} />
+                            <input
+                              type="text"
+                              className={styles.timelineAwardInput}
+                              value={ex.award || ''}
+                              placeholder="Award / Notes (e.g. Best in Show, First Place)"
+                              onChange={(e) => {
+                                const updatedExs = (newArtwork.exhibitions || []).map(item => 
+                                  item.deadlineId === ex.deadlineId ? { ...item, award: e.target.value } : item
+                                );
+                                setNewArtwork({ ...newArtwork, exhibitions: updatedExs });
+                              }}
+                              onBlur={(e) => {
+                                handleUpdateExhibitionStatus(ex.deadlineId, ex.status, e.target.value);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className={styles.modalActions} style={{ marginTop: '20px', borderTop: '1px solid var(--neo-border-medium)', paddingTop: '15px' }}>
+                  <button type="button" onClick={() => setIsArtModalOpen(false)} className={styles.cancelButton}>Close</button>
                 </div>
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="art-image">Image URL / Path</label>
-                <input id="art-image" name="art-image" type="text" value={newArtwork.imageUrl} onChange={e => setNewArtwork({...newArtwork, imageUrl: e.target.value})} placeholder="e.g. /images/work1.jpg" title="Enter the path to the artwork's image file" />
-              </div>
-              <div className={styles.modalActions}>
-                <button type="submit" className={styles.submitButton}>Save Artwork</button>
-                <button type="button" onClick={() => setIsArtModalOpen(false)} className={styles.cancelButton}>Cancel</button>
-              </div>
-            </form>
+            )}
           </div>
         </div>
       )}
