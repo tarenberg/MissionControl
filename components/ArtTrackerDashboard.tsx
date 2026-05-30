@@ -605,6 +605,27 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
   const [enterConfirmationNum, setEnterConfirmationNum] = useState('');
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isWebsiteSyncing, setIsWebsiteSyncing] = useState(false);
+
+  const handleSyncWebsite = async () => {
+    setIsWebsiteSyncing(true);
+    try {
+      const response = await fetch('/api/sync-website', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert("Website artwork sync complete! Changes are pushing to looselytwisted.com.");
+      } else {
+        alert(`Sync failed: ${data.message || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`Sync error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsWebsiteSyncing(false);
+    }
+  };
 
   // Scan Tool State
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -1308,6 +1329,16 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
           <div className={styles.headerStatus}>
             <span>MySQL: <span className={styles.statusOk}>CONNECTED</span></span>
           </div>
+          <button 
+            onClick={handleSyncWebsite}
+            disabled={isWebsiteSyncing}
+            className="neo-button no-3d px-3 py-1 rounded-xl text-gray-500 hover:text-blue-500 active:neo-button-active transition-all flex items-center gap-1.5"
+            style={{ fontSize: '0.65em', height: '24px' }}
+            title="Sync Artworks to looselytwisted.com"
+          >
+            <span>🎨</span>
+            <span>{isWebsiteSyncing ? 'Syncing...' : 'Sync Website'}</span>
+          </button>
         </div>
 
         <nav className={styles.navBar}>

@@ -85,6 +85,7 @@ const DocsBrowserContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>('/');
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [selectedFileContent, setSelectedFileContent] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
@@ -426,6 +427,9 @@ const DocsBrowserContent: React.FC = () => {
 
       <div className="flex items-center justify-between mb-6 bg-background p-4 rounded-2xl border border-border-custom transition-all">
         <div className="flex items-center overflow-hidden flex-grow mr-4">
+          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden mr-3 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex-shrink-0 no-3d transition-colors">
+            <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
           {currentPath !== '/' && !isSearching && (
             <button onClick={handleBackClick} className="mr-3 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex-shrink-0 no-3d transition-colors">
               <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -496,7 +500,8 @@ const DocsBrowserContent: React.FC = () => {
       </div>
 
       <div className="flex gap-8 flex-1 min-h-0 overflow-hidden">
-        <div className="w-1/3 overflow-y-auto pr-4 scrollbar-hide border-r border-border-custom">
+        {/* Sidebar - Desktop */}
+        <div className="hidden md:block w-1/3 overflow-y-auto pr-4 scrollbar-hide border-r border-border-custom">
           {loading ? (
             <div className="flex flex-col gap-4">
               {[1, 2, 3, 4, 5].map(i => (
@@ -547,45 +552,89 @@ const DocsBrowserContent: React.FC = () => {
             </div>
           )}
         </div>
-
-        {selectedFilePath && (
-          <div className="flex-1 flex flex-col bg-card/50 rounded-2xl text-foreground border border-border-custom overflow-hidden shadow-inner transition-all duration-300">
-            <div className="flex justify-between items-center p-6 border-b border-border-custom bg-card sticky top-0 z-10">
-              <div className="flex flex-col">
-                <h3 className="text-xl font-black text-foreground leading-tight tracking-tight">{selectedFileName}</h3>
-                <span className="text-[10px] font-bold text-muted uppercase tracking-widest truncate max-w-md">{selectedFilePath}</span>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setShowEditModal(true)} 
-                  className="bg-card border border-border-custom hover:bg-gray-100 dark:hover:bg-zinc-800 text-foreground text-[10px] font-black uppercase tracking-widest px-6 py-2.5 rounded-2xl transition-all active:scale-95"
-                >
-                  Edit Document
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
-              {selectedFileContent !== null ? (
-                <div 
-                  className="prose prose-blue dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(selectedFileContent) }}
-                />
+        
+        {/* Sidebar - Mobile Modal */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden" onClick={() => setIsSidebarOpen(false)}>
+            <div className="bg-card w-4/5 max-w-sm h-full p-6 overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold mb-6">File Browser</h2>
+              {loading ? (
+                <div className="flex flex-col gap-4">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="h-12 bg-background animate-pulse rounded-2xl border border-border-custom"></div>
+                  ))}
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-muted gap-4">
-                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  <div className="italic text-sm">Reading document...</div>
+                <div className="flex flex-col gap-2">
+                  {items.map((item) => (
+                    <div 
+                      key={item.path} 
+                      className={`group flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer btn-3d ${
+                        selectedFilePath === item.path 
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-sm' 
+                          : 'bg-card border-border-custom hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-blue-500'
+                      }`}
+                      onClick={() => { handleItemClick(item); setIsSidebarOpen(false); }}
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="text-xl flex-shrink-0">{getItemIcon(item)}</span>
+                        <span className={`text-sm font-bold truncate transition-colors ${selectedFilePath === item.path ? 'text-blue-700 dark:text-blue-400' : 'text-foreground group-hover:text-blue-500'}`}>
+                          {item.name}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {items.length === 0 && (
+                    <div className="py-12 text-center text-muted italic text-sm">
+                      This folder is empty
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {!selectedFilePath && (
-          <div className="flex-1 flex flex-col items-center justify-center bg-background rounded-2xl text-muted border border-dashed border-border-custom">
-            <span className="text-4xl mb-4">📂</span>
-            <p className="text-sm font-bold uppercase tracking-widest">Select a document to preview</p>
-          </div>
-        )}
+        <div className="flex-1 w-full md:w-2/3 flex flex-col">
+          {selectedFilePath && (
+            <div className="flex-1 flex flex-col bg-card/50 rounded-2xl text-foreground border border-border-custom overflow-hidden shadow-inner transition-all duration-300">
+              <div className="flex justify-between items-center p-6 border-b border-border-custom bg-card sticky top-0 z-10">
+                <div className="flex flex-col">
+                  <h3 className="text-xl font-black text-foreground leading-tight tracking-tight">{selectedFileName}</h3>
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-widest truncate max-w-md">{selectedFilePath}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setShowEditModal(true)} 
+                    className="bg-card border border-border-custom hover:bg-gray-100 dark:hover:bg-zinc-800 text-foreground text-[10px] font-black uppercase tracking-widest px-6 py-2.5 rounded-2xl transition-all active:scale-95"
+                  >
+                    Edit Document
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
+                {selectedFileContent !== null ? (
+                  <div 
+                    className="prose prose-blue dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(selectedFileContent) }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-64 text-muted gap-4">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="italic text-sm">Reading document...</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!selectedFilePath && (
+            <div className="flex-1 flex flex-col items-center justify-center bg-background rounded-2xl text-muted border border-dashed border-border-custom">
+              <span className="text-4xl mb-4">📂</span>
+              <p className="text-sm font-bold uppercase tracking-widest">Select a document to preview</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {showCreateModal && (

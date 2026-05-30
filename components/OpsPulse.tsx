@@ -77,7 +77,7 @@ export default function OpsPulse() {
     <div className="neo-flat rounded-[40px] overflow-hidden transition-all duration-300 ease-in-out border border-white/50 dark:border-white/5 shadow-neo-flat">
       {/* Header Bar */}
       <div 
-        className="flex justify-between items-center px-10 py-6 cursor-pointer select-none border-b border-gray-300/30 dark:border-gray-700/30"
+        className="flex justify-between items-center px-4 py-4 sm:px-10 sm:py-6 cursor-pointer select-none border-b border-gray-300/30 dark:border-gray-700/30"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         <div className="flex items-center gap-4">
@@ -96,9 +96,9 @@ export default function OpsPulse() {
       </div>
 
       <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[800px] opacity-100'}`}>
-        <div className="px-10 pb-10 pt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="px-4 pb-4 pt-4 sm:px-10 sm:pb-10 sm:pt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-4">
           {/* Gateway Pulse */}
-          <div className="neo-flat rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
+          <div className="neo-flat rounded-3xl p-3 sm:p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-1 h-full ${pulse.services.gateway.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <div className="neo-pressed p-2 rounded-xl text-blue-500">
               <ShieldCheck size={16} />
@@ -113,7 +113,7 @@ export default function OpsPulse() {
           </div>
 
           {/* MC Pulse */}
-          <div className="neo-flat rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
+          <div className="neo-flat rounded-3xl p-3 sm:p-5 flex flex-col items-start gap-3 relative overflow-hidden">
             <div className={`absolute top-0 right-0 w-1 h-full ${pulse.services.missionControl.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <div className="neo-pressed p-2 rounded-xl text-purple-500">
               <Server size={16} />
@@ -128,7 +128,7 @@ export default function OpsPulse() {
           </div>
 
           {/* Art Tracker Pulse */}
-          <div className="neo-flat rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
+          <div className="neo-flat rounded-3xl p-3 sm:p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-1 h-full ${pulse.services.artTracker?.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <div className="neo-pressed p-2 rounded-xl text-orange-600">
               <Activity size={16} />
@@ -143,7 +143,7 @@ export default function OpsPulse() {
           </div>
 
           {/* Agent Pulse */}
-          <div className="neo-flat rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
+          <div className="neo-flat rounded-3xl p-3 sm:p-5 flex flex-col items-start gap-3 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-1 h-full bg-blue-500"></div>
             <div className="neo-pressed p-2 rounded-xl text-orange-500">
               <Cpu size={16} />
@@ -158,7 +158,7 @@ export default function OpsPulse() {
           </div>
 
           {/* Last Update */}
-          <div className="neo-flat rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden">
+          <div className="neo-flat rounded-3xl p-3 sm:p-5 flex flex-col items-start gap-3 relative overflow-hidden">
             <div className="neo-pressed p-2 rounded-xl text-green-500">
               <Activity size={16} />
             </div>
@@ -172,7 +172,7 @@ export default function OpsPulse() {
           </div>
 
           {/* Nest Studio Bridge */}
-          <div className="neo-flat rounded-3xl p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
+          <div className="neo-flat rounded-3xl p-3 sm:p-5 flex flex-col items-start gap-3 relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-1 h-full ${pulse.nest?.status === 'connected' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
             <div className={`neo-pressed p-2 rounded-xl ${pulse.nest?.status === 'connected' ? 'text-cyan-500' : 'text-gray-400'}`}>
               <Zap size={16} />

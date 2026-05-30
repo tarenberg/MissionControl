@@ -176,6 +176,14 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
 
   const connect = useCallback(async () => {
     if (connectedRef.current) return;
+    
+    if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const errorMsg = "Microphone access is not available. Please use a secure (HTTPS) connection and a modern browser.";
+      console.error("GeminiLiveV7: " + errorMsg);
+      setError(errorMsg);
+      setInternalState('idle');
+      return;
+    }
 
     shouldBeConnectedRef.current = true;
     if (reconnectTimeoutRef.current) {
@@ -187,6 +195,9 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
     setError(null);
 
     try {
+      if (!navigator?.mediaDevices || !navigator?.mediaDevices?.getUserMedia) {
+        throw new Error('Microphone API (navigator.mediaDevices) is unavailable in this insecure context. Ensure you are on HTTPS or localhost.');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 

@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// Fetch weather from wttr.in with abort timeout
+interface WeatherCache {
+  [location: string]: {
+    data: string;
+    expiresAt: number;
+  };
+}
+
+const weatherCache: WeatherCache = {};
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// Fetch weather from wttr.in with abort timeout and 1-hour memory caching
 async function fetchWeather(location: string): Promise<string | null> {
   if (!location) return null;
+  const normalizedLoc = location.trim().toLowerCase();
+  const cached = weatherCache[normalizedLoc];
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+
   try {
     const encodedLoc = encodeURIComponent(location);
     const controller = new AbortController();
@@ -15,12 +31,24 @@ async function fetchWeather(location: string): Promise<string | null> {
     clearTimeout(id);
 
     if (response.ok) {
-      const text = await response.text();
-      return text.trim();
+      const text = (await response.text()).trim();
+      if (text) {
+        weatherCache[normalizedLoc] = {
+          data: text,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+        };
+        return text;
+      }
+    }
+    if (cached) {
+      return cached.data;
     }
     return null;
   } catch (err) {
     console.warn('Weather fetch timed out or failed:', err);
+    if (cached) {
+      return cached.data;
+    }
     return null;
   }
 }

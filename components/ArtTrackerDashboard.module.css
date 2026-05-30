@@ -1695,6 +1695,17 @@
   background: #000;
 }
 
+@media (max-width: 768px) {
+  .mainContentPanel,
+  .widgetPanel,
+  .costTrackingPanel,
+  .roiPanel,
+  .showPanel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .scanSetup {
   display: flex;
   flex-direction: column;

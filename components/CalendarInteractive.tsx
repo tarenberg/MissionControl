@@ -49,15 +49,17 @@ const CalendarInteractive: React.FC<CalendarInteractiveProps> = ({ events, alway
     <div className="relative flex flex-col p-4 bg-white text-gray-900 min-h-screen">
       <AlwaysRunningSection runningTasks={alwaysRunning} />
 
-      <div className={`flex flex-grow gap-2 mt-4 transition-all duration-300 ${selectedEvent ? 'mr-80' : ''}`}>
-        {DAYS.map((day) => (
-          <CalendarDayColumn
-            key={day}
-            day={day}
-            events={eventsByDay[day] || []}
-            onSelect={setSelectedEvent}
-          />
-        ))}
+      <div className="flex-grow overflow-x-auto">
+        <div className={`flex flex-grow gap-2 mt-4 transition-all duration-300 min-w-[700px] ${selectedEvent ? 'mr-80' : ''}`}>
+          {DAYS.map((day) => (
+            <CalendarDayColumn
+              key={day}
+              day={day}
+              events={eventsByDay[day] || []}
+              onSelect={setSelectedEvent}
+            />
+          ))}
+        </div>
       </div>
 
       <NextUpSection nextUpTasks={nextUp} />
