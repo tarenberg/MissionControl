@@ -21,11 +21,10 @@ const statusColors:Record<string, string> = {
   'Backlog': 'bg-gray-200 text-gray-800',
   'In Progress': 'bg-blue-200 text-blue-800',
   'Waiting': 'bg-yellow-200 text-yellow-800',
-  'Blocked': 'bg-red-200 text-red-800',
   'Done': 'bg-green-200 text-green-800',
 };
 
-const statusCycle = ['Backlog', 'In Progress', 'Waiting', 'Blocked', 'Done'];
+const statusCycle = ['Backlog', 'In Progress', 'Waiting', 'Done'];
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -224,7 +223,7 @@ export default function TasksPage() {
 
   const filteredTasks = sortedTasks;
 
-  const columns = ['Backlog', 'In Progress', 'Waiting', 'Blocked', 'Done'];
+  const columns = ['Backlog', 'In Progress', 'Waiting', 'Done'];
 
   return (
     <div className="h-full flex flex-col -mt-4 bg-neo-bg p-4 sm:p-8 transition-colors duration-300 overflow-hidden">
@@ -294,7 +293,6 @@ export default function TasksPage() {
                 <h2 className="flex items-center gap-3 text-gray-800 dark:text-gray-200 font-black uppercase tracking-widest text-[11px]">
                   <span className={`w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)] ${
                     status === 'Done' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 
-                    status === 'Blocked' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' :
                     status === 'Waiting' ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]' :
                     status === 'In Progress' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-gray-400'
                   }`}></span>
