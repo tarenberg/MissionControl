@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ToastProvider, useToast } from './Toast';
 import {
   listDirectoryContents,
@@ -82,6 +83,8 @@ const renderMarkdown = (markdown: string) => {
 
 const DocsBrowserContent: React.FC = () => {
   const { addToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentPath, setCurrentPath] = useState<string>('/');
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,23 +169,13 @@ const DocsBrowserContent: React.FC = () => {
 
   // Define handleItemClick first
   const handleItemClick = async (item: FileSystemItem) => {
-    if (item.isFolder) {
-      setCurrentPath(normalizePath(item.path));
-    } else {
-      setSelectedFileName(item.name);
-      setSelectedFilePath(item.path);
-      try {
-        const content = await getFileContent(item.path);
-        setSelectedFileContent(content);
-        setEditingFileContent(content);
-      } catch (error) {
-        addToast('Failed to load file content.', 'error');
-      }
-    }
+    navigateToPath(item.path);
   };
 
   const [dirsData, setDirsData] = useState<Record<string, FileSystemItem[]>>({
     docs: [],
+    artwork: [],
+    submissions: [],
     memory: [],
     tasks: [],
     scripts: [],
@@ -201,8 +194,10 @@ const DocsBrowserContent: React.FC = () => {
     setIsSearching(false);
     try {
       if (currentPath === '/') {
-        const [docsContents, memoryContents, tasksContents, scriptsContents, skillsContents, rootContents] = await Promise.all([
+        const [docsContents, artworkContents, submissionsContents, memoryContents, tasksContents, scriptsContents, skillsContents, rootContents] = await Promise.all([
           listDirectoryContents('docs'),
+          listDirectoryContents('docs/Artwork'),
+          listDirectoryContents('docs/Submissions'),
           listDirectoryContents('memory'),
           listDirectoryContents('tasks'),
           listDirectoryContents('scripts'),
@@ -217,7 +212,9 @@ const DocsBrowserContent: React.FC = () => {
         };
 
         setDirsData({
-          docs: docsContents.sort(sortFn),
+          docs: docsContents.filter(item => item.name !== 'Artwork' && item.name !== 'Submissions').sort(sortFn),
+          artwork: artworkContents.sort(sortFn),
+          submissions: submissionsContents.sort(sortFn),
           memory: memoryContents.sort(sortFn),
           tasks: tasksContents.sort(sortFn),
           scripts: scriptsContents.sort(sortFn),
@@ -260,42 +257,57 @@ const DocsBrowserContent: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    // Check if we are currently initializing from URL to avoid clearing state
-    const params = new URLSearchParams(window.location.search);
-    const isInitializing = !!params.get('path');
-    fetchContents(isInitializing);
-  }, [currentPath]);
+  const navigateToPath = (newPath: string) => {
+    const cleanPath = normalizePath(newPath);
+    if (cleanPath === '/') {
+      router.push('/docs');
+    } else {
+      router.push(`/docs?path=${encodeURIComponent(cleanPath)}`);
+    }
+  };
 
-  // Initialize path from URL if present - Move to after function definitions
+  // Synchronize currentPath and file selection state with URL search params
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const pathParam = params.get('path');
+    const pathParam = searchParams.get('path');
     if (pathParam) {
       const normalized = normalizePath(pathParam);
-      // Check if it's likely a file (has an extension)
       if (normalized.includes('.')) {
         const parent = getParentPath(normalized);
         setCurrentPath(parent);
-        // Trigger the click logic after a short delay to ensure state is ready
-        setTimeout(() => {
-          handleItemClick({
-            name: normalized.split('/').pop() || '',
-            isFolder: false,
-            path: normalized
-          });
-        }, 100);
+        
+        // Load the file content
+        setSelectedFileName(normalized.split('/').pop() || '');
+        setSelectedFilePath(normalized);
+        getFileContent(normalized).then(content => {
+          setSelectedFileContent(content);
+          setEditingFileContent(content);
+        }).catch(err => {
+          addToast('Failed to load file content.', 'error');
+        });
       } else {
         setCurrentPath(normalized);
+        setSelectedFileContent(null);
+        setSelectedFileName(null);
+        setSelectedFilePath(null);
       }
+    } else {
+      setCurrentPath('/');
+      setSelectedFileContent(null);
+      setSelectedFileName(null);
+      setSelectedFilePath(null);
     }
-  }, []);
+  }, [searchParams]);
+
+  // Fetch directory contents whenever currentPath changes
+  useEffect(() => {
+    fetchContents();
+  }, [currentPath]);
 
   const handleBackClick = () => {
     setSelectedFileContent(null);
     setSelectedFileName(null);
     setSelectedFilePath(null);
-    setCurrentPath(getParentPath(currentPath));
+    navigateToPath(getParentPath(currentPath));
   };
 
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
@@ -480,7 +492,7 @@ const DocsBrowserContent: React.FC = () => {
           ) : (
             <nav className="flex text-muted font-mono text-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
               <button 
-                onClick={() => setCurrentPath('/')}
+                onClick={() => navigateToPath('/')}
                 className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline no-3d transition-colors"
               >
                 workspace
@@ -491,7 +503,7 @@ const DocsBrowserContent: React.FC = () => {
                   <React.Fragment key={path}>
                     <span className="mx-2 text-border-custom">/</span>
                     <button 
-                      onClick={() => setCurrentPath(path)}
+                      onClick={() => navigateToPath(path)}
                       className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline no-3d transition-colors"
                     >
                       {part}
@@ -546,6 +558,8 @@ const DocsBrowserContent: React.FC = () => {
         ) : currentPath === '/' && !isSearching ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full h-full overflow-y-auto pb-6 custom-scrollbar">
             {[
+              { id: 'docs/Artwork', name: 'Artwork', icon: '🎨', data: dirsData.artwork },
+              { id: 'docs/Submissions', name: 'Submissions', icon: '📤', data: dirsData.submissions },
               { id: 'docs', name: 'Docs Hub', icon: '📚', data: dirsData.docs },
               { id: 'memory', name: 'Daily Logs & Reports', icon: '📅', data: dirsData.memory },
               { id: 'tasks', name: 'Tasks & Lessons', icon: '🛠️', data: dirsData.tasks },
@@ -564,7 +578,7 @@ const DocsBrowserContent: React.FC = () => {
                   </div>
                   {!category.isRoot && (
                     <button 
-                      onClick={() => setCurrentPath(`/${category.id}`)}
+                      onClick={() => navigateToPath(category.id)}
                       className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-muted hover:text-blue-500 transition-colors"
                       title={`Open ${category.name}`}
                     >
