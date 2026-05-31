@@ -30,15 +30,15 @@
     "status": "complete"
   },
   {
-    "id": "1780071920838",
+    "id": "1780185164486",
     "url": "https://theartguide.com/callforartist/target-prize-2026-international-painting-contest/",
-    "timestamp": "2026-05-29T16:25:20.838Z",
-    "status": "pending"
+    "timestamp": "2026-05-30T23:52:44.486Z",
+    "status": "failed"
   },
   {
     "id": "1780071929245",
     "url": "https://theartguide.com/callforartist/2026-international-artists-grand-prize-competition/",
     "timestamp": "2026-05-29T16:25:29.245Z",
-    "status": "pending"
+    "status": "failed"
   }
 ]

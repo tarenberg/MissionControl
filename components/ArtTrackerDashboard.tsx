@@ -29,6 +29,7 @@ import {
   Rocket,
   Download,
   Copy,
+  Clipboard,
   Camera,
   Award,
   Trophy
@@ -435,26 +436,30 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
   const [isAnalyzingProspectus, setIsAnalyzingProspectus] = useState(false);
   const [isPackaging, setIsPackaging] = useState(false);
   const [prospectusData, setProspectusData] = useState<any>(null);
+  const [showPasteInput, setShowPasteInput] = useState(false);
+  const [pastedProspectus, setPastedProspectus] = useState('');
 
   const handleStartSubmission = async (deadline: Deadline) => {
     setActiveSubmissionDeadline(deadline);
     setArtSearchInModal('');
     setIsSubmissionModalOpen(true);
+    setShowPasteInput(false);
+    setPastedProspectus('');
     if (deadline.link) {
       analyzeProspectus(deadline.link);
     }
   };
 
-  const analyzeProspectus = async (url: string, force: boolean = false) => {
-    if (!url) return;
+  const analyzeProspectus = async (url: string, force: boolean = false, pastedText?: string) => {
+    if (!url && !pastedText) return;
 
     // Guard: if we already have this data and are just re-checking/updating, don't clear it
-    const isSameUrl = prospectusData?.url === url;
+    const isSameUrl = url ? prospectusData?.url === url : false;
 
-    console.log(`[SubmissionAssistant] Analyzing: ${url} (Same URL: ${isSameUrl}, Force: ${force})`);
+    console.log(`[SubmissionAssistant] Analyzing: ${url || 'pasted text'} (Same URL: ${isSameUrl}, Force: ${force})`);
 
     setIsAnalyzingProspectus(true);
-    if (!isSameUrl || force) {
+    if (!isSameUrl || force || pastedText) {
       setProspectusData(null);
     }
 
@@ -462,7 +467,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
       const response = await fetch('/api/analyze-prospectus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, force })
+        body: JSON.stringify({ url, force, pastedText })
       });
 
       if (!response.ok) {
@@ -500,6 +505,11 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
             if (checkData.status === 'complete' || checkData.fees || checkData.mediums) {
               console.log(`[SubmissionAssistant] Analysis complete after ${attempts}s.`);
               setProspectusData({ ...checkData, url });
+              setIsAnalyzingProspectus(false);
+              clearInterval(poll);
+            } else if (checkData.status === 'failed' || checkData.error) {
+              console.log(`[SubmissionAssistant] Analysis failed: ${checkData.error}`);
+              setProspectusData({ error: checkData.error || 'Failed to analyze prospectus.', url });
               setIsAnalyzingProspectus(false);
               clearInterval(poll);
             } else if (attempts > 120) {
@@ -2499,6 +2509,15 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                   >
                     <RefreshCw size={10} className={isAnalyzingProspectus ? 'animate-spin' : ''} />
                   </button>
+                  <button 
+                    onClick={() => setShowPasteInput(!showPasteInput)}
+                    className={styles.editButton}
+                    style={{ padding: '3px 6px', fontSize: '0.65em', marginLeft: '4px' }}
+                    title="Paste prospectus text manually"
+                    disabled={isAnalyzingProspectus}
+                  >
+                    <Clipboard size={10} />
+                  </button>
                 </div>
 
                 {prospectusData && !prospectusData.error ? (
@@ -2616,7 +2635,57 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                       </div>
                     </div>
                   </div>
-                ) : (isAnalyzingProspectus || !prospectusData) ? (
+                ) : showPasteInput ? (
+                <div key="paste-input" style={{ padding: '15px', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ fontSize: '0.95em', fontWeight: 700, margin: '0 0 5px 0', color: 'var(--foreground)' }}>Paste Prospectus Text</p>
+                  <p style={{ fontSize: '0.75em', color: 'var(--muted)', margin: 0, lineHeight: 1.3 }}>Copy the text of the webpage / call-for-artists description and paste it below. Muffin will parse it using Gemini Flash.</p>
+                  <textarea
+                    value={pastedProspectus}
+                    onChange={(e) => setPastedProspectus(e.target.value)}
+                    placeholder="Paste details, deadlines, eligibility criteria, pricing, rules, and exhibition dates here..."
+                    style={{
+                      width: '100%',
+                      flexGrow: 1,
+                      minHeight: '220px',
+                      background: 'rgba(0,0,0,0.15)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      color: 'var(--foreground, white)',
+                      padding: '12px',
+                      fontSize: '0.85em',
+                      fontFamily: 'inherit',
+                      resize: 'none',
+                      outline: 'none',
+                      lineHeight: 1.4
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '5px' }}>
+                    <button
+                      onClick={() => {
+                        setShowPasteInput(false);
+                        setPastedProspectus('');
+                      }}
+                      className={styles.actionButton}
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', margin: 0, padding: '6px 12px', fontSize: '0.8em', width: 'auto' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (pastedProspectus.trim()) {
+                          analyzeProspectus(activeSubmissionDeadline.link || '', true, pastedProspectus);
+                          setShowPasteInput(false);
+                        }
+                      }}
+                      className={styles.actionButton}
+                      style={{ background: 'rgba(96, 165, 250, 0.2)', color: '#60a5fa', border: '1px solid #60a5fa', margin: 0, padding: '6px 12px', fontSize: '0.8em', width: 'auto' }}
+                      disabled={!pastedProspectus.trim()}
+                    >
+                      Analyze Pasted Text
+                    </button>
+                  </div>
+                </div>
+              ) : (isAnalyzingProspectus || !prospectusData) ? (
                 <div key="loading" style={{ textAlign: 'center', padding: '60px', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ fontSize: '3em', marginBottom: '20px' }}>\u2699\ufe0f</div>
                   <p style={{ fontSize: '1.1em', fontWeight: 600 }}>Muffin is reading the prospectus...</p>
@@ -2626,12 +2695,20 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                 <div key="error" style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
                   <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>\u26a0\ufe0f Analysis Interrupted</p>
                   <p style={{ fontSize: '0.85em', margin: 0 }}>{prospectusData.error}</p>
-                  <button
-                    onClick={() => analyzeProspectus(activeSubmissionDeadline.link!)}
-                    style={{ marginTop: '10px', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: 'white', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8em', cursor: 'pointer' }}
-                  >
-                    Try Again
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                    <button
+                      onClick={() => analyzeProspectus(activeSubmissionDeadline.link!)}
+                      style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8em', cursor: 'pointer' }}
+                    >
+                      Try Again
+                    </button>
+                    <button
+                      onClick={() => setShowPasteInput(true)}
+                      style={{ background: 'rgba(96, 165, 250, 0.2)', border: '1px solid #60a5fa', color: '#60a5fa', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8em', cursor: 'pointer' }}
+                    >
+                      Paste Text Manually
+                    </button>
+                  </div>
                 </div>
               ) : null}
               </div>
