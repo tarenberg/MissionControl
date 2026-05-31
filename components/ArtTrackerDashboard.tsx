@@ -839,6 +839,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
             });
           }
         }
+        fetchDeadlines();
       } else {
         console.error('Failed to update exhibition status');
       }
@@ -1182,6 +1183,15 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
         fetchDeadlines(); 
         setIsAddDeadlineOpen(false); 
         setEditingDeadlineId(null); 
+        
+        // Update calendar view to the saved/edited deadline's month
+        if (payload.date) {
+          const parsedDate = new Date(payload.date);
+          if (!isNaN(parsedDate.getTime())) {
+            setCurrentCalendarDate(parsedDate);
+          }
+        }
+
         setNewDeadline({ 
           title: '', 
           date: new Date().toISOString().split('T')[0], 
