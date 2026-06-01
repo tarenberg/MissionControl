@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import JSZip from 'jszip';
 import {
   RefreshCw,
@@ -96,7 +96,7 @@ interface Deadline {
   location?: string;
   fee?: string;
   status?: string;
-  submittedArtworks?: {id: number, title: string, status?: string, imageUrl: string}[];
+  submittedArtworks?: {id: number, title: string, status?: string, award?: string, imageUrl: string}[];
 }
 
 interface Show {
@@ -1442,6 +1442,47 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
     }
   };
 
+  // Calculate exhibition statistics
+  const { totalSubmissions, acceptedSubmissions, rejectedSubmissions, pendingSubmissions, awardsWon, acceptanceRate } = useMemo(() => {
+    let total = 0;
+    let accepted = 0;
+    let rejected = 0;
+    let pending = 0;
+    let awards = 0;
+
+    deadlines.forEach(d => {
+      if (d.submittedArtworks && Array.isArray(d.submittedArtworks)) {
+        d.submittedArtworks.forEach(art => {
+          total++;
+          const status = art.status ? art.status.trim() : 'Pending';
+          if (status === 'Accepted') {
+            accepted++;
+          } else if (status === 'Rejected') {
+            rejected++;
+          } else {
+            pending++;
+          }
+
+          if (art.award && art.award.trim() !== '') {
+            awards++;
+          }
+        });
+      }
+    });
+
+    const decided = accepted + rejected;
+    const rate = decided > 0 ? (accepted / decided) * 100 : 0;
+
+    return {
+      totalSubmissions: total,
+      acceptedSubmissions: accepted,
+      rejectedSubmissions: rejected,
+      pendingSubmissions: pending,
+      awardsWon: awards,
+      acceptanceRate: rate
+    };
+  }, [deadlines]);
+
   const formatShortDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return `${d.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${d.getDate().toString().padStart(2, '0')}`;
@@ -2247,6 +2288,33 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
             <div className={styles.roiCard} title="Total revenue from artworks marked as 'Sold'">
               <h3>Realized Sales</h3>
               <p className={styles.roiValue} style={{color: '#3b82f6'}}>${artworks.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price || 0), 0).toFixed(2)}</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="exhibitions-stats" className={styles.roiPanel}>
+          <h2 className={styles.panelTitle}>Exhibition Performance & Logistics {'\uD83C\uDFC6'}</h2>
+          <div className={styles.roiGrid}>
+            <div className={styles.roiCard} title="Total entries submitted to art shows (Pending, Accepted, Rejected)">
+              <h3>Total Submissions</h3>
+              <p className={styles.roiValue} style={{color: '#ffffff'}}>{totalSubmissions}</p>
+              <span className={styles.roiSubtext}>
+                {acceptedSubmissions} Accepted / {rejectedSubmissions} Rejected / {pendingSubmissions} Pending
+              </span>
+            </div>
+            <div className={styles.roiCard} title="Acceptance rate based on historic decisions (Accepted vs Rejected)">
+              <h3>Acceptance Rate</h3>
+              <p className={styles.roiValue} style={{color: '#f59e0b'}}>{acceptanceRate.toFixed(1)}%</p>
+              <span className={styles.roiSubtext}>
+                Excluding pending decisions
+              </span>
+            </div>
+            <div className={styles.roiCard} title="Special honors and awards won for submitted works">
+              <h3>Awards & Honors</h3>
+              <p className={styles.roiValue} style={{color: '#a855f7'}}>{awardsWon}</p>
+              <span className={styles.roiSubtext}>
+                Distinct exhibition awards
+              </span>
             </div>
           </div>
         </section>
