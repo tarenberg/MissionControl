@@ -60,18 +60,27 @@ export async function POST(req: Request) {
         voiceMode: voice,
       });
 
-      const assistantMsg = await prisma.chatMessage.create({
-        data: {
-          content: inference.assistantContent,
-          role: 'assistant',
-          roomId,
-        }
-      });
+      let assistantMsg;
+      if (inference.dbMessageCreated) {
+        // Retrieve the message that was already created & updated live
+        assistantMsg = await prisma.chatMessage.findFirst({
+          where: { roomId, role: 'assistant' },
+          orderBy: { createdAt: 'desc' },
+        });
+      } else {
+        assistantMsg = await prisma.chatMessage.create({
+          data: {
+            content: inference.assistantContent,
+            role: 'assistant',
+            roomId,
+          }
+        });
 
-      await prisma.chatRoom.update({
-        where: { id: roomId },
-        data: { updatedAt: new Date() },
-      });
+        await prisma.chatRoom.update({
+          where: { id: roomId },
+          data: { updatedAt: new Date() },
+        });
+      }
 
       let audioBase64 = null;
       if (voice) {

@@ -24,7 +24,7 @@
 
 .dashboardHeader {
   @apply neo-flat;
-  padding: 8px 20px;
+  padding: 4px 15px;
   border-radius: 12px;
   display: flex;
   justify-content: space-between;
@@ -507,8 +507,8 @@
 @media (max-width: 768px) {
   .dashboardHeader {
     flex-direction: column;
-    gap: 15px;
-    padding: 15px;
+    gap: 8px;
+    padding: 6px 12px;
     text-align: center;
   }
 
@@ -768,6 +768,7 @@
   @apply neo-pressed;
   border-radius: 16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 20px;
   width: 100%;
 }
@@ -1054,12 +1055,20 @@
   margin: 0;
 }
 
+.roiSubtext {
+  font-size: 0.75em;
+  color: var(--muted);
+  margin-top: 4px;
+  display: block;
+}
+
 .roiPositive { color: #2ecc71; text-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
 .roiNegative { color: #e74c3c; text-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
 
 .roiTableContainer {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .roiTable {
@@ -1239,8 +1248,11 @@
   background: rgba(0, 0, 0, 0.15);
   border-radius: 16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(255, 255, 255, 0.05);
   height: 500px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .calendarGrid {
@@ -1690,9 +1702,175 @@
   background: #000;
 }
 
+@media (max-width: 768px) {
+  .mainContentPanel,
+  .widgetPanel,
+  .costTrackingPanel,
+  .roiPanel,
+  .showPanel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .scanSetup {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
+
+/* --- Tabs --- */
+.tabContainer {
+  display: flex;
+  border-bottom: 1px solid var(--neo-border-medium);
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  padding: 12px 20px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9em;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tabButton:hover {
+  color: var(--foreground);
+}
+
+.tabButtonActive {
+  color: var(--color-primary-blue);
+}
+
+.tabButtonActive::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--color-primary-blue);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 8px var(--color-primary-blue);
+}
+
+/* --- Exhibition History Timeline --- */
+.timelineContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 20px;
+  position: relative;
+}
+
+.timelineItem::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  bottom: -15px; /* Extend past the item to connect */
+  width: 2px;
+  background-color: var(--neo-border-medium);
+}
+
+.timelineItem:last-child::before {
+  display: none; /* Don't draw line after last item */
+}
+
+.timelineIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--neo-bg-light);
+  border: 2px solid var(--neo-border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.timelineIcon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.timelineContent {
+  flex-grow: 1;
+  padding-bottom: 15px;
+}
+
+.timelineHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.timelineTitle {
+  font-weight: 700;
+  font-size: 1.1em;
+  color: var(--foreground);
+}
+
+.timelinePill {
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 99px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.timelinePillPending {
+  background-color: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+.timelinePillPending:hover { background-color: rgba(96, 165, 250, 0.2); }
+
+.timelinePillAccepted {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.timelinePillAccepted:hover { background-color: rgba(34, 197, 94, 0.2); }
+
+.timelinePillRejected {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.timelinePillRejected:hover { background-color: rgba(239, 68, 68, 0.2); }
+
+
+.timelineMeta {
+  display: flex;
+  gap: 15px;
+  font-size: 0.8em;
+  color: var(--muted);
+  margin-bottom: 15px;
+}
+
+.timelineAwardInput {
+  @apply neo-pressed;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  color: var(--foreground);
+}
+.timelineAwardInput::placeholder {
+  color: var(--muted);
+}
+
 

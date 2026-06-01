@@ -133,8 +133,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </aside>
 
       {/* Main Content Area */}
-      <main className={`flex-1 min-h-screen py-6 px-4 lg:py-12 lg:pr-8 transition-all duration-500 ease-in-out ${isCollapsed ? 'lg:pl-32' : 'lg:pl-72'}`}>
-        <div className="w-full">
+      <main className={`flex-1 min-w-0 max-w-full min-h-screen pt-20 pb-6 px-4 lg:py-12 lg:pr-8 transition-all duration-500 ease-in-out ${isCollapsed ? 'lg:pl-32' : 'lg:pl-72'}`}>
+        <div className="w-full max-w-full min-w-0">
           {children}
         </div>
       </main>

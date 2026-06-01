@@ -130,30 +130,38 @@ export async function POST(req: NextRequest) {
       voiceMode: false,
     });
 
-    let assistantContent = inference.assistantContent;
     const action = inference.action;
+    let assistantMsg;
 
-    if (!assistantContent.includes('(VAT Chat Local Mode Active)')) {
-      assistantContent += '\n\n(VAT Chat Local Mode Active)';
+    if (inference.dbMessageCreated) {
+      assistantMsg = await prisma.chatMessage.findFirst({
+        where: { roomId, role: 'assistant' },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else {
+      let assistantContent = inference.assistantContent;
+      if (!assistantContent.includes('(VAT Chat Local Mode Active)')) {
+        assistantContent += '\n\n(VAT Chat Local Mode Active)';
+      }
+
+      assistantMsg = await prisma.chatMessage.create({
+        data: {
+          content: assistantContent,
+          role: 'assistant',
+          roomId,
+        },
+      });
+
+      await prisma.chatRoom.update({
+        where: { id: roomId },
+        data: { updatedAt: new Date() },
+      });
     }
 
-    const assistantMsg = await prisma.chatMessage.create({
-      data: {
-        content: assistantContent,
-        role: 'assistant',
-        roomId,
-      },
-    });
-
-    await prisma.chatRoom.update({
-      where: { id: roomId },
-      data: { updatedAt: new Date() },
-    });
-
     let audioBase64 = null;
-    if (!mute) {
+    if (!mute && assistantMsg) {
       try {
-        const ttsContent = assistantContent.replace(/\[\[ACTION:.*?\]\]/g, '').replace(/\(VAT Chat Local Mode Active\)/g, '').trim();
+        const ttsContent = assistantMsg.content.replace(/\[\[ACTION:.*?\]\]/g, '').replace(/\(VAT Chat Local Mode Active\)/g, '').trim();
         const ttsFormData = new FormData();
         ttsFormData.append('text', ttsContent);
 
