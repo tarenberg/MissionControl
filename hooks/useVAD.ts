@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+// @ts-ignore
 import { MicVAD, RealTimeVADOptions } from '@ricky0123/vad-web';
 
 interface UseVADOptions {
@@ -45,7 +46,7 @@ export function useVAD(options: UseVADOptions = {}) {
           onSpeakingRef.current?.(true);
           onSpeechStartRef.current?.();
         },
-        onSpeechEnd: (audio) => {
+        onSpeechEnd: (audio: Float32Array) => {
           console.log('VAD: Speech ended');
           setIsSpeakingState(false);
           onSpeakingRef.current?.(false);

@@ -321,7 +321,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="p-8 bg-neo-bg min-h-screen transition-colors duration-300">
-      <div className="flex justify-between items-center mb-12 ml-4">
+      <div className="flex flex-col md:flex-row justify-between md:items-center mb-12 ml-4">
         <div>
           <h1 className="text-gray-800 dark:text-gray-200 font-black tracking-tighter text-4xl mb-2 drop-shadow-sm uppercase">Projects</h1>
           <div className="flex items-center gap-3">
@@ -331,21 +331,23 @@ export default function ProjectsPage() {
           </div>
         </div>
         
-        <div className="flex gap-4">
-          {activePorts.length > 0 && (
-            <div className="neo-pressed px-4 py-2 rounded-2xl flex items-center gap-3">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-              <span className="text-[10px] font-black text-green-700 dark:text-green-500 uppercase tracking-widest">
-                {activePorts.length} Live {activePorts.length === 1 ? 'Process' : 'Processes'}
-              </span>
-            </div>
-          )}
-          <button
-            onClick={handleAddClick}
-            className="neo-button no-3d px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 active:neo-button-active"
-          >
-            Add Project
-          </button>
+        <div className="flex flex-col md:flex-row gap-4 mt-6 md:mt-0">
+          <div className="flex gap-4">
+            {activePorts.length > 0 && (
+              <div className="neo-pressed px-4 py-2 rounded-2xl flex items-center gap-3">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+                <span className="text-[10px] font-black text-green-700 dark:text-green-500 uppercase tracking-widest">
+                  {activePorts.length} Live {activePorts.length === 1 ? 'Process' : 'Processes'}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={handleAddClick}
+              className="neo-button no-3d px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 active:neo-button-active"
+            >
+              Add Project
+            </button>
+          </div>
         </div>
       </div>
 

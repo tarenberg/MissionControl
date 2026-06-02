@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import JSZip from 'jszip';
 import {
   RefreshCw,
@@ -29,7 +29,10 @@ import {
   Rocket,
   Download,
   Copy,
-  Camera
+  Clipboard,
+  Camera,
+  Award,
+  Trophy
 } from 'lucide-react';
 import styles from './ArtTrackerDashboard.module.css';
 
@@ -51,8 +54,22 @@ interface Artwork {
   location: string; // Maps to 'description' in DB
   price?: number;
   imageUrl?: string;
+  exhibitions: Exhibition[];
   _available?: number;
   _originalPriceString?: string;
+}
+
+interface Exhibition {
+  deadlineId: number;
+  showTitle: string;
+  location: string;
+  dueDate: string;
+  showStart: string;
+  showEnd: string;
+  returnDate: string;
+  fee: string;
+  status: 'Pending' | 'Accepted' | 'Rejected';
+  award: string | null;
 }
 
 interface Cost {
@@ -79,7 +96,7 @@ interface Deadline {
   location?: string;
   fee?: string;
   status?: string;
-  submittedArtworks?: {id: number, title: string, status: 'Pending' | 'Accepted' | 'Rejected', imageUrl: string}[];
+  submittedArtworks?: {id: number, title: string, status?: string, award?: string, imageUrl: string}[];
 }
 
 interface Show {
@@ -300,26 +317,56 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
       if (isInSpan) {
         const showColor = getShowColor(dl.title);
-        const artNames = dl.submittedArtworks && dl.submittedArtworks.length > 0
-          ? dl.submittedArtworks.map(art => art.title)
-          : [`[ENTRY] ${dl.title}`];
 
-        artNames.forEach(name => {
-          entries.push({
-            artName: name,
-            showTitle: dl.title,
-            status: dl.submittedArtworks?.find(a => a.title === name)?.status || 'Pending',
-            fullDeadline: dl,
-            color: showColor,
-            isPlaceholder: !dl.submittedArtworks?.length,
-            eventType: isDeadline ? 'deadline' :
-                       isShip ? 'ship' :
-                       isReceipt ? 'receipt' :
-                       isStart ? 'start' :
-                       isEnd ? 'end' :
-                       isReturn ? 'return' : 'span'
+        if (dl.submittedArtworks && dl.submittedArtworks.length > 0) {
+          dl.submittedArtworks.forEach(art => {
+            const status = art.status || 'Pending';
+            
+            if (status === 'Accepted') {
+              // Accepted artwork: show full logistics span and specific events
+              entries.push({
+                artName: art.title,
+                showTitle: dl.title,
+                status: status,
+                fullDeadline: dl,
+                color: showColor,
+                isPlaceholder: false,
+                eventType: isDeadline ? 'deadline' :
+                           isShip ? 'ship' :
+                           isReceipt ? 'receipt' :
+                           isStart ? 'start' :
+                           isEnd ? 'end' :
+                           isReturn ? 'return' : 'span'
+              });
+            } else {
+              // Submitted but not accepted: ONLY show the submission deadline
+              if (isDeadline) {
+                entries.push({
+                  artName: art.title,
+                  showTitle: dl.title,
+                  status: status,
+                  fullDeadline: dl,
+                  color: showColor,
+                  isPlaceholder: false,
+                  eventType: 'deadline'
+                });
+              }
+            }
           });
-        });
+        } else {
+          // Placeholder show (no artworks submitted yet) - only show the deadline
+          if (isDeadline) {
+            entries.push({
+              artName: `[ENTRY] ${dl.title}`,
+              showTitle: dl.title,
+              status: 'Pending',
+              fullDeadline: dl,
+              color: showColor,
+              isPlaceholder: true,
+              eventType: 'deadline'
+            });
+          }
+        }
       }
     });
 
@@ -382,32 +429,37 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
   // Modal State - Artworks
   const [isArtModalOpen, setIsArtModalOpen] = useState(false);
+  const [artModalTab, setArtModalTab] = useState<'info' | 'history'>('info');
   const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
   const [isArtworkSelectionPanelOpen, setIsArtworkSelectionPanelOpen] = useState(false);
   const [activeSubmissionDeadline, setActiveSubmissionDeadline] = useState<Deadline | null>(null);
   const [isAnalyzingProspectus, setIsAnalyzingProspectus] = useState(false);
   const [isPackaging, setIsPackaging] = useState(false);
   const [prospectusData, setProspectusData] = useState<any>(null);
+  const [showPasteInput, setShowPasteInput] = useState(false);
+  const [pastedProspectus, setPastedProspectus] = useState('');
 
   const handleStartSubmission = async (deadline: Deadline) => {
     setActiveSubmissionDeadline(deadline);
     setArtSearchInModal('');
     setIsSubmissionModalOpen(true);
+    setShowPasteInput(false);
+    setPastedProspectus('');
     if (deadline.link) {
       analyzeProspectus(deadline.link);
     }
   };
 
-  const analyzeProspectus = async (url: string, force: boolean = false) => {
-    if (!url) return;
+  const analyzeProspectus = async (url: string, force: boolean = false, pastedText?: string) => {
+    if (!url && !pastedText) return;
 
     // Guard: if we already have this data and are just re-checking/updating, don't clear it
-    const isSameUrl = prospectusData?.url === url;
+    const isSameUrl = url ? prospectusData?.url === url : false;
 
-    console.log(`[SubmissionAssistant] Analyzing: ${url} (Same URL: ${isSameUrl}, Force: ${force})`);
+    console.log(`[SubmissionAssistant] Analyzing: ${url || 'pasted text'} (Same URL: ${isSameUrl}, Force: ${force})`);
 
     setIsAnalyzingProspectus(true);
-    if (!isSameUrl || force) {
+    if (!isSameUrl || force || pastedText) {
       setProspectusData(null);
     }
 
@@ -415,7 +467,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
       const response = await fetch('/api/analyze-prospectus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, force })
+        body: JSON.stringify({ url, force, pastedText })
       });
 
       if (!response.ok) {
@@ -453,6 +505,11 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
             if (checkData.status === 'complete' || checkData.fees || checkData.mediums) {
               console.log(`[SubmissionAssistant] Analysis complete after ${attempts}s.`);
               setProspectusData({ ...checkData, url });
+              setIsAnalyzingProspectus(false);
+              clearInterval(poll);
+            } else if (checkData.status === 'failed' || checkData.error) {
+              console.log(`[SubmissionAssistant] Analysis failed: ${checkData.error}`);
+              setProspectusData({ error: checkData.error || 'Failed to analyze prospectus.', url });
               setIsAnalyzingProspectus(false);
               clearInterval(poll);
             } else if (attempts > 120) {
@@ -605,6 +662,27 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
   const [enterConfirmationNum, setEnterConfirmationNum] = useState('');
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isWebsiteSyncing, setIsWebsiteSyncing] = useState(false);
+
+  const handleSyncWebsite = async () => {
+    setIsWebsiteSyncing(true);
+    try {
+      const response = await fetch('/api/sync-website', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert("Website artwork sync complete! Changes are pushing to looselytwisted.com.");
+      } else {
+        alert(`Sync failed: ${data.message || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`Sync error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsWebsiteSyncing(false);
+    }
+  };
 
   // Scan Tool State
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -708,6 +786,65 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
       }
     } catch (err) {
       console.error('Error toggling artwork link:', err);
+    }
+  };
+
+  const handleUpdateExhibitionStatus = async (deadlineId: number, status: 'Pending' | 'Accepted' | 'Rejected', award: string | null) => {
+    if (!editingArtworkId) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/deadlines.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_submission',
+          deadlineId,
+          artworkId: editingArtworkId,
+          status,
+          award
+        })
+      });
+
+      if (res.ok) {
+        // Update local artwork in the main list
+        const updatedExhibitions = (newArtwork.exhibitions || []).map(ex => 
+          ex.deadlineId === deadlineId ? { ...ex, status, award } : ex
+        );
+        const updatedArt = { ...newArtwork, exhibitions: updatedExhibitions };
+        setNewArtwork(updatedArt);
+        setArtworks(prev => prev.map(art => art.id === editingArtworkId ? { ...art, ...updatedArt } as Artwork : art));
+
+        // Prompt if status is "Accepted"
+        if (status === 'Accepted') {
+          const autoUpdate = window.confirm(`"${newArtwork.title}" has been Accepted into the show!\n\nWould you like to automatically update its primary status to "Accepted" in the tracker?`);
+          if (autoUpdate) {
+            // Update artwork's main status to 'Accepted'
+            const savedArt = { ...updatedArt, status: 'Accepted' as any };
+            setNewArtwork(savedArt);
+            setArtworks(prev => prev.map(art => art.id === editingArtworkId ? { ...art, ...savedArt } as Artwork : art));
+            
+            // Call API to save artwork changes
+            await fetch(`${API_BASE_URL}/artworks.php`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: editingArtworkId,
+                title: savedArt.title,
+                medium: savedArt.medium,
+                dimensions: savedArt.dimensions,
+                price: savedArt.price,
+                imageUrl: savedArt.imageUrl,
+                status: 'Accepted',
+                location: savedArt.location
+              })
+            });
+          }
+        }
+        fetchDeadlines();
+      } else {
+        console.error('Failed to update exhibition status');
+      }
+    } catch (err) {
+      console.error('Error updating exhibition status:', err);
     }
   };
 
@@ -997,6 +1134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
   const openEditArtwork = (art: Artwork) => {
     setNewArtwork(art);
     setEditingArtworkId(art.id);
+    setArtModalTab('info');
     setIsArtModalOpen(true);
   };
 
@@ -1045,6 +1183,15 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
         fetchDeadlines(); 
         setIsAddDeadlineOpen(false); 
         setEditingDeadlineId(null); 
+        
+        // Update calendar view to the saved/edited deadline's month
+        if (payload.date) {
+          const parsedDate = new Date(payload.date);
+          if (!isNaN(parsedDate.getTime())) {
+            setCurrentCalendarDate(parsedDate);
+          }
+        }
+
         setNewDeadline({ 
           title: '', 
           date: new Date().toISOString().split('T')[0], 
@@ -1295,6 +1442,47 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
     }
   };
 
+  // Calculate exhibition statistics
+  const { totalSubmissions, acceptedSubmissions, rejectedSubmissions, pendingSubmissions, awardsWon, acceptanceRate } = useMemo(() => {
+    let total = 0;
+    let accepted = 0;
+    let rejected = 0;
+    let pending = 0;
+    let awards = 0;
+
+    deadlines.forEach(d => {
+      if (d.submittedArtworks && Array.isArray(d.submittedArtworks)) {
+        d.submittedArtworks.forEach(art => {
+          total++;
+          const status = art.status ? art.status.trim() : 'Pending';
+          if (status === 'Accepted') {
+            accepted++;
+          } else if (status === 'Rejected') {
+            rejected++;
+          } else {
+            pending++;
+          }
+
+          if (art.award && art.award.trim() !== '') {
+            awards++;
+          }
+        });
+      }
+    });
+
+    const decided = accepted + rejected;
+    const rate = decided > 0 ? (accepted / decided) * 100 : 0;
+
+    return {
+      totalSubmissions: total,
+      acceptedSubmissions: accepted,
+      rejectedSubmissions: rejected,
+      pendingSubmissions: pending,
+      awardsWon: awards,
+      acceptanceRate: rate
+    };
+  }, [deadlines]);
+
   const formatShortDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return `${d.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${d.getDate().toString().padStart(2, '0')}`;
@@ -1308,6 +1496,16 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
           <div className={styles.headerStatus}>
             <span>MySQL: <span className={styles.statusOk}>CONNECTED</span></span>
           </div>
+          <button 
+            onClick={handleSyncWebsite}
+            disabled={isWebsiteSyncing}
+            className="neo-button no-3d px-3 py-1 rounded-xl text-gray-500 hover:text-blue-500 active:neo-button-active transition-all flex items-center gap-1.5"
+            style={{ fontSize: '0.65em', height: '24px' }}
+            title="Sync Artworks to looselytwisted.com"
+          >
+            <span>🎨</span>
+            <span>{isWebsiteSyncing ? 'Syncing...' : 'Sync Website'}</span>
+          </button>
         </div>
 
         <nav className={styles.navBar}>
@@ -2020,7 +2218,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
               >
                 <Camera size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Studio Scan
               </button>
-              <button className={styles.actionButton} style={{ flex: 1, padding: '10px', fontSize: '1em' }} onClick={() => { setEditingArtworkId(null); setNewArtwork({ title: '', medium: '', status: 'In Studio', price: 0, location: '', dimensions: '', imageUrl: '' }); setIsArtModalOpen(true); }} title="Add a new artwork to your inventory">
+              <button className={styles.actionButton} style={{ flex: 1, padding: '10px', fontSize: '1em' }} onClick={() => { setEditingArtworkId(null); setNewArtwork({ title: '', medium: '', status: 'In Studio', price: 0, location: '', dimensions: '', imageUrl: '', exhibitions: [] }); setArtModalTab('info'); setIsArtModalOpen(true); }} title="Add a new artwork to your inventory">
                 + Add Artwork
               </button>
             </div>
@@ -2093,49 +2291,175 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
             </div>
           </div>
         </section>
+
+        <section id="exhibitions-stats" className={styles.roiPanel}>
+          <h2 className={styles.panelTitle}>Exhibition Performance & Logistics {'\uD83C\uDFC6'}</h2>
+          <div className={styles.roiGrid}>
+            <div className={styles.roiCard} title="Total entries submitted to art shows (Pending, Accepted, Rejected)">
+              <h3>Total Submissions</h3>
+              <p className={styles.roiValue} style={{color: '#ffffff'}}>{totalSubmissions}</p>
+              <span className={styles.roiSubtext}>
+                {acceptedSubmissions} Accepted / {rejectedSubmissions} Rejected / {pendingSubmissions} Pending
+              </span>
+            </div>
+            <div className={styles.roiCard} title="Acceptance rate based on historic decisions (Accepted vs Rejected)">
+              <h3>Acceptance Rate</h3>
+              <p className={styles.roiValue} style={{color: '#f59e0b'}}>{acceptanceRate.toFixed(1)}%</p>
+              <span className={styles.roiSubtext}>
+                Excluding pending decisions
+              </span>
+            </div>
+            <div className={styles.roiCard} title="Special honors and awards won for submitted works">
+              <h3>Awards & Honors</h3>
+              <p className={styles.roiValue} style={{color: '#a855f7'}}>{awardsWon}</p>
+              <span className={styles.roiSubtext}>
+                Distinct exhibition awards
+              </span>
+            </div>
+          </div>
+        </section>
         </div>
       </main>
 
       {/* MODALS */}
       {isArtModalOpen && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+          <div className={styles.modalContent} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <h2>{editingArtworkId ? 'Edit Artwork' : 'Add New Artwork'}</h2>
-            <form onSubmit={handleSaveArtwork} className={styles.modalForm}>
-              <div className={styles.formGroup}>
-                <label htmlFor="art-title">Title</label>
-                <input id="art-title" name="art-title" type="text" value={newArtwork.title} onChange={e => setNewArtwork({...newArtwork, title: e.target.value})} required title="Enter the title of the artwork" />
+            
+            {editingArtworkId && (
+              <div className={styles.tabContainer}>
+                <button
+                  type="button"
+                  className={`${styles.tabButton} ${artModalTab === 'info' ? styles.tabButtonActive : ''}`}
+                  onClick={() => setArtModalTab('info')}
+                >
+                  Details
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.tabButton} ${artModalTab === 'history' ? styles.tabButtonActive : ''}`}
+                  onClick={() => setArtModalTab('history')}
+                >
+                  Exhibition History
+                </button>
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="art-medium">Medium</label>
-                <input id="art-medium" name="art-medium" type="text" value={newArtwork.medium} onChange={e => setNewArtwork({...newArtwork, medium: e.target.value})} required title="Enter the materials used (e.g. Oil on Canvas)" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            )}
+
+            {(!editingArtworkId || artModalTab === 'info') ? (
+              <form onSubmit={handleSaveArtwork} className={styles.modalForm}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="art-price">Price ($)</label>
-                  <input id="art-price" name="art-price" type="number" value={newArtwork.price} onChange={e => setNewArtwork({...newArtwork, price: Number(e.target.value)})} required title="Enter the retail price in USD" />
+                  <label htmlFor="art-title">Title</label>
+                  <input id="art-title" name="art-title" type="text" value={newArtwork.title} onChange={e => setNewArtwork({...newArtwork, title: e.target.value})} required title="Enter the title of the artwork" />
                 </div>
                 <div className={styles.formGroup}>
-                  <label htmlFor="art-status">Status</label>
-                  <select id="art-status" name="art-status" value={newArtwork.status} onChange={e => setNewArtwork({...newArtwork, status: e.target.value as any})} title="Select the current availability of the work">
-                    <option value="In Studio">In Studio</option>
-                    <option value="Exhibited">Exhibited</option>
-                    <option value="Sold">Sold</option>
-                    <option value="Archived">Archived</option>
-                    <option value="Committed">Committed</option>
-                    <option value="Accepted">Accepted</option>
-                  </select>
+                  <label htmlFor="art-medium">Medium</label>
+                  <input id="art-medium" name="art-medium" type="text" value={newArtwork.medium} onChange={e => setNewArtwork({...newArtwork, medium: e.target.value})} required title="Enter the materials used (e.g. Oil on Canvas)" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="art-price">Price ($)</label>
+                    <input id="art-price" name="art-price" type="number" value={newArtwork.price} onChange={e => setNewArtwork({...newArtwork, price: Number(e.target.value)})} required title="Enter the retail price in USD" />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="art-status">Status</label>
+                    <select id="art-status" name="art-status" value={newArtwork.status} onChange={e => setNewArtwork({...newArtwork, status: e.target.value as any})} title="Select the current availability of the work">
+                      <option value="In Studio">In Studio</option>
+                      <option value="Exhibited">Exhibited</option>
+                      <option value="Sold">Sold</option>
+                      <option value="Archived">Archived</option>
+                      <option value="Committed">Committed</option>
+                      <option value="Accepted">Accepted</option>
+                    </select>
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="art-image">Image URL / Path</label>
+                  <input id="art-image" name="art-image" type="text" value={newArtwork.imageUrl} onChange={e => setNewArtwork({...newArtwork, imageUrl: e.target.value})} placeholder="e.g. /images/work1.jpg" title="Enter the path to the artwork's image file" />
+                </div>
+                <div className={styles.modalActions}>
+                  <button type="submit" className={styles.submitButton}>Save Artwork</button>
+                  <button type="button" onClick={() => setIsArtModalOpen(false)} className={styles.cancelButton}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {!newArtwork.exhibitions || newArtwork.exhibitions.length === 0 ? (
+                  <div style={{ padding: '30px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.95em' }}>
+                    No exhibition entries for this artwork yet. Submit this artwork to a show via the Deadlines section to see it here!
+                  </div>
+                ) : (
+                  <div className={styles.timelineContainer}>
+                    {newArtwork.exhibitions.map((ex) => (
+                      <div key={ex.deadlineId} className={styles.timelineItem}>
+                        <div className={styles.timelineIcon}>
+                          {ex.status === 'Accepted' ? (
+                            <Trophy style={{ color: '#22c55e' }} />
+                          ) : (
+                            <Calendar />
+                          )}
+                        </div>
+                        <div className={styles.timelineContent}>
+                          <div className={styles.timelineHeader}>
+                            <span className={styles.timelineTitle}>{ex.showTitle}</span>
+                            <select
+                              value={ex.status || 'Pending'}
+                              onChange={(e) => {
+                                const newStatus = e.target.value as 'Pending' | 'Accepted' | 'Rejected';
+                                handleUpdateExhibitionStatus(ex.deadlineId, newStatus, ex.award);
+                              }}
+                              className={`${styles.timelinePill} ${
+                                ex.status === 'Accepted' ? styles.timelinePillAccepted :
+                                ex.status === 'Rejected' ? styles.timelinePillRejected :
+                                styles.timelinePillPending
+                              }`}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Accepted">Accepted</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                          </div>
+                          
+                          <div className={styles.timelineMeta}>
+                            {ex.location && <span>📍 {ex.location}</span>}
+                            {ex.dueDate && <span>📅 Due: {ex.dueDate}</span>}
+                            {ex.fee && Number(ex.fee) > 0 && <span>💰 Fee: ${ex.fee}</span>}
+                            {(ex.showStart || ex.showEnd) && (
+                              <span>
+                                🏛️ Show: {ex.showStart || 'N/A'} {ex.showEnd ? `to ${ex.showEnd}` : ''}
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                            <Award size={16} style={{ color: 'var(--muted)' }} />
+                            <input
+                              type="text"
+                              className={styles.timelineAwardInput}
+                              value={ex.award || ''}
+                              placeholder="Award / Notes (e.g. Best in Show, First Place)"
+                              onChange={(e) => {
+                                const updatedExs = (newArtwork.exhibitions || []).map(item => 
+                                  item.deadlineId === ex.deadlineId ? { ...item, award: e.target.value } : item
+                                );
+                                setNewArtwork({ ...newArtwork, exhibitions: updatedExs });
+                              }}
+                              onBlur={(e) => {
+                                handleUpdateExhibitionStatus(ex.deadlineId, ex.status, e.target.value);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className={styles.modalActions} style={{ marginTop: '20px', borderTop: '1px solid var(--neo-border-medium)', paddingTop: '15px' }}>
+                  <button type="button" onClick={() => setIsArtModalOpen(false)} className={styles.cancelButton}>Close</button>
                 </div>
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="art-image">Image URL / Path</label>
-                <input id="art-image" name="art-image" type="text" value={newArtwork.imageUrl} onChange={e => setNewArtwork({...newArtwork, imageUrl: e.target.value})} placeholder="e.g. /images/work1.jpg" title="Enter the path to the artwork's image file" />
-              </div>
-              <div className={styles.modalActions}>
-                <button type="submit" className={styles.submitButton}>Save Artwork</button>
-                <button type="button" onClick={() => setIsArtModalOpen(false)} className={styles.cancelButton}>Cancel</button>
-              </div>
-            </form>
+            )}
           </div>
         </div>
       )}
@@ -2263,6 +2587,15 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                   >
                     <RefreshCw size={10} className={isAnalyzingProspectus ? 'animate-spin' : ''} />
                   </button>
+                  <button 
+                    onClick={() => setShowPasteInput(!showPasteInput)}
+                    className={styles.editButton}
+                    style={{ padding: '3px 6px', fontSize: '0.65em', marginLeft: '4px' }}
+                    title="Paste prospectus text manually"
+                    disabled={isAnalyzingProspectus}
+                  >
+                    <Clipboard size={10} />
+                  </button>
                 </div>
 
                 {prospectusData && !prospectusData.error ? (
@@ -2380,7 +2713,57 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                       </div>
                     </div>
                   </div>
-                ) : (isAnalyzingProspectus || !prospectusData) ? (
+                ) : showPasteInput ? (
+                <div key="paste-input" style={{ padding: '15px', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ fontSize: '0.95em', fontWeight: 700, margin: '0 0 5px 0', color: 'var(--foreground)' }}>Paste Prospectus Text</p>
+                  <p style={{ fontSize: '0.75em', color: 'var(--muted)', margin: 0, lineHeight: 1.3 }}>Copy the text of the webpage / call-for-artists description and paste it below. Muffin will parse it using Gemini Flash.</p>
+                  <textarea
+                    value={pastedProspectus}
+                    onChange={(e) => setPastedProspectus(e.target.value)}
+                    placeholder="Paste details, deadlines, eligibility criteria, pricing, rules, and exhibition dates here..."
+                    style={{
+                      width: '100%',
+                      flexGrow: 1,
+                      minHeight: '220px',
+                      background: 'rgba(0,0,0,0.15)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      color: 'var(--foreground, white)',
+                      padding: '12px',
+                      fontSize: '0.85em',
+                      fontFamily: 'inherit',
+                      resize: 'none',
+                      outline: 'none',
+                      lineHeight: 1.4
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '5px' }}>
+                    <button
+                      onClick={() => {
+                        setShowPasteInput(false);
+                        setPastedProspectus('');
+                      }}
+                      className={styles.actionButton}
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', margin: 0, padding: '6px 12px', fontSize: '0.8em', width: 'auto' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (pastedProspectus.trim()) {
+                          analyzeProspectus(activeSubmissionDeadline.link || '', true, pastedProspectus);
+                          setShowPasteInput(false);
+                        }
+                      }}
+                      className={styles.actionButton}
+                      style={{ background: 'rgba(96, 165, 250, 0.2)', color: '#60a5fa', border: '1px solid #60a5fa', margin: 0, padding: '6px 12px', fontSize: '0.8em', width: 'auto' }}
+                      disabled={!pastedProspectus.trim()}
+                    >
+                      Analyze Pasted Text
+                    </button>
+                  </div>
+                </div>
+              ) : (isAnalyzingProspectus || !prospectusData) ? (
                 <div key="loading" style={{ textAlign: 'center', padding: '60px', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ fontSize: '3em', marginBottom: '20px' }}>\u2699\ufe0f</div>
                   <p style={{ fontSize: '1.1em', fontWeight: 600 }}>Muffin is reading the prospectus...</p>
@@ -2390,12 +2773,20 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
                 <div key="error" style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
                   <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>\u26a0\ufe0f Analysis Interrupted</p>
                   <p style={{ fontSize: '0.85em', margin: 0 }}>{prospectusData.error}</p>
-                  <button
-                    onClick={() => analyzeProspectus(activeSubmissionDeadline.link!)}
-                    style={{ marginTop: '10px', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: 'white', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8em', cursor: 'pointer' }}
-                  >
-                    Try Again
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                    <button
+                      onClick={() => analyzeProspectus(activeSubmissionDeadline.link!)}
+                      style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8em', cursor: 'pointer' }}
+                    >
+                      Try Again
+                    </button>
+                    <button
+                      onClick={() => setShowPasteInput(true)}
+                      style={{ background: 'rgba(96, 165, 250, 0.2)', border: '1px solid #60a5fa', color: '#60a5fa', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8em', cursor: 'pointer' }}
+                    >
+                      Paste Text Manually
+                    </button>
+                  </div>
                 </div>
               ) : null}
               </div>
@@ -2553,7 +2944,7 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
 
       {enteringShow && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContent} style={{ width: '600px' }}>
+          <div className={styles.modalContent} style={{ width: '600px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Rocket size={24} /> Confirm Entry: {enteringShow.title}
             </h2>

@@ -125,6 +125,7 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -140,6 +141,14 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 130, 246, 0.8);
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* --- Mobile Responsive Layout Fixes --- */

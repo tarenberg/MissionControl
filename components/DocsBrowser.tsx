@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ToastProvider, useToast } from './Toast';
 import {
   listDirectoryContents,
@@ -82,9 +83,12 @@ const renderMarkdown = (markdown: string) => {
 
 const DocsBrowserContent: React.FC = () => {
   const { addToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentPath, setCurrentPath] = useState<string>('/');
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [selectedFileContent, setSelectedFileContent] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
@@ -165,20 +169,19 @@ const DocsBrowserContent: React.FC = () => {
 
   // Define handleItemClick first
   const handleItemClick = async (item: FileSystemItem) => {
-    if (item.isFolder) {
-      setCurrentPath(normalizePath(item.path));
-    } else {
-      setSelectedFileName(item.name);
-      setSelectedFilePath(item.path);
-      try {
-        const content = await getFileContent(item.path);
-        setSelectedFileContent(content);
-        setEditingFileContent(content);
-      } catch (error) {
-        addToast('Failed to load file content.', 'error');
-      }
-    }
+    navigateToPath(item.path);
   };
+
+  const [dirsData, setDirsData] = useState<Record<string, FileSystemItem[]>>({
+    docs: [],
+    artwork: [],
+    submissions: [],
+    memory: [],
+    tasks: [],
+    scripts: [],
+    skills: [],
+    root: [],
+  });
 
   // Define fetchContents
   const fetchContents = async (isInitializing = false) => {
@@ -190,13 +193,44 @@ const DocsBrowserContent: React.FC = () => {
     }
     setIsSearching(false);
     try {
-      const contents = await listDirectoryContents(currentPath === '/' ? '/' : currentPath);
-      const sorted = contents.sort((a, b) => {
-        if (a.isFolder && !b.isFolder) return -1;
-        if (!a.isFolder && b.isFolder) return 1;
-        return a.name.localeCompare(b.name);
-      });
-      setItems(sorted);
+      if (currentPath === '/') {
+        const [docsContents, artworkContents, submissionsContents, memoryContents, tasksContents, scriptsContents, skillsContents, rootContents] = await Promise.all([
+          listDirectoryContents('docs'),
+          listDirectoryContents('docs/Artwork'),
+          listDirectoryContents('docs/Submissions'),
+          listDirectoryContents('memory'),
+          listDirectoryContents('tasks'),
+          listDirectoryContents('scripts'),
+          listDirectoryContents('skills'),
+          listDirectoryContents('/'),
+        ]);
+        
+        const sortFn = (a: FileSystemItem, b: FileSystemItem) => {
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          return a.name.localeCompare(b.name);
+        };
+
+        setDirsData({
+          docs: docsContents.filter(item => item.name !== 'Artwork' && item.name !== 'Submissions').sort(sortFn),
+          artwork: artworkContents.sort(sortFn),
+          submissions: submissionsContents.sort(sortFn),
+          memory: memoryContents.sort(sortFn),
+          tasks: tasksContents.sort(sortFn),
+          scripts: scriptsContents.sort(sortFn),
+          skills: skillsContents.sort(sortFn),
+          root: rootContents.filter(item => !item.isFolder).sort(sortFn),
+        });
+        setItems([]);
+      } else {
+        const contents = await listDirectoryContents(currentPath === '/' ? '/' : currentPath);
+        const sorted = contents.sort((a, b) => {
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setItems(sorted);
+      }
     } catch (error) {
         addToast('Failed to load directory contents.', 'error');
     }
@@ -223,42 +257,57 @@ const DocsBrowserContent: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    // Check if we are currently initializing from URL to avoid clearing state
-    const params = new URLSearchParams(window.location.search);
-    const isInitializing = !!params.get('path');
-    fetchContents(isInitializing);
-  }, [currentPath]);
+  const navigateToPath = (newPath: string) => {
+    const cleanPath = normalizePath(newPath);
+    if (cleanPath === '/') {
+      router.push('/docs');
+    } else {
+      router.push(`/docs?path=${encodeURIComponent(cleanPath)}`);
+    }
+  };
 
-  // Initialize path from URL if present - Move to after function definitions
+  // Synchronize currentPath and file selection state with URL search params
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const pathParam = params.get('path');
+    const pathParam = searchParams.get('path');
     if (pathParam) {
       const normalized = normalizePath(pathParam);
-      // Check if it's likely a file (has an extension)
       if (normalized.includes('.')) {
         const parent = getParentPath(normalized);
         setCurrentPath(parent);
-        // Trigger the click logic after a short delay to ensure state is ready
-        setTimeout(() => {
-          handleItemClick({
-            name: normalized.split('/').pop() || '',
-            isFolder: false,
-            path: normalized
-          });
-        }, 100);
+        
+        // Load the file content
+        setSelectedFileName(normalized.split('/').pop() || '');
+        setSelectedFilePath(normalized);
+        getFileContent(normalized).then(content => {
+          setSelectedFileContent(content);
+          setEditingFileContent(content);
+        }).catch(err => {
+          addToast('Failed to load file content.', 'error');
+        });
       } else {
         setCurrentPath(normalized);
+        setSelectedFileContent(null);
+        setSelectedFileName(null);
+        setSelectedFilePath(null);
       }
+    } else {
+      setCurrentPath('/');
+      setSelectedFileContent(null);
+      setSelectedFileName(null);
+      setSelectedFilePath(null);
     }
-  }, []);
+  }, [searchParams]);
+
+  // Fetch directory contents whenever currentPath changes
+  useEffect(() => {
+    fetchContents();
+  }, [currentPath]);
 
   const handleBackClick = () => {
     setSelectedFileContent(null);
     setSelectedFileName(null);
     setSelectedFilePath(null);
-    setCurrentPath(getParentPath(currentPath));
+    navigateToPath(getParentPath(currentPath));
   };
 
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
@@ -426,6 +475,9 @@ const DocsBrowserContent: React.FC = () => {
 
       <div className="flex items-center justify-between mb-6 bg-background p-4 rounded-2xl border border-border-custom transition-all">
         <div className="flex items-center overflow-hidden flex-grow mr-4">
+          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden mr-3 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex-shrink-0 no-3d transition-colors">
+            <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
           {currentPath !== '/' && !isSearching && (
             <button onClick={handleBackClick} className="mr-3 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex-shrink-0 no-3d transition-colors">
               <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -440,7 +492,7 @@ const DocsBrowserContent: React.FC = () => {
           ) : (
             <nav className="flex text-muted font-mono text-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
               <button 
-                onClick={() => setCurrentPath('/')}
+                onClick={() => navigateToPath('/')}
                 className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline no-3d transition-colors"
               >
                 workspace
@@ -451,7 +503,7 @@ const DocsBrowserContent: React.FC = () => {
                   <React.Fragment key={path}>
                     <span className="mx-2 text-border-custom">/</span>
                     <button 
-                      onClick={() => setCurrentPath(path)}
+                      onClick={() => navigateToPath(path)}
                       className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline no-3d transition-colors"
                     >
                       {part}
@@ -495,15 +547,85 @@ const DocsBrowserContent: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex gap-8 flex-1 min-h-0 overflow-hidden">
-        <div className="w-1/3 overflow-y-auto pr-4 scrollbar-hide border-r border-border-custom">
-          {loading ? (
-            <div className="flex flex-col gap-4">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="h-12 bg-background animate-pulse rounded-2xl border border-border-custom"></div>
-              ))}
-            </div>
-          ) : (
+      {/* 5 categories / Directory grids at root, or standard list inside subfolders */}
+      <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full h-full overflow-y-auto pb-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-64 bg-background animate-pulse rounded-[32px] border border-border-custom"></div>
+            ))}
+          </div>
+        ) : currentPath === '/' && !isSearching ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full h-full overflow-y-auto pb-6 custom-scrollbar">
+            {[
+              { id: 'docs/Artwork', name: 'Artwork', icon: '🎨', data: dirsData.artwork },
+              { id: 'docs/Submissions', name: 'Submissions', icon: '📤', data: dirsData.submissions },
+              { id: 'docs', name: 'Docs Hub', icon: '📚', data: dirsData.docs },
+              { id: 'memory', name: 'Daily Logs & Reports', icon: '📅', data: dirsData.memory },
+              { id: 'tasks', name: 'Tasks & Lessons', icon: '🛠️', data: dirsData.tasks },
+              { id: 'scripts', name: 'Automation Scripts', icon: '📜', data: dirsData.scripts },
+              { id: 'skills', name: 'Agent Skills', icon: '🧪', data: dirsData.skills },
+              { id: '', name: 'Core Index', icon: '🔑', data: dirsData.root, isRoot: true },
+            ].map(category => (
+              <div 
+                key={category.name} 
+                className="bg-card rounded-[32px] border border-border-custom p-6 shadow-md flex flex-col h-[320px] hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+              >
+                <div className="flex justify-between items-center mb-4 border-b border-border-custom pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{category.icon}</span>
+                    <span className="font-black text-xs uppercase tracking-wider text-foreground">{category.name}</span>
+                  </div>
+                  {!category.isRoot && (
+                    <button 
+                      onClick={() => navigateToPath(category.id)}
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-muted hover:text-blue-500 transition-colors"
+                      title={`Open ${category.name}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                  )}
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {category.data.map(item => (
+                    <div 
+                      key={item.path}
+                      onClick={() => handleItemClick(item)}
+                      className="group flex items-center justify-between p-3 rounded-xl border border-border-custom bg-background/50 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer transition-all"
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden mr-2">
+                        <span className="text-sm flex-shrink-0">{getItemIcon(item)}</span>
+                        <span className="text-xs font-bold truncate text-foreground group-hover:text-blue-500">{item.name}</span>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setShowMoveModal(item); }}
+                          className="p-1 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded text-muted transition-colors"
+                          title="Move"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
+                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-muted hover:text-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {category.data.length === 0 && (
+                    <div className="py-12 text-center text-muted italic text-xs">
+                      No files inside
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-card rounded-[32px] border border-border-custom p-6 shadow-md flex-1 overflow-y-auto custom-scrollbar">
             <div className="flex flex-col gap-2">
               {items.map((item) => (
                 <div 
@@ -545,22 +667,46 @@ const DocsBrowserContent: React.FC = () => {
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        {selectedFilePath && (
-          <div className="flex-1 flex flex-col bg-card/50 rounded-2xl text-foreground border border-border-custom overflow-hidden shadow-inner transition-all duration-300">
+      {/* Slide-out Document Preview Drawer */}
+      {selectedFilePath && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] transition-opacity animate-in fade-in duration-300"
+            onClick={() => {
+              setSelectedFileContent(null);
+              setSelectedFileName(null);
+              setSelectedFilePath(null);
+            }}
+          />
+          {/* Drawer container */}
+          <div className="fixed top-0 right-0 h-full w-full sm:w-[500px] md:w-[600px] z-[80] bg-card border-l border-border-custom shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="flex justify-between items-center p-6 border-b border-border-custom bg-card sticky top-0 z-10">
-              <div className="flex flex-col">
-                <h3 className="text-xl font-black text-foreground leading-tight tracking-tight">{selectedFileName}</h3>
-                <span className="text-[10px] font-bold text-muted uppercase tracking-widest truncate max-w-md">{selectedFilePath}</span>
+              <div className="flex flex-col overflow-hidden mr-4">
+                <h3 className="text-xl font-black text-foreground leading-tight tracking-tight truncate">{selectedFileName}</h3>
+                <span className="text-[10px] font-bold text-muted uppercase tracking-widest truncate">{selectedFilePath}</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button 
                   onClick={() => setShowEditModal(true)} 
-                  className="bg-card border border-border-custom hover:bg-gray-100 dark:hover:bg-zinc-800 text-foreground text-[10px] font-black uppercase tracking-widest px-6 py-2.5 rounded-2xl transition-all active:scale-95"
+                  className="bg-card border border-border-custom hover:bg-gray-100 dark:hover:bg-zinc-800 text-foreground text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95"
                 >
-                  Edit Document
+                  Edit
+                </button>
+                <button 
+                  onClick={() => {
+                    setSelectedFileContent(null);
+                    setSelectedFileName(null);
+                    setSelectedFilePath(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-muted transition-colors"
+                  title="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
             </div>
@@ -571,22 +717,15 @@ const DocsBrowserContent: React.FC = () => {
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(selectedFileContent) }}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-muted gap-4">
+                <div className="flex flex-col items-center justify-center h-full text-muted gap-4">
                   <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   <div className="italic text-sm">Reading document...</div>
                 </div>
               )}
             </div>
           </div>
-        )}
-
-        {!selectedFilePath && (
-          <div className="flex-1 flex flex-col items-center justify-center bg-background rounded-2xl text-muted border border-dashed border-border-custom">
-            <span className="text-4xl mb-4">📂</span>
-            <p className="text-sm font-bold uppercase tracking-widest">Select a document to preview</p>
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-6">

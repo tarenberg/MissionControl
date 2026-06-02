@@ -1,6 +1,13 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '@/lib/prisma';
 import { getPersonaPrompt } from '@/lib/chatPersona';
+import { exec, spawn } from 'child_process';
+import { promisify } from 'util';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
+const execPromise = promisify(exec);
 
 export interface ChatAction {
   type: string;
@@ -10,7 +17,12 @@ export interface ChatAction {
 export interface ChatInferenceResult {
   assistantContent: string;
   action: ChatAction | null;
-  engine: 'ollama' | 'gemini';
+  engine: 'ollama' | 'gemini' | 'acpx';
+  dbMessageCreated?: boolean;
+}
+
+function stripAnsi(str: string): string {
+  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
 }
 
 interface BuildContextOptions {
@@ -118,6 +130,25 @@ export function extractAction(assistantContent: string): ChatAction | null {
   return null;
 }
 
+function detectAgent(roomName: string): string | null {
+  const name = roomName.toLowerCase();
+  
+  if (name.includes('vibecoding') || name.includes('vibe coding')) {
+    return 'codex';
+  }
+  
+  if (name.includes('jason')) return 'jason';
+  if (name.includes('claude code') || name === 'claude' || name.includes('claude-code')) return 'claude';
+  if (name.includes('codex')) return 'codex';
+  if (name.includes('copilot')) return 'copilot';
+  if (name.includes('cursor')) return 'cursor';
+  if (name.includes('pi')) return 'pi';
+  if (name.includes('gemini')) return 'gemini';
+  if (name.includes('openclaw')) return 'openclaw';
+  
+  return null;
+}
+
 export async function runInference(params: {
   roomId: string;
   roomName: string;
@@ -125,12 +156,156 @@ export async function runInference(params: {
   voiceMode?: boolean;
 }): Promise<ChatInferenceResult> {
   const { roomId, roomName, userContent, voiceMode = false } = params;
+
+  // 1. Check if the room name designates an ACPX coding agent (for vibecoding)
+  const agentId = detectAgent(roomName);
+  if (agentId) {
+    const sessionName = `vat-${roomId.slice(-12)}`;
+    const workspacePath = `C:\\Users\\tberg\\Documents\\_PROJECTS`;
+    const tempDir = os.tmpdir();
+    const tempFilePath = path.join(tempDir, `vat-prompt-${roomId}.txt`);
+    
+    try {
+      await fs.promises.mkdir(tempDir, { recursive: true });
+      
+      const systemInstruction = `[SYSTEM INSTRUCTION: You are a coding assistant running in the root workspace directory: C:\\Users\\tberg\\Documents\\_PROJECTS
+The primary project "MissionControl" is located in the "MissionControl" subdirectory (C:\\Users\\tberg\\Documents\\_PROJECTS\\MissionControl).
+When asked to inspect, read, or edit files in "MissionControl" or "Mission Control" (or any files like components/, app/, etc. which are part of MissionControl), you MUST navigate into or reference the "MissionControl" folder first (e.g., run commands or find files under "C:\\Users\\tberg\\Documents\\_PROJECTS\\MissionControl" or "MissionControl/").
+Other projects in the same workspace include ArtTrackerDashboard, AI-Engines, Chronicles, etc.
+Always check and verify file paths before reading or editing.]
+
+User Request: ${userContent}`;
+
+      await fs.promises.writeFile(tempFilePath, systemInstruction, 'utf-8');
+
+      // Ensure the session exists
+      const ensureCmd = `acpx --cwd "${workspacePath}" ${agentId} sessions ensure --name "${sessionName}"`;
+      await execPromise(ensureCmd);
+
+      // Create the initial assistant message in the database so we can stream progress
+      const assistantMsg = await prisma.chatMessage.create({
+        data: {
+          content: `🤖 [VibeCoding] Initiating session for agent "${agentId}"...`,
+          role: 'assistant',
+          roomId,
+        },
+      });
+
+      await prisma.chatRoom.update({
+        where: { id: roomId },
+        data: { updatedAt: new Date() },
+      });
+
+      // Run the prompt using explicit prompt command to exit on complete
+      const args = [
+        '--approve-all',
+        '--format', 'quiet',
+        '--cwd', workspacePath,
+        agentId,
+        'prompt',
+        '-s', sessionName,
+        '-f', tempFilePath
+      ];
+
+      const child = spawn('acpx', args, { shell: true, env: process.env });
+
+      let accumulatedOutput = '';
+      let lastUpdateTs = Date.now();
+      let dbUpdatePromise: Promise<any> = Promise.resolve();
+
+      const updateDb = async (final = false) => {
+        if (!final && Date.now() - lastUpdateTs < 1200) {
+          return;
+        }
+        lastUpdateTs = Date.now();
+
+        await dbUpdatePromise;
+
+        const cleanText = stripAnsi(accumulatedOutput).trim();
+        const displayContent = cleanText || `🤖 [VibeCoding] Agent "${agentId}" running...`;
+
+        dbUpdatePromise = (async () => {
+          try {
+            await prisma.chatMessage.update({
+              where: { id: assistantMsg.id },
+              data: { content: displayContent },
+            });
+            await prisma.chatRoom.update({
+              where: { id: roomId },
+              data: { updatedAt: new Date() },
+            });
+          } catch (e) {
+            console.error('Failed to stream vibe coding progress to DB:', e);
+          }
+        })();
+
+        await dbUpdatePromise;
+      };
+
+      child.stdout.on('data', (chunk) => {
+        accumulatedOutput += chunk.toString();
+        updateDb(false).catch(console.error);
+      });
+
+      child.stderr.on('data', (chunk) => {
+        accumulatedOutput += chunk.toString();
+        updateDb(false).catch(console.error);
+      });
+
+      child.on('error', (err) => {
+        accumulatedOutput += `\nError spawning process: ${err.message}`;
+        updateDb(true).catch(console.error);
+      });
+
+      await new Promise<void>((resolve) => {
+        child.on('close', () => {
+          resolve();
+        });
+      });
+
+      await updateDb(true);
+
+      try {
+        await prisma.agentLog.create({
+          data: {
+            agentId: `vat-chat:acpx:${agentId}`,
+            level: 'info',
+            subsystem: 'vat-chat',
+            message: `room=${roomName} mode=acpx agent=${agentId} chars=${userContent.length}`,
+          },
+        });
+      } catch {}
+
+      return {
+        assistantContent: stripAnsi(accumulatedOutput).trim() || `No output received from ${agentId} agent.`,
+        action: null,
+        engine: 'acpx',
+        dbMessageCreated: true
+      };
+    } catch (err: any) {
+      console.error(`acpx execution failed:`, err);
+      return {
+        assistantContent: `Failed to execute coding action: ${err.message}`,
+        action: null,
+        engine: 'acpx'
+      };
+    } finally {
+      try {
+        if (fs.existsSync(tempFilePath)) {
+          await fs.promises.unlink(tempFilePath);
+        }
+      } catch (unlinkErr) {
+        console.error('Failed to clean up temp file:', unlinkErr);
+      }
+    }
+  }
+
   const systemPrompt = getPersonaPrompt(roomName, voiceMode);
   const conversation = await buildConversationContext({ roomId, userContent });
 
   const userPrompt = `System: ${systemPrompt}\n${conversation}`;
 
-  let engine: 'ollama' | 'gemini' = 'ollama';
+  let engine: 'ollama' | 'gemini' | 'acpx' = 'ollama';
   let assistantContent: string | null = null;
 
   // Gemini-first for hybrid/cloud, local-only when explicitly requested.

@@ -192,6 +192,11 @@ async function fetchJina(url) {
     headers: { 'Accept': 'application/json', 'X-No-Cache': 'true' }
   });
   const text = await response.text();
+  
+  if (text.includes('Cloudflare') || text.includes('Just a moment...') || text.includes('captcha-bypass') || text.includes('Attention Required!')) {
+    throw new Error("Cloudflare block detected. The website is blocking automated scraper. Please copy-paste the prospectus text manually.");
+  }
+
   try {
     const json = JSON.parse(text);
     return json.data?.content || text;
@@ -200,29 +205,42 @@ async function fetchJina(url) {
   }
 }
 
-async function analyzeProspectus(url, requestId) {
+async function analyzeProspectus(url, requestId, pastedTextFile = null) {
   console.log(`Analyzing prospectus with Gemini: ${url}`);
   
   try {
-    let text = await fetchJina(url);
-    
-    // Look for deeper links
-    const linkMatches = text.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g);
-    if (linkMatches) {
-      for (const match of linkMatches) {
-        const linkMatch = match.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
-        if (!linkMatch) continue;
-        const [_, label, link] = linkMatch;
-        const lowerLabel = label?.toLowerCase() || '';
-        const isDeeper = ['prospectus', 'full details', 'guidelines', 'call for entry'].some(k => lowerLabel.includes(k)) || 
-                         link.includes('callforentry.org') || 
-                         link.includes('entrythingy.com');
-                         
-        if (isDeeper) {
-          console.log(`Following deeper link: ${link}`);
-          const deeperText = await fetchJina(link);
-          text = deeperText + "\n\n" + text;
-          break;
+    let text = "";
+    if (pastedTextFile) {
+      const p = path.join(__dirname, '..', pastedTextFile);
+      if (fs.existsSync(p)) {
+        text = fs.readFileSync(p, 'utf8');
+        console.log(`Read pasted text from ${p} (${text.length} characters)`);
+      } else {
+        throw new Error(`Pasted text file not found at ${p}`);
+      }
+    }
+
+    if (!text) {
+      text = await fetchJina(url);
+      
+      // Look for deeper links
+      const linkMatches = text.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g);
+      if (linkMatches) {
+        for (const match of linkMatches) {
+          const linkMatch = match.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
+          if (!linkMatch) continue;
+          const [_, label, link] = linkMatch;
+          const lowerLabel = label?.toLowerCase() || '';
+          const isDeeper = ['prospectus', 'full details', 'guidelines', 'call for entry'].some(k => lowerLabel.includes(k)) || 
+                           link.includes('callforentry.org') || 
+                           link.includes('entrythingy.com');
+                           
+          if (isDeeper) {
+            console.log(`Following deeper link: ${link}`);
+            const deeperText = await fetchJina(link);
+            text = deeperText + "\n\n" + text;
+            break;
+          }
         }
       }
     }
@@ -273,6 +291,8 @@ JSON:`;
     await updateDatabase(analysis, url);
   } catch (err) {
     console.error(`Analysis failed: ${err.message}`);
+    const resultPath = path.join(__dirname, '..', 'data', `prospectus-analysis-${requestId}.json`);
+    fs.writeFileSync(resultPath, JSON.stringify({ error: err.message, status: 'failed' }, null, 2));
   }
 }
 
@@ -281,26 +301,42 @@ const requestPath = path.join(__dirname, '..', 'data', 'prospectus-requests.json
 console.log(`Checking for requests at: ${requestPath}`);
 if (require.main === module && fs.existsSync(requestPath)) {
   (async () => {
-    const requests = JSON.parse(fs.readFileSync(requestPath, 'utf8'));
+    let requests = JSON.parse(fs.readFileSync(requestPath, 'utf8'));
     const pending = requests.filter(r => r.status === 'pending');
     console.log(`Found ${pending.length} pending requests.`);
     
     if (pending.length > 0) {
-      for (const req of pending) {
+      for (const pendingReq of pending) {
         try {
-          console.log(`Processing request ${req.id} for ${req.url}`);
+          console.log(`Processing request ${pendingReq.id} for ${pendingReq.url}`);
+          
+          // Re-read from disk to prevent race conditions
+          requests = JSON.parse(fs.readFileSync(requestPath, 'utf8'));
+          let req = requests.find(r => r.id === pendingReq.id);
+          if (!req) continue;
+          
           req.status = 'processing';
           fs.writeFileSync(requestPath, JSON.stringify(requests, null, 2));
-          await analyzeProspectus(req.url, req.id);
+          await analyzeProspectus(req.url, req.id, req.pastedTextFile);
           
           const resultPath = path.join(__dirname, '..', 'data', `prospectus-analysis-${req.id}.json`);
-          const requestsNow = JSON.parse(fs.readFileSync(requestPath, 'utf8'));
-          const reqNow = requestsNow.find(r => r.id === req.id);
-          if (fs.existsSync(resultPath)) reqNow.status = 'complete';
-          else reqNow.status = 'pending';
-          fs.writeFileSync(requestPath, JSON.stringify(requestsNow, null, 2));
+          requests = JSON.parse(fs.readFileSync(requestPath, 'utf8'));
+          req = requests.find(r => r.id === pendingReq.id);
+          if (!req) continue;
+          
+          if (fs.existsSync(resultPath)) {
+            const analysisData = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+            if (analysisData.error) {
+              req.status = 'failed';
+            } else {
+              req.status = 'complete';
+            }
+          } else {
+            req.status = 'pending';
+          }
+          fs.writeFileSync(requestPath, JSON.stringify(requests, null, 2));
         } catch (err) {
-          console.error(`Worker failed on request ${req.id}:`, err.message);
+          console.error(`Worker failed on request ${pendingReq.id}:`, err.message);
         }
       }
     }
