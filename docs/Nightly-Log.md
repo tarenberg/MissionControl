@@ -4,6 +4,12 @@
 **Agent:** Muffin 🧁
 
 ### Key Activities & Outcomes:
+- **Autonomous Google Drive "Inbox Bucket" Filing Pipeline Deployed (PR #3)**:
+    - **Google Drive Integration via `gog` CLI**: Designed and implemented a robust, native python-based file synchronization and categorization pipeline (`scripts/gdrive-inbox-filer.py`).
+    - **Autonomous Folder Lifecycle Management**: Programmed the script to search for the primary cloud drop zone (**`Muffin Inbox`**) and archive folder (**`Processed`**). If not present on Tom's Google Drive, it automatically creates them and fetches/logs their shareable web URLs.
+    - **Multi-Modal AI Classification (Gemini 2.5-Flash)**: Integrates the local high-context Gemini API utilizing base64 encoding to support both text files and binary files (PDF prospectus documents, JPEG/PNG painting scans). Gemini reads the contents, determines the logical directory in the `docs/` library, standardizes the filename to a clean kebab-case pattern, and routes it directly to its home on the local filesystem.
+    - **Safe Cloud Archiving**: Moves successfully filed items on Google Drive into the `Processed` subfolder to avoid duplicate processing and maintain a clean inbox, while serving as a safe cloud backup.
+    - **Idempotent Housekeeper Integration**: Registered the GDrive auto-filer as a first-class, idempotent cron-scheduled job (`"gdrive-inbox"`) inside `scripts/housekeeper.py`, running autonomously every 2 hours alongside standard health checks and morning kickoffs.
 - **Critical Task Board Log Bloat Resolved**:
     - **Reduced `tasks/todo.md` from 2.8MB to 3.8KB**: Autonomously ran a cleaning script that pruned over 13,000 lines of historical/automated error-logging noise. This completely resolved a heavy context and performance bottleneck, reducing token overhead by 99.8% and preventing future context overflows.
 - **Seamless Bidirectional Docs Synchronization Deployed**:
