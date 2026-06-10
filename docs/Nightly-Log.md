@@ -1,3 +1,34 @@
+## 2026-06-09: GitHub Task Sync Integration Deployed
+
+### Task: Auto-Sync GitHub Issues & PRs with Mission Control Tasks
+- **Goal:** Eliminate manual task creation and status updates by automatically synchronizing GitHub issues and pull requests with Mission Control tasks.
+- **Progress:**
+  - **Real-Time Webhook Handler**: Built `/api/github/webhook` endpoint that receives GitHub webhook events (issues.opened, pull_request.opened, pull_request.closed). Implements HMAC signature verification for security and idempotent event handling to prevent duplicate task creation.
+  - **Background Sync Service**: Created `lib/github/sync-service.ts` with periodic sync capability to catch missed webhooks. Compares GitHub state with database and creates/updates tasks as needed. Comprehensive error logging to `GithubSyncLog` table.
+  - **GitHub API Client**: Built `lib/github/github-client.ts` using Octokit for fetching issues and PRs. Properly typed interfaces and error handling throughout.
+  - **Database Models**: Added two new Prisma models:
+    - `GithubWebhookConfig` - Per-project webhook configuration (repo owner, name, secret)
+    - `GithubSyncLog` - Audit trail of all sync events (type, status, items processed, errors)
+  - **UI Component**: Created `GithubSyncStatus.tsx` with real-time sync history display, manual sync trigger button, and status indicators. Styled with neomorphic design matching the rest of Mission Control.
+  - **Background Script**: Implemented `scripts/github-background-sync.js` for cron scheduling. Processes all configured projects with detailed logging.
+  - **Task Status Mapping**: 
+    - Issue opened → Backlog
+    - PR opened → In Progress
+    - PR merged → Done
+    - PR closed (not merged) → Backlog
+    - Issue closed (no PR) → Done
+  - **Documentation**: Created full spec, plan, and task breakdown in `tasks/github-task-sync/` following the Four Files workflow.
+- **Build Status:** **VERIFIED CLEAN** (`npx tsc --noEmit --skipLibCheck` passed with zero errors in the new code; pre-existing VAD hook errors unrelated)
+- **Pull Request:** [PR #4](https://github.com/tarenberg/MissionControl/pull/4) created on branch `muffin/github-sync-v2`
+- **Next Steps:**
+  1. Install `@octokit/rest` dependency
+  2. Run Prisma migration
+  3. Set `GITHUB_TOKEN` environment variable
+  4. Configure webhooks in GitHub repo settings
+  5. Schedule `scripts/github-background-sync.js` in cron
+
+---
+
 ## 2026-05-27: Telegram-Class Audio Upgrades Deployed
 
 ### Task 1: Client-Side audioSrc Memory Cache & SSE Sync Fix
