@@ -30,21 +30,23 @@ model Contact {
 }
 
 model Project {
-  id           String     @id @default(cuid())
+  id           String                 @id @default(cuid())
   title        String
   description  String?
-  status       String     @default("active")
+  status       String                 @default("active")
   githubRepo   String?
   githubUrl    String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
   localUrl     String?
   devUrl       String?
   archivedPath String?
   artPieces    ArtPiece[]
   notes        Note[]
   tasks        Task[]
-  contacts     Contact[]  @relation("ContactToProject")
+  contacts     Contact[]              @relation("ContactToProject")
+  webhookConfig GithubWebhookConfig?
+  syncLogs     GithubSyncLog[]
 }
 
 model Task {
@@ -168,4 +170,27 @@ model JournalMedia {
   type           String       // "image" or "video"
   filename       String
   createdAt      DateTime     @default(now())
+}
+
+model GithubWebhookConfig {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  repoOwner     String
+  repoName      String
+  webhookSecret String?
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  project       Project  @relation(fields: [projectId], references: [id])
+}
+
+model GithubSyncLog {
+  id             String   @id @default(cuid())
+  projectId      String
+  syncType       String   // 'webhook' | 'manual' | 'scheduled'
+  status         String   // 'success' | 'error'
+  message        String?
+  itemsProcessed Int      @default(0)
+  createdAt      DateTime @default(now())
+  project        Project  @relation(fields: [projectId], references: [id])
 }
