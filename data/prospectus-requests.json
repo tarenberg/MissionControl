@@ -28,5 +28,35 @@
     "url": "list",
     "timestamp": "2026-05-15T16:54:05.428Z",
     "status": "complete"
+  },
+  {
+    "id": "1781199239434",
+    "url": "https://theartguide.com/callforartist/2026-international-artists-grand-prize-competition/",
+    "timestamp": "2026-06-11T17:33:59.434Z",
+    "status": "pending"
+  },
+  {
+    "id": "1781199751258",
+    "url": "https://artelagunaprize.com/21-edition",
+    "timestamp": "2026-06-11T17:42:31.258Z",
+    "status": "pending"
+  },
+  {
+    "id": "1781200174585",
+    "url": "https://www.artistsnetwork.com/art-competitions/splash/",
+    "timestamp": "2026-06-11T17:49:34.585Z",
+    "status": "pending"
+  },
+  {
+    "id": "1781200179472",
+    "url": "https://showsubmit.com/show/clwac-129th-anniversary-open-juried-exhibition",
+    "timestamp": "2026-06-11T17:49:39.472Z",
+    "status": "pending"
+  },
+  {
+    "id": "1781200396510",
+    "url": "https://theartguide.com/callforartist/allied-artists-of-america-113th-annual-juried-exhibition-online-and-on-site-exhibition/",
+    "timestamp": "2026-06-11T17:53:16.510Z",
+    "status": "pending"
   }
 ]

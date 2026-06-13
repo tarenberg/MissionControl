@@ -5,8 +5,55 @@ import { Terminal, Activity, ChevronDown, ChevronUp, RefreshCw } from 'lucide-re
 
 type LogType = 'app' | 'gateway';
 
+interface ParsedLog {
+  level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'UNKNOWN';
+  message: string;
+  time: string;
+  raw: string;
+}
+
+function parseLog(rawLog: string): ParsedLog {
+  try {
+    const parsed = JSON.parse(rawLog);
+    const level = parsed._meta?.logLevelName || 'UNKNOWN';
+    const rawMessage = parsed['1'] || parsed.message || rawLog;
+    // Ensure message is always a string
+    const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
+    const time = parsed.time || parsed._meta?.date || '';
+    return { level, message, time, raw: rawLog };
+  } catch {
+    // If parsing fails, treat as raw text
+    return {
+      level: 'UNKNOWN',
+      message: rawLog,
+      time: '',
+      raw: rawLog
+    };
+  }
+}
+
+function getLogColor(level: string): string {
+  switch (level) {
+    case 'ERROR': return 'text-red-500 dark:text-red-400';
+    case 'WARN': return 'text-yellow-500 dark:text-yellow-400';
+    case 'INFO': return 'text-gray-500 dark:text-gray-400';
+    case 'DEBUG': return 'text-blue-500 dark:text-blue-400';
+    default: return 'text-gray-600 dark:text-gray-500';
+  }
+}
+
+function getLogBadge(level: string): string {
+  switch (level) {
+    case 'ERROR': return 'bg-red-500';
+    case 'WARN': return 'bg-yellow-500';
+    case 'INFO': return 'bg-blue-500';
+    case 'DEBUG': return 'bg-gray-500';
+    default: return 'bg-gray-400';
+  }
+}
+
 const OpsLogMonitor = () => {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<ParsedLog[]>([]);
   const [logType, setLogType] = useState<LogType>('app');
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -20,7 +67,8 @@ const OpsLogMonitor = () => {
       const data = await response.json();
       
       if (Array.isArray(data)) {
-        setLogs(data);
+        const parsed = data.map(parseLog);
+        setLogs(parsed);
         setError(null);
       } else if (data.error) {
         throw new Error(data.error);
@@ -116,9 +164,22 @@ const OpsLogMonitor = () => {
                   <div className="text-gray-500 italic font-medium">Listening for log packets...</div>
                 )}
                 {logs.map((log, index) => (
-                  <div key={index} className="flex gap-4 group">
-                    <span className="text-blue-500/30 select-none font-black text-[9px] w-6 text-right mt-0.5">{ (index + 1).toString().padStart(2, '0') }</span>
-                    <div className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">{log}</div>
+                  <div key={index} className="flex gap-3 group items-start">
+                    <span className="text-blue-500/30 select-none font-black text-[9px] w-6 text-right mt-1">{ (index + 1).toString().padStart(2, '0') }</span>
+                    <div className={`w-1.5 h-1.5 rounded-full mt-2 ${getLogBadge(log.level)} shadow-[0_0_4px_currentColor]`} />
+                    <div className="flex-1 space-y-0.5">
+                      <div className={`text-[10px] font-bold uppercase tracking-wide ${getLogColor(log.level)}`}>
+                        {log.level}
+                      </div>
+                      <div className="text-gray-700 dark:text-gray-300 break-words">
+                        {log.message}
+                      </div>
+                      {log.time && (
+                        <div className="text-[9px] text-gray-400 dark:text-gray-600">
+                          {new Date(log.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

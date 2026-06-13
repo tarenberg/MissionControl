@@ -3,7 +3,7 @@
  * Processes GitHub webhook events and updates tasks accordingly
  */
 
-import crypto from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -37,9 +37,9 @@ export class WebhookHandler {
    * Verify GitHub webhook signature
    */
   verifySignature(payload: string, signature: string, secret: string): boolean {
-    const hmac = crypto.createHmac('sha256', secret);
+    const hmac = createHmac('sha256', secret);
     const digest = 'sha256=' + hmac.update(payload).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
   }
 
   /**

@@ -1,15 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { backupEntry } from '@/lib/backup';
+
+// Generate a concise title from journal content
+function generateTitle(content: string): string {
+  const clean = content.trim();
+  
+  // Try to extract first sentence
+  const sentenceMatch = clean.match(/^[^.!?\n]+[.!?]/);
+  if (sentenceMatch) {
+    const sentence = sentenceMatch[0].replace(/[.!?]+$/, '').trim();
+    if (sentence.length <= 60) {
+      return sentence;
+    }
+    // If sentence is too long, truncate it
+    return sentence.slice(0, 57) + '...';
+  }
+  
+  // No sentence ending found, use first line or first 50 chars
+  const firstLine = clean.split('\n')[0];
+  if (firstLine.length <= 60) {
+    return firstLine;
+  }
+  
+  return firstLine.slice(0, 57) + '...';
+}
 
 // Fetch weather from wttr.in with abort timeout
-async function fetchWeather(location: string): Promise<string | null> {
+// Supports historical dates via ?date=YYYY-MM-DD parameter
+async function fetchWeather(location: string, date?: Date): Promise<string | null> {
   if (!location) return null;
   try {
     const encodedLoc = encodeURIComponent(location);
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 2500);
 
-    const response = await fetch(`https://wttr.in/${encodedLoc}?format=%c+%t`, {
+    // Format date for historical weather lookup
+    let url = `https://wttr.in/${encodedLoc}?format=%c+%t`;
+    if (date) {
+      const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      url = `https://wttr.in/${encodedLoc}?date=${dateStr}&format=%c+%t`;
+    }
+
+    const response = await fetch(url, {
       signal: controller.signal,
     });
     clearTimeout(id);
@@ -62,7 +95,9 @@ export async function GET(req: NextRequest) {
             content: true,
             mood: true,
             location: true,
+            weather: true,
             createdAt: true,
+            updatedAt: true,
             media: {
               select: {
                 type: true,
@@ -98,10 +133,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const { title, content, mood, location, media } = data;
+    let { title, content, mood, location, media } = data;
 
     if (!content) {
       return NextResponse.json({ error: 'Content is required.' }, { status: 400 });
+    }
+
+    // Auto-generate title if missing
+    if (!title || !title.trim()) {
+      title = generateTitle(content);
+      console.log(`🎯 Auto-generated title: "${title}"`);
     }
 
     // Resolve location (fallback to New Haven, CT)
@@ -130,6 +171,9 @@ export async function POST(req: NextRequest) {
         media: true,
       },
     });
+
+    // Auto-backup to file system
+    await backupEntry(entry);
 
     return NextResponse.json({ success: true, entry });
   } catch (error: any) {

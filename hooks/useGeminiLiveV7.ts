@@ -187,6 +187,16 @@ export function useGeminiLiveV7(options: GeminiLiveOptions) {
     setError(null);
 
     try {
+      // Security check: getUserMedia requires HTTPS (except localhost)
+      if (typeof window !== 'undefined' && window.location.protocol === 'http:' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
+        throw new Error('Microphone access requires HTTPS. Please use https:// or localhost.');
+      }
+
+      // Check if mediaDevices API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Microphone API not available. Please use HTTPS or check browser permissions.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
