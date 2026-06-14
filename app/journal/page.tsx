@@ -113,6 +113,7 @@ export default function JournalPage() {
   // UI toggles per entry
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [showMediaForEntries, setShowMediaForEntries] = useState<Set<string>>(new Set());
+  const [fullscreenMedia, setFullscreenMedia] = useState<{ type: string; url: string; caption: string | null } | null>(null);
 
   const loadEntries = async () => {
     setIsLoading(true);
@@ -467,20 +468,28 @@ export default function JournalPage() {
                     </button>
 
                     {showMedia && entry.media && entry.media.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
                         {entry.media.map((m) => (
-                          <div key={m.id} className="rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-md hover:shadow-lg transition-shadow">
+                          <button
+                            key={m.id}
+                            onClick={() => setFullscreenMedia(m)}
+                            className="rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 hover:shadow-lg hover:scale-105 transition-all cursor-pointer group relative"
+                          >
                             {m.type === "image" ? (
-                              <img src={m.url} alt={m.caption || "Attachment"} className="w-full h-28 object-cover" />
+                              <img src={m.url} alt={m.caption || "Attachment"} className="w-full h-16 object-cover" />
                             ) : m.type === "video" ? (
-                              <video src={m.url} className="w-full h-28 object-cover" controls />
+                              <>
+                                <video src={m.url} className="w-full h-16 object-cover" />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                                  <span className="text-white text-xl">▶️</span>
+                                </div>
+                              </>
                             ) : (
-                              <div className="w-full h-28 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs font-bold text-gray-500 dark:text-gray-400">
+                              <div className="w-full h-16 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs font-bold text-gray-500 dark:text-gray-400">
                                 {m.type}
                               </div>
                             )}
-                            {m.caption && <div className="text-xs bg-gray-100 dark:bg-gray-800 p-2 text-gray-700 dark:text-gray-300 truncate">{m.caption}</div>}
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -497,6 +506,37 @@ export default function JournalPage() {
           {!isLoading && entries.length === 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No entries yet. Start your first chronicle entry!</p>
           )}
+        </div>
+      )}
+
+      {/* Fullscreen Media Viewer */}
+      {fullscreenMedia && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setFullscreenMedia(null)}>
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setFullscreenMedia(null)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl font-bold z-10"
+            >
+              ✕
+            </button>
+            
+            {fullscreenMedia.type === "image" ? (
+              <img src={fullscreenMedia.url} alt={fullscreenMedia.caption || "Full view"} className="w-full h-full object-contain rounded-lg" />
+            ) : fullscreenMedia.type === "video" ? (
+              <video src={fullscreenMedia.url} controls className="w-full h-full object-contain rounded-lg" autoPlay />
+            ) : (
+              <div className="text-white text-center">
+                <div className="text-6xl mb-4">📎</div>
+                <p>{fullscreenMedia.type}</p>
+              </div>
+            )}
+            
+            {fullscreenMedia.caption && (
+              <div className="absolute bottom-4 left-4 right-4 bg-black/80 text-white p-3 rounded-lg text-sm">
+                {fullscreenMedia.caption}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
