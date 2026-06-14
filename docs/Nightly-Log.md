@@ -1,3 +1,167 @@
+## 2026-06-14: GitHub Task Sync Deployment Completion ✅ (Nightly Sprint)
+
+### Summary
+✅ **Branch**: `muffin/github-sync-v2` (3 commits ahead of origin)
+✅ **Status**: Code complete, awaiting Tom's configuration
+✅ **Database**: Prisma migrations applied, schema verified
+✅ **Dependencies**: All required packages installed (@octokit/rest v22.0.1)
+✅ **PR**: Ready for review and merge into master
+
+### Completion Checklist
+- [x] GitHub sync feature code (all endpoints + handlers complete)
+- [x] Prisma migration (duplicate column bug fixed 2026-06-13)
+- [x] Database schema validation
+- [x] @octokit/rest dependency verification
+- [x] TypeScript compilation verified (GitHub sync code zero errors)
+- [x] .env.local template created with documentation
+- [ ] **BLOCKED - Awaiting Tom**: GitHub Personal Access Token setup
+- [ ] **BLOCKED - Awaiting Tom**: Webhook secret generation and GitHub repo configuration
+- [ ] **Pending**: Background sync job cron scheduling
+
+### Remaining Configuration Steps for Tom
+
+#### 1. Create GitHub Personal Access Token
+1. Go to https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Set expiration: 90 days (renewable)
+4. Select scopes:
+   - ✅ `repo` (full control of private repositories)
+   - ✅ `read:repo_hook` (read repository hooks)
+5. Copy the token value
+6. Paste into `.env.local` as:
+   ```
+   GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+#### 2. Generate Webhook Secret
+Run in terminal:
+```bash
+openssl rand -base64 32
+```
+Add to `.env.local`:
+```
+GITHUB_WEBHOOK_SECRET=<output_from_openssl>
+```
+
+#### 3. Configure GitHub Repository Webhook
+1. Go to your repo: https://github.com/{owner}/{repo}/settings/hooks
+2. Click "Add webhook"
+3. Set **Payload URL** to: `https://your-mission-control-domain.com/api/github/webhook`
+   - For local testing: use Ngrok or similar to expose localhost
+4. Set **Content type** to: `application/json`
+5. **Secret**: Paste the webhook secret from step 2
+6. **Which events**: Select "Issues" and "Pull requests"
+7. **Active**: Enable the webhook
+8. Click "Add webhook"
+
+#### 4. Verify Configuration
+After webhook is active:
+1. Open GitHub repo → Settings → Webhooks
+2. Click on your webhook
+3. Scroll to "Recent Deliveries"
+4. You should see a test delivery with a green ✓
+5. Check Mission Control database: new `GithubSyncLog` entries should appear
+
+#### 5. Enable Background Sync (Optional but Recommended)
+Add to your cron job:
+```bash
+node scripts/github-background-sync.js
+```
+Run every 30 minutes to catch missed webhooks and stay in sync.
+
+### How It Works
+
+**Event Flow:**
+```
+GitHub Issue/PR Created → GitHub Webhook → /api/github/webhook
+↓
+HMAC Signature Verification (using webhook secret)
+↓
+Lookup GithubWebhookConfig (find which project this repo belongs to)
+↓
+Map Event Type → Task Status (see mapping below)
+↓
+Create or Update Task in Mission Control
+↓
+Log sync activity to GithubSyncLog table
+```
+
+**Task Status Mapping:**
+```
+issues.opened → Backlog
+issues.closed → Done
+pull_request.opened → In Progress
+pull_request.merged (closed + merged=true) → Done
+pull_request.closed (closed + merged=false) → Backlog
+```
+
+### API Endpoints
+
+**Webhook Handler:**
+- **POST** `/api/github/webhook`
+- Receives GitHub webhook events
+- Verifies HMAC signature
+- Auto-creates/updates tasks
+
+**Background Sync Service:**
+- **Script**: `scripts/github-background-sync.js`
+- **Function**: Syncs all configured repos every 30 minutes
+- **Logs**: Writes to `GithubSyncLog` table
+
+### Database Tables
+
+**GithubWebhookConfig**
+- `id`: Primary key
+- `projectId`: Link to Mission Control project
+- `repoOwner`: GitHub repo owner/org
+- `repoName`: Repository name
+- `webhookSecret`: HMAC secret for signature verification
+- `enabled`: Boolean flag to disable/enable webhook processing
+
+**GithubSyncLog**
+- `id`: Primary key
+- `projectId`: Related project
+- `eventType`: 'issues' | 'pull_request'
+- `status`: 'success' | 'failed'
+- `itemsProcessed`: Count of tasks created/updated
+- `errorMessage`: Details if failed
+- `createdAt`: Timestamp
+
+### Code References
+
+- **Webhook Handler**: `app/api/github/webhook/route.ts`
+- **Webhook Logic**: `lib/github/webhook-handler.ts`
+- **GitHub Client**: `lib/github/github-client.ts`
+- **Background Sync**: `scripts/github-background-sync.js`
+- **UI Component**: `components/GithubSyncStatus.tsx`
+
+### Testing
+
+**Manual Testing (without real webhook):**
+```bash
+# Test the webhook handler locally
+curl -X POST http://localhost:3000/api/github/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-github-event: issues" \
+  -H "x-hub-signature-256: sha256=..." \
+  -d '{"action":"opened","issue":{...},"repository":{...}}'
+```
+
+**Real Webhook Testing:**
+1. Create a new issue in your GitHub repo
+2. Go to webhook settings → Recent Deliveries
+3. Verify green ✓ checkmark
+4. Check Mission Control database for new task
+
+### Performance Notes
+
+- Webhook verification uses `timingSafeEqual()` to prevent timing attacks
+- Idempotent event handling: duplicate GitHub webhook events create only one task
+- Background sync logs all activities for audit trail and debugging
+- Database indexes on `GithubWebhookConfig.repoOwner` and `.repoName` for fast lookups
+
+---
+
 ## 2026-06-09: GitHub Task Sync Integration Deployed
 
 ### Task: Auto-Sync GitHub Issues & PRs with Mission Control Tasks
