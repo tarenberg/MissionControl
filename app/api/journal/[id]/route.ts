@@ -71,8 +71,12 @@ export async function PATCH(
       },
     });
 
-    // Auto-backup after update
-    await backupEntry(entry);
+    // Auto-backup after update (convert Date fields to ISO strings)
+    await backupEntry({
+      ...entry,
+      createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
+    });
 
     return NextResponse.json({ success: true, entry });
   } catch (error: any) {
@@ -109,8 +113,12 @@ export async function DELETE(
       }
     }
 
-    // 3. Backup before deletion (tombstone)
-    await backupDeletion(id, entry);
+    // 3. Backup before deletion (tombstone) (convert Date fields to ISO strings)
+    await backupDeletion(id, {
+      ...entry,
+      createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
+    });
 
     // 4. Delete database record
     await prisma.journalEntry.delete({

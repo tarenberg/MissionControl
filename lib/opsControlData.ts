@@ -86,6 +86,8 @@ export interface ActivityLogEntry {
 export interface AgentModelItem {
   id: string;
   name: string;
+  description: string;
+  status: 'Active' | 'Idle';
   model: string;
 }
 
@@ -496,6 +498,8 @@ export function getAgentModels(): AgentModelItem[] {
     return parsedData.map((agent) => ({
       id: agent.id,
       name: agent.name,
+      description: agent.description || 'No description available',
+      status: agent.status || 'Idle',
       model: agent.model,
     }));
   } catch (e: unknown) {
