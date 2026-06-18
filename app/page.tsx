@@ -7,7 +7,7 @@ import StudioMonitor from '../components/StudioMonitor';
 import OpsLogMonitor from '../components/OpsLogMonitor';
 import LiveActivities from '../components/LiveActivities';
 import OpsPulse from '../components/OpsPulse';
-import PathfinderRadar from '../components/PathfinderRadar';
+import AICostsOverview from '../components/AICostsOverview';
 
 interface SkillInfo {
   name: string;
@@ -123,8 +123,8 @@ export default function HomePage() {
       {/* System Status */}
       <section className="mb-12">
         <div className="flex flex-col gap-6">
-          <PathfinderRadar />
           <OpsPulse />
+          <AICostsOverview />
           <SystemMonitor />
           <ServicesMonitor />
           <StudioMonitor />

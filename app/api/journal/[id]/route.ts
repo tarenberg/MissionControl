@@ -2,6 +2,38 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { backupEntry, backupDeletion } from '@/lib/backup';
+
+// Fetch weather from wttr.in with historical date support
+async function fetchWeather(location: string, date?: Date): Promise<string | null> {
+  if (!location) return null;
+  try {
+    const encodedLoc = encodeURIComponent(location);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased to 5s for historical data
+
+    let url = `https://wttr.in/${encodedLoc}?format=%c+%t`;
+    if (date) {
+      const dateStr = date.toISOString().split('T')[0];
+      url = `https://wttr.in/${encodedLoc}?date=${dateStr}&format=%c+%t`;
+    }
+
+    console.log(`📡 Fetching: ${url}`);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const text = (await response.text()).trim();
+      console.log(`📥 Response: ${text}`);
+      return text;
+    }
+    console.warn(`⚠️ Weather API returned status ${response.status}`);
+    return null;
+  } catch (err: any) {
+    console.warn('❌ Weather fetch failed:', err.message);
+    return null;
+  }
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -10,7 +42,22 @@ export async function PATCH(
   try {
     const { id } = await params;
     const data = await req.json();
-    const { title, content, mood, location, weather } = data;
+    const { title, content, mood, location, weather, createdAt } = data;
+
+    // If date changed, fetch weather for that date
+    let shouldUpdateWeather = false;
+    let updatedWeather = weather;
+    
+    if (createdAt !== undefined) {
+      const newDate = new Date(createdAt);
+      const currentEntry = await prisma.journalEntry.findUnique({ where: { id } });
+      const loc = location || currentEntry?.location || 'New Haven, CT';
+      
+      console.log(`🌤️ Fetching weather for ${loc} on ${newDate.toISOString().split('T')[0]}...`);
+      updatedWeather = await fetchWeather(loc, newDate);
+      shouldUpdateWeather = true;
+      console.log(`✅ Weather result: ${updatedWeather || 'null'}`);
+    }
 
     const entry = await prisma.journalEntry.update({
       where: { id },
@@ -19,9 +66,13 @@ export async function PATCH(
         ...(content !== undefined && { content }),
         ...(mood !== undefined && { mood: mood || null }),
         ...(location !== undefined && { location: location || null }),
-        ...(weather !== undefined && { weather: weather || null }),
+        ...(createdAt !== undefined && { createdAt: new Date(createdAt) }),
+        ...(shouldUpdateWeather && { weather: updatedWeather }),
       },
     });
+
+    // Auto-backup after update
+    await backupEntry(entry);
 
     return NextResponse.json({ success: true, entry });
   } catch (error: any) {
@@ -58,7 +109,10 @@ export async function DELETE(
       }
     }
 
-    // 3. Delete database record
+    // 3. Backup before deletion (tombstone)
+    await backupDeletion(id, entry);
+
+    // 4. Delete database record
     await prisma.journalEntry.delete({
       where: { id },
     });

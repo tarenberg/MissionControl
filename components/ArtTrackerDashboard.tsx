@@ -279,48 +279,67 @@ const Dashboard: React.FC<DashboardProps> = ({ appName, artistName }) => {
     const dateStr = date.toISOString().split('T')[0];
 
     deadlines.forEach(dl => {
-      const deadlineDate = dl.date;
+      const deadlineDate = dl.date; // Submission date
       const receiptDate = dl.receipt_date;
-      const shipDate = calculateShipBy(receiptDate);
-      const showStart = dl.show_start;
-      const showEnd = dl.show_end;
-      const returnDate = calculateReturnDate(showEnd);
+      const shipDate = dl.ship_date || calculateShipBy(receiptDate);
 
-      const isDeadline = dateStr === deadlineDate;
-      const isShip = shipDate && dateStr === shipDate;
-      const isReceipt = receiptDate && dateStr === receiptDate;
-      const isStart = showStart && dateStr === showStart;
-      const isEnd = showEnd && dateStr === showEnd;
-      const isReturn = returnDate && dateStr === returnDate;
-
-      // Determine if this date is within the full span [Ship Date -> Return Date]
-      const spanStart = shipDate || receiptDate || deadlineDate;
-      const spanEnd = returnDate || showEnd || deadlineDate;
-      const isInSpan = dateStr >= spanStart && dateStr <= spanEnd;
-
-      if (isInSpan) {
-        const showColor = getShowColor(dl.title);
-        const artNames = dl.submittedArtworks && dl.submittedArtworks.length > 0
-          ? dl.submittedArtworks.map(art => art.title)
-          : [`[ENTRY] ${dl.title}`];
-
-        artNames.forEach(name => {
+      // If no artworks submitted yet, show placeholder on deadline date only
+      if (!dl.submittedArtworks || dl.submittedArtworks.length === 0) {
+        if (dateStr === deadlineDate) {
           entries.push({
-            artName: name,
+            artName: `[ENTRY] ${dl.title}`,
             showTitle: dl.title,
-            status: dl.submittedArtworks?.find(a => a.title === name)?.status || 'Pending',
+            status: 'Pending',
             fullDeadline: dl,
-            color: showColor,
-            isPlaceholder: !dl.submittedArtworks?.length,
-            eventType: isDeadline ? 'deadline' :
-                       isShip ? 'ship' :
-                       isReceipt ? 'receipt' :
-                       isStart ? 'start' :
-                       isEnd ? 'end' :
-                       isReturn ? 'return' : 'span'
+            color: 'rgba(128, 128, 128, 0.4)', // Gray for pending
+            isPlaceholder: true,
+            eventType: 'deadline'
           });
-        });
+        }
+        return;
       }
+
+      // Process each submitted artwork individually based on its status
+      dl.submittedArtworks.forEach(art => {
+        const status = art.status || 'Pending';
+
+        // Skip rejected artworks entirely
+        if (status === 'Rejected') return;
+
+        // Pending or Committed: show only on submission date
+        if (status === 'Pending' || status === 'Committed') {
+          if (dateStr === deadlineDate) {
+            entries.push({
+              artName: art.title,
+              showTitle: dl.title,
+              status: status,
+              fullDeadline: dl,
+              color: status === 'Pending' ? 'rgba(128, 128, 128, 0.4)' : 'rgba(255, 223, 0, 0.4)', // Gray or Yellow
+              isPlaceholder: false,
+              eventType: 'deadline',
+              imageUrl: art.imageUrl
+            });
+          }
+        }
+
+        // Accepted: show from shipping date through receipt date
+        if (status === 'Accepted' && shipDate && receiptDate) {
+          if (dateStr >= shipDate && dateStr <= receiptDate) {
+            const showColor = getShowColor(dl.title); // Unique color per show
+            entries.push({
+              artName: art.title,
+              showTitle: dl.title,
+              status: status,
+              fullDeadline: dl,
+              color: showColor,
+              isPlaceholder: false,
+              eventType: dateStr === shipDate ? 'ship' :
+                         dateStr === receiptDate ? 'receipt' : 'span',
+              imageUrl: art.imageUrl
+            });
+          }
+        }
+      });
     });
 
     return entries;

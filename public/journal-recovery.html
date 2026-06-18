@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Moved</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            background: #f5f5f5;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .redirect-btn {
+            display: inline-block;
+            background: #0066cc;
+            color: white;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .redirect-btn:hover {
+            background: #0052a3;
+        }
+        .countdown {
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📔 Journal Has Moved</h1>
+        <p>
+            The journal recovery tool is obsolete.<br>
+            Your journal entries are stored in a database now,<br>
+            and you can export them from the main journal page.
+        </p>
+        <a href="/journal" class="redirect-btn">Go to Journal</a>
+        <p class="countdown">Redirecting automatically in <span id="counter">5</span> seconds...</p>
+    </div>
+
+    <script>
+        let count = 5;
+        const counter = document.getElementById('counter');
+        
+        const interval = setInterval(() => {
+            count--;
+            counter.textContent = count;
+            if (count <= 0) {
+                clearInterval(interval);
+                window.location.href = '/journal';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
