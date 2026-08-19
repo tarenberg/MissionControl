@@ -42,7 +42,10 @@ export async function PATCH(
   try {
     const { id } = await params;
     const data = await req.json();
-    const { title, content, mood, location, weather, createdAt } = data;
+    const { title, content, mood, location, weather, createdAt, media } = data;
+
+    console.log(`[PATCH] Processing entry ${id}`);
+    console.log(`[PATCH] Received media array:`, media);
 
     // If date changed, fetch weather for that date
     let shouldUpdateWeather = false;
@@ -59,6 +62,67 @@ export async function PATCH(
       console.log(`✅ Weather result: ${updatedWeather || 'null'}`);
     }
 
+    // First, fetch the current entry with media to track changes
+    const currentEntry = await prisma.journalEntry.findUnique({
+      where: { id },
+      include: { media: true },
+    });
+
+    if (!currentEntry) {
+      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+    }
+
+    // Process media array if provided
+    if (Array.isArray(media)) {
+      console.log(`[PATCH] Processing ${media.length} media items`);
+      
+      const newMediaIds = new Set(
+        media
+          .filter((m: any) => m.id && typeof m.id === 'string')
+          .map((m: any) => m.id)
+      );
+
+      // Find media to delete (in current but not in new)
+      const mediaToDelete = currentEntry.media.filter((m) => !newMediaIds.has(m.id));
+      console.log(`[PATCH] Deleting ${mediaToDelete.length} removed media items`);
+
+      // Delete removed media
+      for (const m of mediaToDelete) {
+        try {
+          const filePath = join(process.cwd(), 'public', m.url);
+          await unlink(filePath);
+          console.log(`[PATCH] Deleted file: ${m.url}`);
+        } catch (err) {
+          console.warn(`[PATCH] Could not delete physical file: ${m.url}`, err);
+        }
+        await prisma.journalMedia.delete({ where: { id: m.id } });
+      }
+
+      // Update captions on existing media and create new ones
+      for (const m of media) {
+        if (m.id && currentEntry.media.find((x) => x.id === m.id)) {
+          // Update existing media caption
+          console.log(`[PATCH] Updating media ${m.id} caption to: ${m.caption}`);
+          await prisma.journalMedia.update({
+            where: { id: m.id },
+            data: { caption: m.caption || null },
+          });
+        } else if (!m.id && m.url) {
+          // Create new media (already uploaded)
+          console.log(`[PATCH] Creating new media for URL: ${m.url}`);
+          await prisma.journalMedia.create({
+            data: {
+              url: m.url,
+              type: m.type || 'image/jpeg',
+              filename: m.filename || m.url.split('/').pop() || 'media',
+              caption: m.caption || null,
+              journalEntryId: id,
+            },
+          });
+        }
+      }
+    }
+
     const entry = await prisma.journalEntry.update({
       where: { id },
       data: {
@@ -69,11 +133,13 @@ export async function PATCH(
         ...(createdAt !== undefined && { createdAt: new Date(createdAt) }),
         ...(shouldUpdateWeather && { weather: updatedWeather }),
       },
+      include: { media: true },
     });
 
     // Auto-backup after update
     await backupEntry(entry);
 
+    console.log(`[PATCH] Entry ${id} updated successfully with ${entry.media.length} media items`);
     return NextResponse.json({ success: true, entry });
   } catch (error: any) {
     console.error(`[PATCH /api/journal/[id]]`, error);
