@@ -20,7 +20,7 @@ async function fetchWeather(location: string): Promise<string | null> {
     }
     return null;
   } catch (err) {
-    console.warn('Weather fetch timed out or failed:', err);
+    console.warn('[journal] Weather fetch timed out or failed:', err);
     return null;
   }
 }
@@ -33,7 +33,10 @@ export async function GET(req: NextRequest) {
     const mood = searchParams.get('mood') || '';
     const lite = searchParams.get('lite') === '1';
     const takeParam = Number.parseInt(searchParams.get('take') || '20', 10);
+    const skipParam = Number.parseInt(searchParams.get('skip') || '0', 10);
+    const skip = Number.isFinite(skipParam) ? Math.max(skipParam, 0) : 0;
     const take = Number.isFinite(takeParam) ? Math.min(Math.max(takeParam, 1), 50) : 20;
+    console.log(`[journal GET] lite=${lite}, take=${take}, skip=${skip}, search='${search}', mood='${mood}`);
 
     const where: any = {};
 
@@ -65,7 +68,11 @@ export async function GET(req: NextRequest) {
             createdAt: true,
             media: {
               select: {
+                id: true,
+                url: true,
                 type: true,
+                caption: true,
+                filename: true,
               },
               take: 10,
             },
@@ -82,14 +89,17 @@ export async function GET(req: NextRequest) {
             createdAt: 'desc',
           },
           take,
+          skip,
           include: {
             media: true,
           },
         });
 
-    return NextResponse.json({ success: true, entries });
+    console.log(`[journal GET] Returned ${entries.length} entries`);
+
+    return NextResponse.json({ success: true, entries, count: entries.length });
   } catch (error: any) {
-    console.error('Error fetching journal:', error);
+    console.error('[journal GET] Error fetching journal:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch journal.' }, { status: 500 });
   }
 }
