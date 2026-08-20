@@ -19,13 +19,14 @@ async function testMediaFlow() {
     console.log(`   Current media count: ${entry.media.length}`);
 
     // 2. Simulate adding media via PATCH
+    const timestamp = Date.now();
     const mediaToAdd = [
       {
-        url: '/uploads/test-photo-1.jpg',
+        url: `/uploads/test-photo-${timestamp}-1.jpg`,
         caption: 'Test photo from nightly sprint'
       },
       {
-        url: '/uploads/test-photo-2.jpg',
+        url: `/uploads/test-photo-${timestamp}-2.jpg`,
         caption: 'Second test photo'
       }
     ];
