@@ -1,478 +1,149 @@
 [
   {
-    "title": "Viridian Artists Summer Juried Exhibition",
-    "location": "Viridian Artists, NY",
-    "due_date": "2026-06-12",
-    "link": "https://theartguide.com/callforartist/viridian-artists-summer-juried-exhibition/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Still Life",
-    "location": "Gallery 40, NY",
-    "due_date": "2026-06-12",
-    "link": "https://theartguide.com/callforartist/still-life-2/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "ASSV Juried Art Show",
-    "location": "Sand Lake Center for the Arts, NY",
-    "due_date": "2026-06-12",
-    "link": "https://theartguide.com/callforartist/assv-juried-art-show/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Open Call for Photographers: Narrative",
-    "location": "Chico Art Center, CA",
-    "due_date": "2026-06-14",
-    "link": "https://theartguide.com/callforartist/open-call-for-photographers-narrative/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "99th Members Annual Exhibition",
-    "location": "South County Art Association, RI",
-    "due_date": "2026-06-14",
-    "link": "https://theartguide.com/callforartist/99th-members-annual-exhibition/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Flower Power 2026 Juried Art Competition",
-    "location": "Camelback Gallery, AZ",
-    "due_date": "2026-06-14",
-    "link": "https://theartguide.com/callforartist/flower-power-2026-juried-art-competition/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "30th Annual No Dead Artisits: International Juried Exhibition of Contemporary Art",
-    "location": "Ferrara Showman Gallery, LA",
-    "due_date": "2026-06-15",
-    "link": "https://theartguide.com/callforartist/30th-annual-no-dead-artisits-international-juried-exhibition-of-contemporary-art/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Small Works: 48th Harper College National Juried Exhibition",
-    "location": "Harper College, Martha Bell Gallery, IL",
-    "due_date": "2026-06-15",
-    "link": "https://theartguide.com/callforartist/small-works-48th-harper-college-national-juried-exhibition/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Online Art Competitions for 2026",
-    "location": "Contemporary Art Gallery Online, MD",
-    "due_date": "2026-06-15",
-    "link": "https://theartguide.com/callforartist/online-art-competitions-for-2026/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "The Art of Exhibition Management: What makes Curatorial Successful",
-    "location": "School for Curatorial Studies Venice, ITL",
-    "due_date": "2026-06-16",
-    "link": "https://theartguide.com/callforartist/the-art-of-exhibition-management-what-makes-curatorial-successful/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Allied Artists of America : 113th Annual Juried Exhibition (Online and On-Site Exhibition)",
-    "location": "Online and the Reading Public Museum, PA",
-    "due_date": "2026-06-17",
-    "link": "https://theartguide.com/callforartist/allied-artists-of-america-113th-annual-juried-exhibition-online-and-on-site-exhibition/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Ready for Departure: Local Artist Info Session for Airport Artwork Commissions.",
-    "location": "The Reno-Tahoe Airport Authority, NV",
-    "due_date": "2026-06-17",
-    "link": "https://theartguide.com/callforartist/ready-for-departure-local-artist-info-session-for-airport-artwork-commissions-2/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Call for Artist & Musicians Residency of Collaborative Cross, Arts Practice in Portugal",
-    "location": "Court Of Cavalum, PGL",
-    "due_date": "2026-06-19",
-    "link": "https://theartguide.com/callforartist/call-for-artist-musicians-residency-of-collaborative-cross-arts-practice-in-portugal/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Artist’s Choice 2026, Open Juried",
-    "location": "Woodstock Artists Association & Museum, NY",
-    "due_date": "2026-06-19",
-    "link": "https://theartguide.com/callforartist/artists-choice-2026-open-juried/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "COMEL Award 2026: Aluminium Future Intertwinings",
-    "location": "Spazio COMEL, ITL",
-    "due_date": "2026-06-21",
-    "link": "https://theartguide.com/callforartist/comel-award-2026-aluminium-future-intertwinings/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Call For Encaustic and Wax-Based Artwork: Fire and Form at RoCo",
-    "location": "Rochester Contemporary Art Center, NY",
-    "due_date": "2026-06-22",
-    "link": "https://theartguide.com/callforartist/call-for-encaustic-and-wax-based-artwork-fire-and-form-at-roco/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Experimental Visual Art for Hardcover Book Editions & Online (Art Reviews)",
-    "location": "Point Pleasant Publishing, NY",
-    "due_date": "2026-06-24",
-    "link": "https://theartguide.com/callforartist/series-22-curatorial-review-catalogue-publication-edition/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "Call for Artists: International Youth Art Competition 2027",
-    "location": "CICA Museum, SKR",
-    "due_date": "2026-06-25",
-    "link": "https://theartguide.com/callforartist/call-for-artists-international-youth-art-competition-2027/",
-    "source": "The Art Guide"
-  },
-  {
-    "title": "8th Annual, Primary Colors, Online Art Competition",
+    "title": "Cityscapes, Online Art Competition",
     "location": "Light Space & Time Online Art Gallery, NM",
-    "due_date": "2026-06-27",
-    "link": "https://theartguide.com/callforartist/8th-annual-primary-colors-online-art-competition/",
+    "due_date": "2026-08-27",
+    "link": "https://theartguide.com/callforartist/cityscapes-online-art-competition-2/",
     "source": "The Art Guide"
   },
   {
-    "title": "Birds & Beasts",
-    "location": "Spectrum Art Gallery, CT",
-    "due_date": "2026-06-30",
-    "link": "https://theartguide.com/callforartist/birds-beasts/",
+    "title": "From Forge to Fiber",
+    "location": "Mena Art Gallery, AR",
+    "due_date": "2026-08-28",
+    "link": "https://theartguide.com/callforartist/from-forge-to-fiber/",
     "source": "The Art Guide"
   },
   {
-    "title": "smallWORKS",
-    "location": "Garrison Art Center, NY",
-    "due_date": "2026-06-30",
-    "link": "https://theartguide.com/callforartist/smallworks/",
+    "title": "WAAM 2027 Solo Exhibitions",
+    "location": "Woodstock Artists Association & Museum, NY",
+    "due_date": "2026-08-28",
+    "link": "https://theartguide.com/callforartist/waam-2027-solo-exhibitions/",
     "source": "The Art Guide"
   },
   {
-    "title": "Lines, Shapes & Objects, 2026 Art Competition",
-    "location": "Fusion Art, NM",
-    "due_date": "2026-07-01",
-    "link": "https://theartguide.com/callforartist/lines-shapes-objects-2026-art-competition/",
+    "title": "Open Juried: Figuring it Out",
+    "location": "Woodstock Artists Association & Museum, NY",
+    "due_date": "2026-08-28",
+    "link": "https://theartguide.com/callforartist/open-juried-figuring-it-out/",
     "source": "The Art Guide"
   },
   {
-    "title": "Photo Shoot: 2026",
-    "location": "",
-    "due_date": "2026-06-12",
-    "link": "https://blackboxgallery.com/Photo%20Shoot%202026-CFE.html",
-    "source": "ArtShow"
-  },
-  {
-    "title": "9th Annual Flower Power Juried Competition",
-    "location": "",
-    "due_date": "2026-06-14",
-    "link": "https://www.camelbackgallery.com/flowerpower2026",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Tartget Painting Prize 2026 - International Painting Contest",
-    "location": "",
-    "due_date": "2026-06-14",
-    "link": "https://tartgetpaintingprize.com/index.php/rules/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "National Call for Entry! Made in the USA: Breath of Freedom",
-    "location": "",
-    "due_date": "2026-06-15",
-    "link": "https://artist.callforentry.org/festivals_unique_info.php?ID=17420",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Small Works: 48th Harper College National Juried Exhibition",
-    "location": "Palatine, IL",
-    "due_date": "2026-06-15",
-    "link": "https://www.harpercollege.edu/smallworks",
-    "source": "ArtShow"
-  },
-  {
-    "title": "\"Black and White\" 2026 Call for Entry - Online Art Show",
-    "location": "",
-    "due_date": "2026-06-15",
-    "link": "https://www.colorsofhumanityartgallery.com/Black-and-White-2026/Black-and-White-2026-Prospectus-and-Entry/n-g45JZX",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Allied Artists of America, 113th Annual Online Exhibition",
-    "location": "the Reading Public Museum, PA",
-    "due_date": "2026-06-17",
-    "link": "https://showsubmit.com/show/aaa-113th-online-annual-exhibition",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Spring Innovate Grants for Art + Photo",
-    "location": "",
-    "due_date": "2026-06-18",
-    "link": "https://innovateartistgrants.org/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Sea to Shining Sea",
-    "location": "the Blaine Art Gallery in Blaine, WA",
-    "due_date": "2026-06-19",
-    "link": "https://www.blaineartscouncil.org/july-juried-show-call-to-artists-sea-to-shining-sea/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Global Travel Photo Contest",
-    "location": "",
-    "due_date": "2026-06-22",
-    "link": "https://www.gogophotocontest.com/globaltravelphotocontestaloc/pages/22984",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Visions In Clay Call for Entries",
-    "location": "Delta College in Stockton, CA",
-    "due_date": "2026-06-22",
-    "link": "https://www.deltacollege.edu/about/offices/lh-horton-jr-art-gallery/entries/vic2026",
-    "source": "ArtShow"
-  },
-  {
-    "title": "A Rare Opportunity: Exhibit with MvVO ART at the Waldorf Astoria",
-    "location": "",
-    "due_date": "2026-06-27",
-    "link": "https://www.mvvoart.com/call-for-artists",
-    "source": "ArtShow"
-  },
-  {
-    "title": "8th Annual \"Primary Colors\" Online Art Competition",
-    "location": "",
-    "due_date": "2026-06-27",
-    "link": "https://lightspacetime.art/8th-annual-primary-colors-art-competition-2026/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "The Sweep of Time: Beyond the Horizon",
-    "location": "",
-    "due_date": "2026-06-28",
-    "link": "https://www.manifestgallery.org/sweep",
-    "source": "ArtShow"
-  },
-  {
-    "title": "The Almenara Art Prize",
-    "location": "",
-    "due_date": "2026-06-30",
-    "link": "https://www.thealmenaracollection.com/page/40769/2026-rules",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Arte Laguna Prize Open Call 2026 - 21st Edition",
-    "location": "",
-    "due_date": "2026-06-30",
-    "link": "https://artelagunaprize.com/21-edition",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Strange Figurations",
-    "location": "Limner Gallery in Hudson, NY",
-    "due_date": "2026-06-30",
-    "link": "http://www.slowart.com/prospectus/strange.htm",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Echoes of Expression | Portrait Art Competition",
-    "location": "",
-    "due_date": "2026-06-30",
-    "link": "https://www.teravarna.com/portrait-art-competition?utm_source=Portrait&utm_medium=Artshow",
-    "source": "ArtShow"
-  },
-  {
-    "title": "The Homiens Art Prize",
-    "location": "",
-    "due_date": "2026-06-30",
-    "link": "https://homiens.com/homiens-art-prize/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "International Call for Artists - 2027 Embracing Our Differences",
-    "location": "",
-    "due_date": "2026-07-01",
-    "link": "https://zealous.co/embracingourdifferences1/opportunity/2027-call-to-artists-cash-awards-juried-competition/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Lines, Shapes & Objects 2026 Art Competition",
-    "location": "",
-    "due_date": "2026-07-01",
-    "link": "https://www.fusionartps.com/calls-for-artists/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "95th Annual Online Juried Open Exhibition",
-    "location": "",
-    "due_date": "2026-07-03",
-    "link": "https://www.nationalartleague.org/95th-annual-online-juried-open-show",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Poolside 2026",
-    "location": "Key West, FL",
-    "due_date": "2026-07-05",
-    "link": "https://artist.callforentry.org/festivals_unique_info.php?ID=17354",
-    "source": "ArtShow"
-  },
-  {
-    "title": "INT'L All Media 2026 Call For Entries",
-    "location": "Minot State University in Minot, ND",
-    "due_date": "2026-07-10",
-    "link": "https://www.minotstateu.edu/nac/call-for-entries-AM.shtml",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Spectrum of Imagination | Color Art Competition",
-    "location": "",
-    "due_date": "2026-07-15",
-    "link": "https://www.teravarna.com/color-art-competition?utm_source=Color&utm_medium=Artshow",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Stand by Me",
-    "location": "Dover, NH",
-    "due_date": "2026-07-15",
-    "link": "https://theaplombproject.org/apply/stand-by-me.html",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Beautiful Bizarre Art Prize 2026",
-    "location": "the prestigious Beautiful Bizarre Magazine exhibition at Modern Eden Gallery in San Francisco, CA",
-    "due_date": "2026-07-17",
-    "link": "https://beautifulbizarreartprize.art/enter-beautiful-bizarre-art-prize/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Curious Canvases | Little Picassos Contest | Young Masters",
-    "location": "",
-    "due_date": "2026-07-20",
-    "link": "https://www.youngmasters.teravarna.com/little-picassos-international-juried-art-competition",
-    "source": "ArtShow"
-  },
-  {
-    "title": "16th Annual \"Seascapes\" Online Art Competition",
-    "location": "",
-    "due_date": "2026-07-27",
-    "link": "https://lightspacetime.art/16th-seascapes-2026-art-competition-2026/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Nomad Art Prize",
-    "location": "",
-    "due_date": "2026-07-30",
-    "link": "https://nomadartprize.com/call-for-entries",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Renaissance Art in Paris | P.A.R.I.S. 2026 Art Exhibition",
-    "location": "",
-    "due_date": "2026-07-31",
-    "link": "https://www.teravarna.com/paris-art-exhibition?utm_source=P.A.R.I.S.&utm_medium=Artshow",
-    "source": "ArtShow"
-  },
-  {
-    "title": "\"Art on Climate\" International Illustration Competition",
-    "location": "",
-    "due_date": "2026-07-31",
-    "link": "https://www.artonclimate.com/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Figures & Faces 2026 Art Competition",
-    "location": "",
-    "due_date": "2026-08-01",
-    "link": "https://www.fusionartps.com/calls-for-artists/",
-    "source": "ArtShow"
-  },
-  {
-    "title": "Wild at Art | 14th Animal Art Competition",
-    "location": "",
-    "due_date": "2026-08-15",
-    "link": "https://www.teravarna.com/animal-art-competition?utm_source=Animal&utm_medium=Artshow",
-    "source": "ArtShow"
-  },
-  {
-    "title": "62nd Annual Art Harvest",
-    "location": "Highlander Park in Dunedin, FL",
+    "title": "Deepest Rhythms",
+    "location": "ARC Gallery, IL",
     "due_date": "2026-08-30",
-    "link": "https://www.zapplication.org/event-info.php?ID=14424",
-    "source": "ArtShow"
+    "link": "https://theartguide.com/callforartist/deepest-rhythms/",
+    "source": "The Art Guide"
   },
   {
-    "title": "A Show of Heads: Call for Entries",
-    "location": "Limner Gallery in Hudson, NY",
+    "title": "Solo Show/Small Group: 2027",
+    "location": "Gallery 40, NY",
+    "due_date": "2026-08-30",
+    "link": "https://theartguide.com/callforartist/solo-show-small-group-2027/",
+    "source": "The Art Guide"
+  },
+  {
+    "title": "All Abstraction, Online Art Competition",
+    "location": "Contemporary Art Gallery Online, MD",
     "due_date": "2026-08-31",
-    "link": "http://www.slowart.com/prospectus/head.htm",
-    "source": "ArtShow"
+    "link": "https://theartguide.com/callforartist/all-abstraction-online-art-competition/",
+    "source": "The Art Guide"
   },
   {
-    "title": "The Blissful Buds | 12th Flower Art Competition",
-    "location": "",
+    "title": "Small Works",
+    "location": "Northville Art House, MI",
     "due_date": "2026-08-31",
-    "link": "https://www.teravarna.com/flower-art-competition?utm_source=Flower&utm_medium=Artshow",
-    "source": "ArtShow"
+    "link": "https://theartguide.com/callforartist/small-works-4/",
+    "source": "The Art Guide"
   },
   {
-    "title": "CLWAC 129th Anniversary Annual Open Juried Exhibition",
-    "location": "Salmagundi Club in New York, NY",
+    "title": "Best Work Art Challenge",
+    "location": "Ten Moir Gallery, MO",
+    "due_date": "2026-08-31",
+    "link": "https://theartguide.com/callforartist/best-work-art-challenge/",
+    "source": "The Art Guide"
+  },
+  {
+    "title": "Long Beach Fine Art EXPO V",
+    "location": "Long Beach Library Gallery and the Allegria Hotel, NY",
+    "due_date": "2026-08-31",
+    "link": "https://theartguide.com/callforartist/long-beach-fine-art-expo-v/",
+    "source": "The Art Guide"
+  },
+  {
+    "title": "Inked: The Art of Tattoo",
+    "location": "Kay Daugherty Gallery, MD",
+    "due_date": "2026-08-31",
+    "link": "https://theartguide.com/callforartist/inked-the-art-of-tattoo/",
+    "source": "The Art Guide"
+  },
+  {
+    "title": "Animal Kingdom 2026 Art Competition",
+    "location": "Fusion Art, NM",
     "due_date": "2026-09-01",
-    "link": "https://showsubmit.com/show/clwac-129th-anniversary-open-juried-exhibition",
-    "source": "ArtShow"
+    "link": "https://theartguide.com/callforartist/animal-kingdom-2026-art-competition/",
+    "source": "The Art Guide"
   },
   {
-    "title": "The Bennett Prize 5",
-    "location": "",
-    "due_date": "2026-09-19",
-    "link": "https://artist.callforentry.org/festivals_unique_info.php?ID=16813",
-    "source": "ArtShow"
+    "title": "CLWAC 129th Annual OpenJuried Exhibition",
+    "location": "Salmagundi Club, NY",
+    "due_date": "2026-09-01",
+    "link": "https://theartguide.com/callforartist/clwac-129th-annual-openjuried-exhibition/",
+    "source": "The Art Guide"
   },
   {
-    "title": "28th Annual Pastel 100 Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/pastel-100/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "2026-06-10",
-    "source": "Artists Network"
+    "title": "NEW YORK FASHION WEEK/Art Hearts Fashion",
+    "location": "SSG, NY",
+    "due_date": "2026-09-04",
+    "link": "https://theartguide.com/callforartist/new-york-fashion-week-ziegfeld-ballroom/",
+    "source": "The Art Guide"
   },
   {
-    "title": "20th Annual Over 60 Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/over-60/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "",
-    "source": "Artists Network"
+    "title": "Focus on Fall",
+    "location": "Spectrum Art Gallery, CT",
+    "due_date": "2026-09-05",
+    "link": "https://theartguide.com/callforartist/focus-on-fall-2/",
+    "source": "The Art Guide"
   },
   {
-    "title": "Splash 28: The Best of Watercolor Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/splash/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "2026-08-11",
-    "source": "Artists Network"
+    "title": "Metro Art Studios Annual Call for Curators",
+    "location": "Crown Gallery at Metro Art Studios, CT",
+    "due_date": "2026-09-05",
+    "link": "https://theartguide.com/callforartist/metro-art-studios-annual-call-for-curators/",
+    "source": "The Art Guide"
   },
   {
-    "title": "5th Annual Best In Show | Pets Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/best-in-show-pets/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "",
-    "source": "Artists Network"
+    "title": "Solo Art Series – An Opportunity to Shine",
+    "location": "Light Space & Time Online Art Gallery, NM",
+    "due_date": "2026-09-05",
+    "link": "https://theartguide.com/callforartist/solo-art-series-an-opportunity-to-shine-4/",
+    "source": "The Art Guide"
   },
   {
-    "title": "28th Annual Pastel 100 Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/pastel-100/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "2026-06-10",
-    "source": "Artists Network"
+    "title": "Quiet Landscape: Beauty, Stillness, and Connection",
+    "location": "PhotoPlace Gallery, VT",
+    "due_date": "2026-09-07",
+    "link": "https://theartguide.com/callforartist/quiet-landscape-beauty-stillness-and-connection/",
+    "source": "The Art Guide"
   },
   {
-    "title": "Splash 28: The Best of Watercolor Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/splash/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "2026-08-11",
-    "source": "Artists Network"
+    "title": "Applications Now Open for First Friday Art Walk 2026-2027",
+    "location": "City of Ocala, FL",
+    "due_date": "2026-09-07",
+    "link": "https://theartguide.com/callforartist/applications-now-open-for-first-friday-art-walk-2026-2027/",
+    "source": "The Art Guide"
   },
   {
-    "title": "Strokes of Genius 18: The Best of Drawing Art Competition",
-    "link": "https://www.artistsnetwork.com/art-competitions/strokes/",
-    "location": "Artists Network (Online/Magazine)",
-    "due_date": "2026-05-21",
-    "source": "Artists Network"
+    "title": "Black and White: 2026",
+    "location": "Black Box Gallery, OR",
+    "due_date": "2026-09-10",
+    "link": "https://theartguide.com/callforartist/black-and-white-2026/",
+    "source": "The Art Guide"
+  },
+  {
+    "title": "Call for Artists | Women United Art Prize 2026",
+    "location": "Women United Art Movement, CZR",
+    "due_date": "2026-09-15",
+    "link": "https://theartguide.com/callforartist/call-for-artists-women-united-art-prize-2026/",
+    "source": "The Art Guide"
   }
 ]

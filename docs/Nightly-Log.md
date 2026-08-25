@@ -1,3 +1,68 @@
+## 2026-08-23: PostgreSQL Migration + Journey Sync Integration (Nightly Sprint)
+
+### Summary
+**Accomplishment**: Successfully migrated Mission Control from SQLite to PostgreSQL, created Journey Sync integration UI and API proxy
+
+**Blocker**: Dev server consistently killed (SIGKILL) within 50–360 seconds, regardless of execution mode (persists across all attempts)
+
+**Root Cause Found**: System-level process termination affecting all OpenClaw exec calls
+- ✅ Foreground execution: SIGKILL after 50–360 sec
+- ✅ PTY mode: SIGKILL after 50–360 sec
+- ✅ Background mode: SIGKILL after 50–360 sec
+- ✅ Watchdog wrapper: SIGKILL kills parent + child
+- ❌ NOT app crash, NOT database issue, NOT resource exhaustion
+- ❌ Likely: Windows Defender, AppLocker, or OpenClaw parent process policy
+
+**Data Migration Complete**:
+- ✅ PostgreSQL container running (port 5432)
+- ✅ 81 journal entries migrated
+- ✅ 95 media records migrated
+- ✅ Prisma schema updated
+- ✅ Mission Control `.env.local` configured
+
+**Services Running**:
+- ✅ PostgreSQL (port 5432, shared database)
+- ✅ Mission Control (port 3000, when alive)
+- ✅ Journey Sync (port 8080, live)
+
+**Investigation Results**:
+- Checked OpenClaw config: no timeout setting found
+- Checked Windows Event Viewer: no blocking events
+- Checked process monitors: none active
+- Tested multiple execution modes: all killed equally
+- Tested watchdog wrapper: parent process killed too
+
+**Workaround**: Run dev server outside OpenClaw using Windows Task Scheduler or native PowerShell.
+
+**Next Action**: Document standalone dev server startup; investigate Windows Defender/AppLocker policies.
+
+---
+
+## 2026-08-22: Dev Server Blocker Diagnostic (Nightly Sprint)
+
+### Summary
+**Issue**: Mission Control dev server forcibly killed (SIGKILL) after 30–60 seconds across all branches and commits
+
+**Root Cause**: External process termination (not app crash)
+- Consistent timing across 8+ restart attempts
+- No error logs, server responding normally before termination
+- Likely OpenClaw background process timeout or system watchdog
+
+**Current Branch**: `muffin/journal-search-stats` (66e5a5b)
+**Status**: Feature-complete, blocked on deployment
+
+**Features on Branch**:
+- ✅ Chronicles search + filters + statistics
+- ✅ Backup button & selection
+- ✅ Clickable attachment viewer
+- ✅ All recent records preserved
+
+**Diagnostics Created**: `SPRINT-DIAGNOSTIC-2026-08-22.md` with root cause analysis and 4 proposed solutions
+
+**Next Action**: Test foreground dev server run (Option A) to determine if issue is background-process-specific
+
+---
+
 ## 2026-06-14: GitHub Task Sync Deployment Completion ✅ (Nightly Sprint)
 
 ### Summary
