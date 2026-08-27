@@ -1,45 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-import crypto from 'crypto';
+import { existsSync } from 'fs';
 
-export async function POST(req: NextRequest) {
+const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'journal');
+
+/**
+ * POST /api/journal/upload
+ * Upload media file to journal entry
+ * Form data: file (File)
+ */
+export async function POST(request: NextRequest) {
   try {
-    const formData = await req.formData();
-    const files = formData.getAll('files') as File[];
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
 
-    if (!files || files.length === 0) {
-      return NextResponse.json({ error: 'No files uploaded.' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: 'No file provided' },
+        { status: 400 }
+      );
     }
 
-    const uploadedMedia = [];
-
-    for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      
-      // Generate safe file name
-      const fileExtension = file.name.split('.').pop() || 'bin';
-      const uniqueName = `${crypto.randomUUID()}.${fileExtension}`;
-      
-      // Save to public uploads
-      const uploadDir = join(process.cwd(), 'public', 'uploads', 'journal');
-      const filePath = join(uploadDir, uniqueName);
-      
-      await writeFile(filePath, buffer);
-      
-      const fileUrl = `/uploads/journal/${uniqueName}`;
-      const type = file.type.startsWith('video/') ? 'video' : 'image';
-      
-      uploadedMedia.push({
-        url: fileUrl,
-        type,
-        filename: file.name
-      });
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4'];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, error: `File type not allowed. Allowed: ${allowedTypes.join(', ')}` },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ success: true, media: uploadedMedia });
-  } catch (error: any) {
-    console.error('Upload Error:', error);
-    return NextResponse.json({ error: error.message || 'Upload failed.' }, { status: 500 });
+    // Validate file size (10MB max)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        { success: false, error: 'File too large (max 10MB)' },
+        { status: 400 }
+      );
+    }
+
+    // Create upload directory if it doesn't exist
+    if (!existsSync(UPLOAD_DIR)) {
+      await mkdir(UPLOAD_DIR, { recursive: true });
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const extension = file.name.split('.').pop() || 'bin';
+    const filename = `${timestamp}-${random}.${extension}`;
+
+    // Write file
+    const filepath = join(UPLOAD_DIR, filename);
+    const bytes = await file.arrayBuffer();
+    await writeFile(filepath, Buffer.from(bytes));
+
+    // Return relative URL for accessing the file
+    const url = `/uploads/journal/${filename}`;
+
+    return NextResponse.json({
+      success: true,
+      url,
+      filename,
+      type: file.type.startsWith('image/') ? 'image' : 'video',
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Upload failed',
+      },
+      { status: 500 }
+    );
   }
 }

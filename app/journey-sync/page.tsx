@@ -51,8 +51,11 @@ export default function JourneySyncPage() {
   const [showStats, setShowStats] = useState(false);
 
   // Form state for create/edit
-  const [formData, setFormData] = useState<Partial<JournalEntry>>({});
+  const [formData, setFormData] = useState<Partial<JournalEntry & { uploadedMedia: Array<{ url: string; filename: string; type: string }> }>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadedMedia, setUploadedMedia] = useState<Array<{ url: string; filename: string; type: string }>>([]);
+  const [uploading, setUploading] = useState(false);
+  const [autoFilling, setAutoFilling] = useState(false);
 
   useEffect(() => {
     fetchEntries();
@@ -149,15 +152,21 @@ export default function JourneySyncPage() {
         return;
       }
 
+      const payload = {
+        ...formData,
+        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+      };
+
       const response = await fetch('/api/journey-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('Failed to create entry');
 
       setFormData({});
+      setUploadedMedia([]);
       setShowCreateForm(false);
       await fetchEntries();
     } catch (err) {
@@ -169,15 +178,22 @@ export default function JourneySyncPage() {
     try {
       if (!editingId) return;
 
+      const payload = {
+        id: editingId,
+        ...formData,
+        media: uploadedMedia.length > 0 ? uploadedMedia : undefined,
+      };
+
       const response = await fetch('/api/journey-sync', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingId, ...formData }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('Failed to update entry');
 
       setFormData({});
+      setUploadedMedia([]);
       setEditingId(null);
       setShowModal(false);
       setSelectedEntry(null);
@@ -209,10 +225,68 @@ export default function JourneySyncPage() {
     setSelectedEntry(entry);
     setFormData(entry);
     setEditingId(entry.id);
+    setUploadedMedia(Array.isArray(entry.media) ? entry.media : []);
     setShowModal(true);
   };
 
   const getMoodColor = (mood?: string) => MOOD_COLORS[mood || 'default'];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+
+        const response = await fetch('/api/journal/upload', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+        const data = await response.json();
+
+        setUploadedMedia((prev) => [
+          ...prev,
+          { url: data.url, filename: data.filename, type: data.type },
+        ]);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeUploadedMedia = (index: number) => {
+    setUploadedMedia((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAutoFill = async () => {
+    setAutoFilling(true);
+    try {
+      const locationQuery = formData.location || 'New Haven, CT';
+      const response = await fetch(`/api/journal/weather?location=${encodeURIComponent(locationQuery)}`);
+
+      if (!response.ok) throw new Error('Failed to fetch weather');
+      const data = await response.json();
+
+      setFormData((prev) => ({
+        ...prev,
+        location: data.location,
+        weather: data.weather,
+        date: new Date().toISOString(),
+      }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to auto-fill weather');
+    } finally {
+      setAutoFilling(false);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -483,7 +557,7 @@ export default function JourneySyncPage() {
               {/* Location */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Location
+                  Location (for weather)
                 </label>
                 <input
                   type="text"
@@ -491,15 +565,26 @@ export default function JourneySyncPage() {
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   disabled={!editingId}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg disabled:bg-slate-50 disabled:text-slate-600"
-                  placeholder="Where were you?"
+                  placeholder="e.g., New Haven, CT"
                 />
               </div>
 
               {/* Weather */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Weather
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Weather
+                  </label>
+                  {editingId && (
+                    <button
+                      onClick={handleAutoFill}
+                      disabled={autoFilling}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:text-slate-400"
+                    >
+                      {autoFilling ? 'Fetching...' : 'Auto-fill'}
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={formData.weather || ''}
@@ -532,33 +617,85 @@ export default function JourneySyncPage() {
                 <p className="text-sm text-slate-600">{formatDate(selectedEntry.createdAt)}</p>
               </div>
 
-              {/* Media */}
-              {selectedEntry.media && Array.isArray(selectedEntry.media) && selectedEntry.media.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Media ({selectedEntry.media.length})
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedEntry.media.map((m, idx) => (
-                      <div key={idx} className="space-y-2">
-                        {m.type === 'image' && (
-                          <Image
-                            src={m.url}
-                            alt={m.caption || `Media ${idx + 1}`}
-                            width={200}
-                            height={200}
-                            className="w-full rounded-lg object-cover"
-                            unoptimized
-                          />
-                        )}
-                        {m.caption && (
-                          <p className="text-xs text-slate-600 italic">{m.caption}</p>
-                        )}
-                      </div>
-                    ))}
+              {/* Media Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Media {uploadedMedia.length > 0 && `(${uploadedMedia.length})`}
+                </label>
+                {editingId && (
+                  <div className="mb-3">
+                    <label className="block w-full px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                      <span className="text-sm text-slate-600">
+                        {uploading ? 'Uploading...' : '+ Add Media'}
+                      </span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,video/mp4"
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Display existing media from entry */}
+                {selectedEntry.media && Array.isArray(selectedEntry.media) && selectedEntry.media.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs text-slate-500 mb-2">Original Media</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedEntry.media.map((m, idx) => (
+                        <div key={`orig-${idx}`} className="relative">
+                          {m.type === 'image' && (
+                            <Image
+                              src={m.url}
+                              alt={m.caption || `Media ${idx + 1}`}
+                              width={150}
+                              height={150}
+                              className="w-full rounded-lg object-cover"
+                              unoptimized
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Display newly uploaded media */}
+                {uploadedMedia.length > 0 && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-2">New Media</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {uploadedMedia.map((m, idx) => (
+                        <div key={`new-${idx}`} className="relative">
+                          {m.type === 'image' && (
+                            <>
+                              <Image
+                                src={m.url}
+                                alt={m.filename}
+                                width={150}
+                                height={150}
+                                className="w-full rounded-lg object-cover"
+                                unoptimized
+                              />
+                              {editingId && (
+                                <button
+                                  onClick={() => removeUploadedMedia(idx)}
+                                  className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Weather */}
               {selectedEntry.weather && (
@@ -679,22 +816,31 @@ export default function JourneySyncPage() {
               {/* Location */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Location
+                  Location (for weather)
                 </label>
                 <input
                   type="text"
                   value={formData.location || ''}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Where are you?"
+                  placeholder="e.g., New Haven, CT"
                 />
               </div>
 
               {/* Weather */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Weather
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Weather
+                  </label>
+                  <button
+                    onClick={handleAutoFill}
+                    disabled={autoFilling}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:text-slate-400"
+                  >
+                    {autoFilling ? 'Fetching...' : 'Auto-fill'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={formData.weather || ''}
@@ -702,6 +848,57 @@ export default function JourneySyncPage() {
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Sunny 72F"
                 />
+              </div>
+
+              {/* Media Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Media {uploadedMedia.length > 0 && `(${uploadedMedia.length})`}
+                </label>
+                <label className="block w-full px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                  <span className="text-sm text-slate-600">
+                    {uploading ? 'Uploading...' : '+ Add Media'}
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/mp4"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Display newly uploaded media */}
+                {uploadedMedia.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-slate-500 mb-2">Uploads</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {uploadedMedia.map((m, idx) => (
+                        <div key={`new-${idx}`} className="relative">
+                          {m.type === 'image' && (
+                            <>
+                              <Image
+                                src={m.url}
+                                alt={m.filename}
+                                width={100}
+                                height={100}
+                                className="w-full rounded-lg object-cover"
+                                unoptimized
+                              />
+                              <button
+                                onClick={() => removeUploadedMedia(idx)}
+                                className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
+                              >
+                                ✕
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Entry Date */}
@@ -730,6 +927,7 @@ export default function JourneySyncPage() {
                 onClick={() => {
                   setShowCreateForm(false);
                   setFormData({});
+                  setUploadedMedia([]);
                 }}
                 className="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-800 rounded-lg font-medium transition"
               >
