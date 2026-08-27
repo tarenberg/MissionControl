@@ -14,7 +14,7 @@ interface JournalEntry {
   date?: string;
   createdAt: string;
   updatedAt: string;
-  media?: string;
+  media?: Array<{ id: string; url: string; type: string; caption?: string; filename: string }> | string;
 }
 
 interface Stats {
@@ -365,11 +365,11 @@ export default function JourneySyncPage() {
               >
                 <div className="flex gap-4">
                   {/* Media Thumbnail */}
-                  {entry.media && (
+                  {entry.media && Array.isArray(entry.media) && entry.media.length > 0 && (
                     <div className="flex-shrink-0 w-20 h-20 bg-slate-200 rounded-lg overflow-hidden">
                       <Image
-                        src={entry.media}
-                        alt={entry.title}
+                        src={entry.media[0].url}
+                        alt={entry.media[0].caption || entry.title}
                         width={80}
                         height={80}
                         className="w-full h-full object-cover"
@@ -394,11 +394,16 @@ export default function JourneySyncPage() {
                       )}
                       {entry.location && (
                         <span className="px-2 py-1 text-xs rounded bg-slate-100 text-slate-700 border border-slate-300">
-                          {entry.location}
+                          📍 {entry.location}
+                        </span>
+                      )}
+                      {entry.weather && (
+                        <span className="px-2 py-1 text-xs rounded bg-slate-100 text-slate-700 border border-slate-300">
+                          {entry.weather}
                         </span>
                       )}
                       <span className="px-2 py-1 text-xs text-slate-500">
-                        {formatDate(entry.createdAt)}
+                        📅 {formatDate(entry.date ? entry.date : entry.createdAt)}
                       </span>
                     </div>
                   </div>
@@ -490,28 +495,88 @@ export default function JourneySyncPage() {
                 />
               </div>
 
-              {/* Date */}
+              {/* Weather */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Created
+                  Weather
+                </label>
+                <input
+                  type="text"
+                  value={formData.weather || ''}
+                  onChange={(e) => setFormData({ ...formData, weather: e.target.value })}
+                  disabled={!editingId}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg disabled:bg-slate-50 disabled:text-slate-600"
+                  placeholder="e.g., Sunny 72F"
+                />
+              </div>
+
+              {/* Entry Date */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Entry Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.date ? new Date(formData.date).toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  disabled={!editingId}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg disabled:bg-slate-50 disabled:text-slate-600"
+                />
+              </div>
+
+              {/* Created At */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Created At
                 </label>
                 <p className="text-sm text-slate-600">{formatDate(selectedEntry.createdAt)}</p>
               </div>
 
               {/* Media */}
-              {selectedEntry.media && (
+              {selectedEntry.media && Array.isArray(selectedEntry.media) && selectedEntry.media.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Media
+                    Media ({selectedEntry.media.length})
                   </label>
-                  <Image
-                    src={selectedEntry.media}
-                    alt={selectedEntry.title}
-                    width={300}
-                    height={300}
-                    className="w-full max-w-xs rounded-lg"
-                    unoptimized
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedEntry.media.map((m, idx) => (
+                      <div key={idx} className="space-y-2">
+                        {m.type === 'image' && (
+                          <Image
+                            src={m.url}
+                            alt={m.caption || `Media ${idx + 1}`}
+                            width={200}
+                            height={200}
+                            className="w-full rounded-lg object-cover"
+                            unoptimized
+                          />
+                        )}
+                        {m.caption && (
+                          <p className="text-xs text-slate-600 italic">{m.caption}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Weather */}
+              {selectedEntry.weather && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Weather
+                  </label>
+                  <p className="text-sm text-slate-600">{selectedEntry.weather}</p>
+                </div>
+              )}
+
+              {/* Entry Date */}
+              {selectedEntry.date && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Entry Date
+                  </label>
+                  <p className="text-sm text-slate-600">{formatDate(selectedEntry.date)}</p>
                 </div>
               )}
             </div>
@@ -622,6 +687,33 @@ export default function JourneySyncPage() {
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Where are you?"
+                />
+              </div>
+
+              {/* Weather */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Weather
+                </label>
+                <input
+                  type="text"
+                  value={formData.weather || ''}
+                  onChange={(e) => setFormData({ ...formData, weather: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Sunny 72F"
+                />
+              </div>
+
+              {/* Entry Date */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Entry Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.date ? new Date(formData.date).toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
