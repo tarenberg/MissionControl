@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Point to NestJS backend (port 3001) instead of external Journey Sync container
-const JOURNEY_SYNC_URL = process.env.JOURNEY_SYNC_URL || 'http://localhost:3001';
+// Point to NestJS backend (port 3002)
+const JOURNEY_SYNC_URL = process.env.JOURNEY_SYNC_URL || 'http://localhost:3002';
 
 export async function GET(request: NextRequest) {
   try {

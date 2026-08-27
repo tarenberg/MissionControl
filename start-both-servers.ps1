@@ -60,21 +60,21 @@ function Start-Server {
             -WindowStyle Hidden `
             -PassThru
         
-        Log "✅ $Name started (PID: $($process.Id))"
+        Log "[OK] $Name started (PID: $($process.Id))"
         Pop-Location
         return $process
     } catch {
-        Log "❌ Failed to start $Name: $_"
+        Log "[ERROR] Failed to start $Name : $_"
         Pop-Location
         return $null
     }
 }
 
 function Monitor-Servers {
-    Log "==================== SERVICE STARTED ===================="
+    Log "================= SERVICE STARTED ================="
     Log "Mission Control: $MCPath (port 3000)"
     Log "NestJS Backend: $BackendPath (port 3002)"
-    Log "========================================================"
+    Log "=================================================="
     
     $mcProcess = $null
     $backendProcess = $null
@@ -104,12 +104,12 @@ function Monitor-Servers {
             
             # Check both servers are healthy
             if ((Check-Port 3000) -and (Check-Port 3002)) {
-                Log "✅ Both servers healthy"
+                Log "[OK] Both servers healthy"
             }
             
             Start-Sleep -Seconds 10
         } catch {
-            Log "❌ Monitoring error: $_"
+            Log "[ERROR] Monitoring error: $_"
             Start-Sleep -Seconds 5
         }
     }
@@ -119,6 +119,6 @@ function Monitor-Servers {
 try {
     Monitor-Servers
 } catch {
-    Log "FATAL: $_"
+    Log "[FATAL] $_"
     exit 1
 }
