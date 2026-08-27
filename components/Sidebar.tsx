@@ -38,6 +38,7 @@ export default function Sidebar() {
             { name: 'Tasks', href: '/tasks', icon: '✅' },
             { name: 'Art Tracker', href: '/art-tracker', icon: '🎨' },
             { name: 'Chronicles', href: '/journal', icon: '📓' },
+            { name: 'Journey Sync', href: '/journey-sync', icon: '🗺️' },
             { name: 'Team', href: '/team', icon: '👥' },
             { name: 'Ops Control', href: '/ops', icon: '⚙️' },
             { name: 'VAT Chat', href: '/chat', icon: '💬' },
