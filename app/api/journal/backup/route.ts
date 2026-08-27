@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 /**
  * GET /api/journal/backup
@@ -48,10 +51,41 @@ export async function GET(request: NextRequest) {
   }
 }
 
+async function autoBackupToGoogleDrive(entries: any[]) {
+  try {
+    const backupDir = 'G:\\My Drive\\Chronicles';
+    const timestamp = new Date().toISOString().split('T')[0];
+    const backupFile = join(backupDir, `journey-sync-backup-${timestamp}.json`);
+
+    // Check if directory exists
+    if (!existsSync(backupDir)) {
+      console.warn(`Google Drive backup directory not found: ${backupDir}`);
+      return { success: false, message: 'Backup directory not accessible' };
+    }
+
+    const backup = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      totalEntries: entries.length,
+      restoredAt: new Date().toISOString(),
+      source: 'auto-backup-after-restore',
+      entries,
+    };
+
+    await writeFile(backupFile, JSON.stringify(backup, null, 2), 'utf-8');
+    console.log(`Auto-backup saved to ${backupFile}`);
+    return { success: true, backupFile };
+  } catch (error) {
+    console.error('Auto-backup error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 /**
  * POST /api/journal/backup/restore
  * Restore journal entries from backup JSON
  * Form data: file (JSON backup file)
+ * Automatically saves a backup copy to Google Drive after successful restore
  */
 export async function POST(request: NextRequest) {
   try {
@@ -132,10 +166,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-backup to Google Drive after successful restore
+    let backupResult = { success: false, message: 'Skipped' };
+    if (results.failed === 0 || results.created > 0 || results.updated > 0) {
+      backupResult = await autoBackupToGoogleDrive(backup.entries);
+    }
+
     return NextResponse.json({
       success: results.failed === 0,
       message: `Restored ${results.created} new entries, updated ${results.updated}`,
       results,
+      autoBackup: backupResult,
     });
   } catch (error) {
     console.error('Restore error:', error);
@@ -143,6 +184,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: error instanceof Error ? error.message : 'Restore failed',
+        autoBackup: { success: false, message: 'Not attempted due to restore error' },
       },
       { status: 500 }
     );
