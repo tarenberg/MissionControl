@@ -1,50 +1,149 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { listBackups, loadBackup, createSnapshot } from '@/lib/backup';
 
 /**
- * GET /api/journal/backup - List all backup files
- * GET /api/journal/backup?file=<filename> - Load a specific backup
- * GET /api/journal/backup?snapshot=1 - Create a full snapshot of current DB
+ * GET /api/journal/backup
+ * Export all journal entries as JSON backup file
  */
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const filename = searchParams.get('file');
-    const snapshot = searchParams.get('snapshot') === '1';
+    // Fetch all entries from backend
+    const backendUrl = process.env.JOURNEY_SYNC_URL || 'http://localhost:3002';
+    const response = await fetch(`${backendUrl}/api/entries?skip=0&take=10000`, {
+      cache: 'no-store',
+    });
 
-    // Create full snapshot
-    if (snapshot) {
-      const entries = await prisma.journalEntry.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: { media: true },
-      });
-      
-      const snapshotFile = await createSnapshot(entries);
-      return NextResponse.json({ 
-        success: true, 
-        snapshot: snapshotFile,
-        count: entries.length 
-      });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch entries: ${response.status}`);
     }
 
-    // Load specific backup
-    if (filename) {
-      const backup = await loadBackup(filename);
-      if (!backup) {
-        return NextResponse.json({ error: 'Backup not found' }, { status: 404 });
-      }
-      return NextResponse.json({ success: true, backup });
-    }
+    const { entries } = await response.json();
 
-    // List all backups
-    const backups = await listBackups();
-    return NextResponse.json({ success: true, backups, count: backups.length });
+    // Create backup object
+    const backup = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      totalEntries: entries.length,
+      entries: entries,
+    };
 
-  } catch (error: any) {
-    console.error('[GET /api/journal/backup]', error);
+    // Return as downloadable JSON
+    const filename = `journey-sync-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+    return new NextResponse(JSON.stringify(backup, null, 2), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (error) {
+    console.error('Backup error:', error);
     return NextResponse.json(
-      { error: error.message || 'Backup operation failed' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Backup failed',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/journal/backup/restore
+ * Restore journal entries from backup JSON
+ * Form data: file (JSON backup file)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Parse JSON
+    const text = await file.text();
+    const backup = JSON.parse(text);
+
+    if (!backup.entries || !Array.isArray(backup.entries)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid backup format: missing entries array' },
+        { status: 400 }
+      );
+    }
+
+    // Restore entries
+    const backendUrl = process.env.JOURNEY_SYNC_URL || 'http://localhost:3002';
+    const results = {
+      total: backup.entries.length,
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as string[],
+    };
+
+    for (const entry of backup.entries) {
+      try {
+        const payload = {
+          title: entry.title,
+          content: entry.content,
+          mood: entry.mood,
+          location: entry.location,
+          weather: entry.weather,
+          tags: entry.tags,
+          date: entry.date,
+          media: entry.media || [],
+        };
+
+        // Try to update first (if ID exists), then create
+        let response;
+        if (entry.id) {
+          response = await fetch(`${backendUrl}/api/entries/${entry.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (response.ok) {
+            results.updated++;
+          } else {
+            throw new Error(`Update failed: ${response.status}`);
+          }
+        } else {
+          response = await fetch(`${backendUrl}/api/entries`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (response.ok) {
+            results.created++;
+          } else {
+            throw new Error(`Create failed: ${response.status}`);
+          }
+        }
+      } catch (err) {
+        results.failed++;
+        results.errors.push(
+          `Entry "${entry.title}": ${err instanceof Error ? err.message : 'Unknown error'}`
+        );
+      }
+    }
+
+    return NextResponse.json({
+      success: results.failed === 0,
+      message: `Restored ${results.created} new entries, updated ${results.updated}`,
+      results,
+    });
+  } catch (error) {
+    console.error('Restore error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Restore failed',
+      },
       { status: 500 }
     );
   }

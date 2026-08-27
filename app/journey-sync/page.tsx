@@ -57,6 +57,11 @@ export default function JourneySyncPage() {
   const [uploading, setUploading] = useState(false);
   const [autoFilling, setAutoFilling] = useState(false);
 
+  // Backup/restore state
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [showBackupMenu, setShowBackupMenu] = useState(false);
+
   useEffect(() => {
     fetchEntries();
   }, []);
@@ -266,6 +271,58 @@ export default function JourneySyncPage() {
     setUploadedMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const response = await fetch('/api/journal/backup');
+      if (!response.ok) throw new Error('Backup failed');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `journey-sync-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setShowBackupMenu(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Backup failed');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    setRestoreLoading(true);
+    try {
+      const formDataRestore = new FormData();
+      formDataRestore.append('file', files[0]);
+
+      const response = await fetch('/api/journal/backup/restore', {
+        method: 'POST',
+        body: formDataRestore,
+      });
+
+      if (!response.ok) throw new Error('Restore failed');
+      const result = await response.json();
+
+      alert(`Restore complete: ${result.message}\n\nCreated: ${result.results.created}\nUpdated: ${result.results.updated}\nFailed: ${result.results.failed}`);
+      setShowBackupMenu(false);
+      await fetchEntries();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Restore failed');
+    } finally {
+      setRestoreLoading(false);
+      e.target.value = '';
+    }
+  };
+
   const handleAutoFill = async () => {
     setAutoFilling(true);
     try {
@@ -310,16 +367,49 @@ export default function JourneySyncPage() {
               <h1 className="text-4xl font-bold text-slate-900">Journey Sync</h1>
               <p className="text-slate-600 mt-1">Your personal chronicles, synced</p>
             </div>
-            <button
-              onClick={() => {
-                setFormData({});
-                setEditingId(null);
-                setShowCreateForm(true);
-              }}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
-            >
-              New Entry
-            </button>
+            <div className="flex gap-2">
+              <div className="relative">
+                <button
+                  onClick={() => setShowBackupMenu(!showBackupMenu)}
+                  className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition text-sm"
+                >
+                  💾 Backup
+                </button>
+                {showBackupMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-40">
+                    <button
+                      onClick={handleBackup}
+                      disabled={backupLoading}
+                      className="block w-full text-left px-4 py-2 hover:bg-slate-100 disabled:bg-slate-50 disabled:text-slate-400 rounded-t-lg text-sm"
+                    >
+                      {backupLoading ? 'Exporting...' : 'Export All Entries'}
+                    </button>
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleRestore}
+                        disabled={restoreLoading}
+                        className="hidden"
+                      />
+                      <span className="block w-full text-left px-4 py-2 hover:bg-slate-100 disabled:bg-slate-50 disabled:text-slate-400 rounded-b-lg text-sm cursor-pointer">
+                        {restoreLoading ? 'Restoring...' : 'Restore from File'}
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowCreateForm(true);
+                }}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+              >
+                New Entry
+              </button>
+            </div>
           </div>
 
           {/* Search and Filters */}
@@ -423,6 +513,10 @@ export default function JourneySyncPage() {
 
         {loading ? (
           <div className="text-center py-12 text-slate-600">Loading entries...</div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+            {error}
+          </div>
         ) : filteredEntries.length === 0 ? (
           <div className="text-center py-12 text-slate-600">
             {searchQuery || selectedMood !== 'all' || selectedLocation !== 'all'
