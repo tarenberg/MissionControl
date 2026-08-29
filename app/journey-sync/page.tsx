@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 
 interface JournalEntry {
   id: string;
@@ -535,13 +534,14 @@ export default function JourneySyncPage() {
                   {/* Media Thumbnail */}
                   {entry.media && Array.isArray(entry.media) && entry.media.length > 0 && (
                     <div className="flex-shrink-0 w-20 h-20 bg-slate-200 rounded-lg overflow-hidden">
-                      <Image
+                      <img
                         src={entry.media[0].url}
                         alt={entry.media[0].caption || entry.title}
-                        width={80}
-                        height={80}
                         className="w-full h-full object-cover"
-                        unoptimized
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder-image.svg';
+                          e.currentTarget.style.backgroundColor = '#e5e7eb';
+                        }}
                       />
                     </div>
                   )}
@@ -742,13 +742,14 @@ export default function JourneySyncPage() {
                       {selectedEntry.media.map((m, idx) => (
                         <div key={`orig-${idx}`} className="relative">
                           {m.type === 'image' && (
-                            <Image
+                            <img
                               src={m.url}
                               alt={m.caption || `Media ${idx + 1}`}
-                              width={150}
-                              height={150}
                               className="w-full rounded-lg object-cover"
-                              unoptimized
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder-image.svg';
+                                e.currentTarget.style.backgroundColor = '#e5e7eb';
+                              }}
                             />
                           )}
                         </div>
@@ -766,13 +767,14 @@ export default function JourneySyncPage() {
                         <div key={`new-${idx}`} className="relative">
                           {m.type === 'image' && (
                             <>
-                              <Image
+                              <img
                                 src={m.url}
                                 alt={m.filename}
-                                width={150}
-                                height={150}
                                 className="w-full rounded-lg object-cover"
-                                unoptimized
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder-image.svg';
+                                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                                }}
                               />
                               {editingId && (
                                 <button
