@@ -974,13 +974,14 @@ export default function JourneySyncPage() {
                         <div key={`new-${idx}`} className="relative">
                           {m.type === 'image' && (
                             <>
-                              <Image
+                              <img
                                 src={m.url}
                                 alt={m.filename}
-                                width={100}
-                                height={100}
                                 className="w-full rounded-lg object-cover"
-                                unoptimized
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder-image.svg';
+                                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                                }}
                               />
                               <button
                                 onClick={() => removeUploadedMedia(idx)}
